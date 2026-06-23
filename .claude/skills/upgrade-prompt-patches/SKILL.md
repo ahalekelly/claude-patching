@@ -74,7 +74,7 @@ The `result` line shows the running tally (e.g. `prompt-slim (v2.1.162): 65/67 p
 `patch-prompt-slim.js` has **built-in diagnostics** for failures. The `--check` output classifies each skipped patch:
 
 - **`chained (consumed by <patch>)`** — an earlier patch already removed this text. Remove the entry from `patches.json`. No investigation needed.
-- **`diverged (N% match, line X/Y)`** — text content changed at a specific point. The output shows both the patch context and bundle context at the divergence. Update `.find.txt` and `.replace.txt`. **Don't trust the `N%`/`line X/Y` numbers or the diagnostic's whitespace rendering for the *exact* divergence point** — its line-diff and context display are coarse and mislead on blank lines. To localize precisely, bisect the longest matching prefix of the `.find.txt` against the bundle using the engine's own `createRegexPatch` (eval it out of `patch-prompt-slim.js`; reimplement `toNativeEscapes` as `s=>s.replace(/[-￿]/g,c=>'\\u'+c.charCodeAt(0).toString(16).padStart(4,'0'))`), binary-searching prefix length and printing ~90 chars around the cut. To check raw whitespace authoritatively, use `node -e` with `indexOf`+`slice`+`JSON.stringify` on the bundle — **never `rg ... | head -1 | od`**, which truncates at the first newline and makes a real blank line (`\n\n`) look like a single `\n`.
+- **`diverged (N% match, line X/Y)`** — text content changed at a specific point. The output shows both the patch context and bundle context at the divergence. Update `.find.txt` and `.replace.txt`. **Don't trust the `N%`/`line X/Y` numbers or the diagnostic's whitespace rendering for the *exact* divergence point** — its line-diff and context display are coarse and mislead on blank lines. To localize precisely, bisect the longest matching prefix of the `.find.txt` against the bundle using the engine's own `createRegexPatch` (eval it out of `patch-prompt-slim.js`; reimplement `toNativeEscapes` as `s=>s.replace(/[-￿]/g,c=>'\\u'+c.charCodeAt(0).toString(16).padStart(4,'0'))`), binary-searching prefix length and printing ~90 chars around the cut. To check raw whitespace authoritatively, use `node -e` with `indexOf`+`slice`+`JSON.stringify` on the bundle — **never `rg ... | head -1 | od`**, which truncates at the first newline and makes a real blank line (`\n\n`) look like a single `\n`. **Red herring to rule out first:** when the diagnostic anchors on an em-dash or whitespace, the real divergence is often a *hardcoded identifier that renamed* a few chars later — the diagnostic just stopped on the stable text right before it. Before bisecting, eyeball the bundle a few chars past the reported point for a renamed literal token. Two forms recur: a literal-ternary var (`${$?"…":"…"}` where the bare `$` renamed to `t` — fix with a `${__SVAR__?"…":"…"}` placeholder) and a property that dropped (`${__VAR__.name}` → `${__VAR__}`). The `lean-edit` em-dash "divergence" in 2.1.186 was actually `$`→`t` two tokens downstream.
 - **`not found`** — no meaningful match from line 1. The section may be removed or heavily rewritten. **This requires judgment**: search the bundle for distinctive phrases from the `.find.txt` to determine if the text was relocated/reworded or truly deleted.
 
 Example output:
@@ -91,6 +91,24 @@ professional-objectivity: not found — Section may be removed or heavily rewrit
 - **Reworded**: Update `.find.txt` to match the new bundle text. Update `.replace.txt` only if it references the changed portion. Preserve all `${varName}` and `__NAME__` placeholders.
 - **Removed by Anthropic**: Delete both `.find.txt` and `.replace.txt`, and remove the entry from the `patches` array in `patches.json`.
 - **Chained casualty**: Just remove the entry from `patches.json`. Optionally delete the patch files.
+
+#### Rebuilding a Heavily-Restructured Patch
+
+When a section's surrounding JS changed shape (not just reworded prose) — vars renamed, an assignment dropped, a clause inserted — don't incrementally patch the old `.find.txt`. **Rebuild it from the exact bundle bytes.** Extract the region with node and author the find from what you see:
+
+```bash
+node -e 'const c=require("fs").readFileSync("cli.js.native.original","utf8");
+const i=c.indexOf("## When not to use");          // a stable anchor in the section
+console.log(JSON.stringify(c.slice(i,i+3000)));'   # JSON.stringify shows \n / \uXXXX / \` verbatim
+```
+
+Then write the `.find.txt` as the bundle's own bytes with only the minified vars swapped to placeholders:
+
+- Keep `\uXXXX`, `\n` (literal backslash-n), and escaped backticks `` \` `` **exactly as the bundle has them** — they match byte-for-byte. `toNativeEscapes()` is a no-op on already-escaped sequences, so a find built straight from the slice is the most reliable form. (Literal `—` also works via conversion, but copying the slice removes all guesswork.)
+- Replace each minified identifier with a `__NAME__` placeholder in its slot: `${ns}`→`${__TOOLVAR__}` (var form), `if(c){`→`if(__QVAR__){` (bare form). The engine builds an **independent** capture group per occurrence — it does *not* enforce that repeated placeholders match the same identifier (it relies on the bundle being internally consistent), and the `.replace.txt` substitutes each placeholder with its *first* capture group.
+- For the `.replace.txt`, reproduce any runtime JS the find consumed (variable assignments, ternaries, gating) faithfully — only trim the human-readable prose. The replacement is executable code; a dropped `let`/`return` or an unbalanced template-literal backtick breaks the bundle. `--apply`'s syntax check catches it, but verify the template-literal boundaries line up before trusting it.
+
+`task-usage-notes` (2.1.186) needed exactly this — the `__XVAR__` assignment vanished, a var was added to the `let`, and `team_name` dropped from three strings. Rebuilding from the slice beat editing the old find.
 
 **Write all fixes in a single Node script** rather than editing files one at a time. Use `fs.writeFileSync` for updates and `fs.unlinkSync` for deletions. Avoid template literals for patch content that contains backticks — use string concatenation or `Array.join('\n')` instead.
 
@@ -115,12 +133,14 @@ Never leave a `.replace.txt` completely empty. The API requires non-whitespace i
 ```
 This renders as a harmless orphan heading.
 
-### Function-Based Patches
+### Hardcoded Identifiers in Replacements
 
-Patches using `__NAME__` for function replacement have a critical rule: **the `.replace.txt` must define the function using whatever name the regex captures from the NEW bundle.** Since `__NAME__` becomes a backreference (`$1`), the replacement automatically gets the right name — but if you hardcode an old function name, you get:
-```
-SyntaxError: Identifier 'oldName' has already been declared
-```
+**Scan the `.replace.txt` for any literal minified identifier, not just the `.find.txt`.** A `__NAME__` placeholder becomes a capture group from the NEW bundle, so a replacement that references `__NAME__` always gets the current name. A replacement that *hardcodes* the old name silently binds to the wrong thing. Two flavors:
+
+- **Function name** → `SyntaxError: Identifier 'oldName' has already been declared` (or a redeclaration). The `.replace.txt` must define the function via the placeholder, not the old literal name.
+- **Assignment variable** → no error, just dead code. Real case (`work-principles`, 2.1.186): the principles array assignment `K=[…]` renamed to `r=[…]`. The `.find.txt` hardcoded `K=[` (failed `not found`) AND the `.replace.txt` hardcoded `K=[` — which would have declared a fresh, unread `K` while the rest of the bundle read `r`. Fix: placeholder-ize **both** files (`__AVAR__=[`), so the replacement reuses the captured var.
+
+Rule of thumb: every minified token that appears literally in a `.find.txt` (array vars like `K=[`, spread targets like `...$,`, trailing element vars like `,q`) must become a `__NAME__` placeholder, and any of those the `.replace.txt` re-emits must use the same placeholder.
 
 ### Chained Patches Can Mask Failures
 
