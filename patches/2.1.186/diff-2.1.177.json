@@ -1,0 +1,16 @@
+{"type":"diff_meta","fromVersion":"2.1.177","toVersion":"2.1.186","addedCount":11,"removedCount":8,"changedCount":3}
+{"type":"diff_removed","flags":["tengu_agent_list_attach","tengu_auto_background_agents","tengu_cedar_inlet","tengu_chert_bezel","tengu_compass_dial","tengu_dune_wren","tengu_garnet_finch","tengu_pewter_lark"]}
+{"type":"flag","name":"tengu_amber_heron","default":"!1","occurrences":1,"lines":[407907],"change":"added"}
+{"type":"flag","name":"tengu_auto_mode_config","default":"{}","occurrences":12,"lines":[144963,226886,360029,360035,360564,360581,360588,360593,360598,581054,582358,582363],"change":"occurrences_changed","previousOccurrences":8}
+{"type":"flag","name":"tengu_birch_lantern","default":"\"off\"","occurrences":1,"lines":[512575],"change":"added"}
+{"type":"flag","name":"tengu_ccr_delta_rehydrate","default":"!1","occurrences":1,"lines":[680332],"change":"added"}
+{"type":"flag","name":"tengu_cedar_lattice","default":"!1","occurrences":1,"lines":[578629],"change":"added"}
+{"type":"flag","name":"tengu_cedar_sundial","default":"!1","occurrences":1,"lines":[430274],"change":"added"}
+{"type":"flag","name":"tengu_cobalt_harbor","default":"!1","occurrences":1,"lines":[587903],"change":"added"}
+{"type":"flag","name":"tengu_copper_thistle","default":"!1","occurrences":3,"lines":[372058,615101,615710],"change":"occurrences_changed","previousOccurrences":4}
+{"type":"flag","name":"tengu_mcp_strip_trailing_xml_tags","default":"!1","occurrences":1,"lines":[272291],"change":"added"}
+{"type":"flag","name":"tengu_memory_store_resync_interval_minutes","default":"M9p","occurrences":1,"lines":[435116],"change":"added"}
+{"type":"flag","name":"tengu_neapolitan","default":"!1","occurrences":1,"lines":[407365],"change":"added"}
+{"type":"flag","name":"tengu_saffron_anchor","default":"!1","occurrences":1,"lines":[393132],"change":"added"}
+{"type":"flag","name":"tengu_scratch","default":"!1","occurrences":1,"lines":[569158],"change":"occurrences_changed","previousOccurrences":2}
+{"type":"flag","name":"tengu_soft_slate_nudge","default":"\"baseline\"","occurrences":1,"lines":[452241],"change":"added"}
