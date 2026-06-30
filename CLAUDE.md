@@ -23,12 +23,27 @@ node claude-patching.js --restore --apply     # Reset state: restore .bak then r
 
 **Output format:** All commands emit **NDJSON** (one JSON object per line). The last line is always the summary.
 
+`--check`/`--apply` (`type:"summary"`) and `--port` (`type:"port_check"`) share **one** summary shape — same keys, same value types, so the same jq works for either:
+
+```jsonc
+{ "passed": ["id", ...],            // applied cleanly
+  "failed": [{"id","reason"}, ...], // pattern-not-found AND hard failures (need fixing)
+  "skipped": ["id", ...],           // skipped intentionally (already applied per metadata)
+  "total": 26,
+  "success": true }                 // === failed.length === 0
+```
+
+A pattern that doesn't match is a **failure**, not a skip — that's what keeps `success` honest for porting. Counts come from `.passed|length` etc. (no separate count fields).
+
 ```bash
 # --check / --apply summary (last line)
-... | tail -1 | jq '{applied, failed, success}'
+... | tail -1 | jq '{passed:(.passed|length), failed:(.failed|length), success}'
+
+# failed patch IDs + reasons in one shot
+... | tail -1 | jq -c '.failed[]'
 
 # --port check results
-... | jq -r 'select(.type=="port_check") | "Pass: \(.passed | length)/\(.total)"'
+... | jq -r 'select(.type=="port_check") | "Pass: \(.passed|length)/\(.total)"'
 
 # --status install versions
 ... | jq '.installs | to_entries[] | "\(.key): \(.value.version)"'
