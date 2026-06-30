@@ -110,9 +110,13 @@ if (!m2) {
 }
 
 output.discovery('model family paragraph', m2[0].slice(0, 80) + '...');
-content = content.replace(site2, () => 'null');
+// Use (null) not bare null: the paragraph now sits at `return`...`` (a memoized
+// helper), so a bare `null` would weld onto the keyword as `returnnull` — a
+// single undefined identifier that passes node --check but throws at runtime.
+// The parens keep it valid after a keyword, a comma, or as an array element.
+content = content.replace(site2, () => '(null)');
 patchCount++;
-output.modification('null out model family paragraph', m2[0].slice(0, 80) + '...', 'null');
+output.modification('null out model family paragraph', m2[0].slice(0, 80) + '...', '(null)');
 
 // ── Write ──
 
