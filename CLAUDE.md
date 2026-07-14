@@ -92,9 +92,9 @@ This runs **setup** → **init** → **check** in one pass with condensed output
 | Command | Purpose | Idempotent? |
 |---------|---------|-------------|
 | `--status` | Detects bare/native installs, shows versions, applied patches, workspace artifact freshness | Yes |
-| `--setup` | Clones/updates the tweakcc reference, creates `.original` backups from clean sources, generates `.pretty` files via js-beautify. Won't overwrite a clean backup if the source is already patched. | Yes |
+| `--setup` | Clones/updates the tweakcc and claude-code reference repos, creates `.original` backups from clean sources, generates `.pretty` files via js-beautify. Won't overwrite a clean backup if the source is already patched. | Yes |
 | `--init` | Creates `patches/<version>/index.json` from latest existing index, imports prompt patches by copying the latest local version ≤ target | No — errors if index already exists |
-| `--port` | Composes setup + init + check with condensed output. Init skips silently if index exists. Also runs `scan-feature-flags.js` and `scan-env-vars.js` after setup to produce `flags.json`/`env-vars.json` (plus `diff-<prev>.json`/`env-diff-<prev>.json` if a prior inventory exists) under `patches/<version>/`. | Yes (when index exists) |
+| `--port` | Composes setup + init + check with condensed output. Init skips silently if index exists. Also runs `scan-feature-flags.js` and `scan-env-vars.js` after setup to produce `flags.json`/`env-vars.json` (plus `diff-<prev>.json`/`env-diff-<prev>.json` if a prior inventory exists), and — after check (Phase 3.5) — `scan-changelog.js` to produce `changelog-impact.json`, all under `patches/<version>/`. | Yes (when index exists) |
 | `--check` | Dry-runs all patches against target. Auto-falls back to latest patch version if none exists for the target version. | Yes |
 | `--apply` | Applies patches, writes metadata comment, runs syntax check, reassembles binary (native). Creates `.bak` before patching. | No |
 | `--restore` | Copies `.bak` over the live installation. | No |
@@ -142,6 +142,26 @@ node scan-env-vars.js cli.js.native.pretty --diff patches/<prev>/env-vars.json
 ```
 
 Inventory lands at `patches/<version>/env-vars.json`; the diff at `patches/<version>/env-diff-<prev>.json`. The diff surfaces `added` / `occurrences_changed` / removed (no `default_changed` — env reads carry no default). Note: a bare `rg 'ANTHROPIC_[A-Z0-9_]+'` over-counts because names like `CLAUDE_CODE_USE_ANTHROPIC_AWS` embed an `ANTHROPIC_` substring; the scanner consumes the enclosing `CLAUDE_CODE_` token first, so its counts are the honest ones.
+
+## Changelog Impact
+
+`scan-changelog.js` correlates the upstream CC changelog against our patch set. It answers two things: **what changed** between the version we last patched and the target, and **what might break** — which patches are most likely impacted, especially those flagged broken by `--check`.
+
+The changelog source is `anthropics/claude-code`'s `CHANGELOG.md` (chosen over `feed.xml`: plain markdown, trivial to parse, and — decisively — it preserves the backticks around env vars, flags, tool names, and settings keys, which is exactly the impact signal). `--setup` shallow-clones the repo to `/tmp/claude-code-src`.
+
+Matching is **BM25 fuzzy search** via SQLite FTS5 — reached through `node:sqlite` (Node 22+) or `bun:sqlite` (Bun), selected at runtime. **No `better-sqlite3`, no native addon, no build step.** The changelog bullets in range `(from, to]` are the corpus; each patch's document (its id + `index.json` notes + the patch file's leading `/** */` header) is tokenised into an OR-query. BM25's IDF surfaces the shared *feature* words (thinking, skill, background, table, …) and ignores minified var names that never appear in prose. It's a **triage aid, not a verdict** — every patch matches something; read the relative ranking, and expect a noise floor for patches with no real change in-window.
+
+```bash
+node scan-changelog.js /tmp/claude-code-src/CHANGELOG.md --to <ver> [--from <prev>] \
+  --index patches/<ver>/index.json --save patches/<ver>/changelog-impact.json [--broken id1,id2]
+```
+
+`--port` runs this automatically (Phase 3.5), passing the `--broken` ids from the check phase and using the previous indexed version as `--from`. The artifact (`patches/<version>/changelog-impact.json`) carries `changelog` (the between-versions overview), `patchImpacts` (per-patch ranked matches, broken patches sorted first), and a **`reasoning` block that starts empty** — that's the human/LLM layer: fill it in with your findings as you fix broken patches (e.g. "thinking-visibility: matches are noise, no relevant entry" or "cron-visibility broke because 2.1.209 reverted the background-session guard").
+
+```bash
+# broken patches + their top changelog match, from the artifact
+jq -r '.patchImpacts[] | select(.broken) | "\(.id): \(.matches[0].bullet // "no match")"' patches/<ver>/changelog-impact.json
+```
 
 ## Development Workflow
 

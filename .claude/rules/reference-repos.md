@@ -15,6 +15,12 @@ The [tweakcc](https://github.com/Piebald-AI/tweakcc) project — authoritative C
 
 Dispatch haiku explorers to pull information from `/tmp/tweakcc` when needed.
 
+## claude-code (`/tmp/claude-code-src`)
+
+Cloned/updated by `node claude-patching.js --setup` (shallow). The official [anthropics/claude-code](https://github.com/anthropics/claude-code) repo — used solely as the source of `CHANGELOG.md` for the `--port` changelog-impact scan (`scan-changelog.js`).
+
+`CHANGELOG.md` was chosen over `feed.xml`: it's plain markdown (`## X.Y.Z` headers + `- ` bullets, trivial to parse) and preserves the backticks around env vars / flags / tool names / settings keys — the exact impact signal the feed strips out.
+
 ## Prompt patches
 
 Prompt patches are now self-contained in `patches/<version>/prompt-patches/`. No external repo.
