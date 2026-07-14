@@ -18,10 +18,10 @@ IMPORTANT: When the user asks you to create a pull request, follow these steps c
 <example>
 gh pr create --title "the pr title" --body "$(cat <<'EOF'
 ## Summary
-<1-3 bullet points>
+${__SUMFN__()}
 
 ## Test plan
-[Bulleted markdown checklist of TODOs for testing the pull request...]${__VAR3__?`
+${__TPFN__()}${__VAR3__?`
 
 ${__VAR3__}`:""}
 EOF

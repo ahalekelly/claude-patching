@@ -1,7 +1,7 @@
 ## When not to use
 
 If the target is already known, use the direct tool: ${__READVAR__} for a known path, ${__GVAR__} for a specific symbol or string.
-`;if(__QVAR__){let __PBVAR__=!__ENV__.CLAUDE_CODE_DISABLE_BACKGROUND_TASKS&&!__FUNC3__()&&!__BG__?"\n- `run_in_background: true` runs the agent asynchronously; you'll be notified when it completes.":"",__GBVAR__=__FUNC3__()?"\n- `run_in_background`, `name`, and `mode` are unavailable here — only synchronous subagents.":__FUNC4__()?"\n- `name` and `mode` are unavailable here — teammates cannot spawn teammates.":"",__YVAR2__=__REMOTEFN__()?'\n- `isolation: "remote"` runs the agent in a remote CCR sandbox (always background).':"";return`${__DVAR__}
+`;if(__QVAR__){let __PBVAR__=!__BGFN__()&&!__FUNC3__()&&!__BG__?"\n- Subagents run in the background by default; you'll be notified when one completes. Pass `run_in_background: false` for a synchronous run when you need the result before continuing.":"",__GBVAR__=__FUNC3__()?"\n- `run_in_background`, `name`, and `mode` are unavailable here — only synchronous subagents.":__FUNC4__()?"\n- `name` and `mode` are unavailable here — teammates cannot spawn teammates.":"",__YVAR2__=__REMOTEFN__()?'\n- `isolation: "remote"` runs the agent in a remote CCR sandbox (always background).':"";return`${__DVAR__}
 
 - The agent's final message is returned to you as the tool result; it is not shown to the user — relay what matters.
 - Use ${__SENDVAR__} with the agent's ID or name to continue a previously spawned agent with its context intact; a new ${__TOOLVAR__} call${__TEAMS__?" with a subagent_type":""} starts fresh.
