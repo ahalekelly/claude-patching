@@ -406,22 +406,40 @@ if (appliedCount === 0) {
 
 const summary = `prompt-slim (v${version}): ${appliedCount}/${patches.length} patches, ~${totalSaved.toLocaleString()} chars saved`;
 
-if (skippedCount > 0) {
-  const skipDetails = skipped.map(s => {
-    let line = `${s.file}: ${s.reason}`;
-    if (s.diag) {
-      if (s.reason === 'chained') {
-        line += ` (consumed by ${s.diag.consumed_by})`;
-      } else if (s.reason === 'diverged') {
-        line += ` (${s.diag.match_pct}% match, line ${s.diag.line})`;
-        line += `\n    patch: ${s.diag.patch_ctx}`;
-        line += `\n    bundle: ${s.diag.bundle_ctx}`;
-      } else if (s.reason === 'not found') {
-        line += ` — ${s.diag.hint}`;
-      }
+// Per-skip diagnostics (match %, line, patch-vs-bundle context) — the detail
+// needed to actually re-fit each diverged pair.
+const skipDetails = skipped.map(s => {
+  let line = `${s.file}: ${s.reason}`;
+  if (s.diag) {
+    if (s.reason === 'chained') {
+      line += ` (consumed by ${s.diag.consumed_by})`;
+    } else if (s.reason === 'diverged') {
+      line += ` (${s.diag.match_pct}% match, line ${s.diag.line})`;
+      line += `\n    patch: ${s.diag.patch_ctx}`;
+      line += `\n    bundle: ${s.diag.bundle_ctx}`;
+    } else if (s.reason === 'not found') {
+      line += ` — ${s.diag.hint}`;
     }
-    return line;
-  });
+  }
+  return line;
+});
+
+// Honesty gate: on --check (dry run), any drift — fewer applied than the full
+// set — is a FAILURE, not a pass. A partial prompt-slim means diverged prompt
+// text that must be re-fitted (via the upgrade-prompt-patches skill) before the
+// port is complete; letting it exit 0 would report a dishonest green. Emitted as
+// the lead error so it heads the port work order. --apply stays lenient (applies
+// the pairs that match, warns on the rest) so a partial set is still usable.
+if (dryRun && appliedCount < patches.length) {
+  output.error(
+    `prompt-slim drift: ${appliedCount}/${patches.length} prompt patches (${skippedCount} diverged) — port not complete`,
+    ['Fix the diverged pairs with the upgrade-prompt-patches skill, then re-check', ...skipDetails]
+  );
+  process.exit(1);
+}
+
+// Full --check, or any --apply: warn on skips (lenient), then report success.
+if (skippedCount > 0) {
   output.warning(`${skippedCount} prompt patches skipped`, skipDetails);
 }
 

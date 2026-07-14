@@ -45,6 +45,9 @@ A pattern that doesn't match is a **failure**, not a skip — that's what keeps 
 # --port check results
 ... | jq -r 'select(.type=="port_check") | "Pass: \(.passed|length)/\(.total)"'
 
+# --port broken-patch work order (file + diagnostics + top changelog match, per patch)
+... | grep '"type":"port_broken"' | jq -r '.orders[] | "\(.id) → \(.file)\n  found: \(.found|join(" · "))\n  hint: \(.expected[0]//"")\n  cl: \(.changelog[0].bullet//"no match")"'
+
 # --status install versions
 ... | jq '.installs | to_entries[] | "\(.key): \(.value.version)"'
 ```
@@ -59,13 +62,15 @@ If only one install exists, target flags are optional. If both exist, you must s
 
 ## Porting to a New CC Version
 
+**Use the `porting-patches` skill** — it's the concise, current playbook for this whole flow (drives `--port`, reads the work order, walks each fix). What follows is the reference detail.
+
 When a new CC version drops, run `--port` against the updated target:
 
 ```bash
 node claude-patching.js --native --port
 ```
 
-This runs **setup** → **init** → **check** in one pass with condensed output. Passing patches are listed by name; failures include diagnostics.
+This runs **setup** → **init** → **flag scan** → **env scan** → **check** → **changelog scan** → **work order** in one pass with condensed output. Passing patches are listed by name; each broken patch ends up in a **work order** (`type:"port_broken"`) that joins its source path, the discovery lines it emitted before failing (how far it got), its `Expected:` hints, and its top changelog match — one actionable record per broken patch, no artifact cross-referencing needed.
 
 **Typical follow-up:**
 
@@ -94,7 +99,7 @@ This runs **setup** → **init** → **check** in one pass with condensed output
 | `--status` | Detects bare/native installs, shows versions, applied patches, workspace artifact freshness | Yes |
 | `--setup` | Clones/updates the tweakcc and claude-code reference repos, creates `.original` backups from clean sources, generates `.pretty` files via js-beautify. Won't overwrite a clean backup if the source is already patched. | Yes |
 | `--init` | Creates `patches/<version>/index.json` from latest existing index, imports prompt patches by copying the latest local version ≤ target | No — errors if index already exists |
-| `--port` | Composes setup + init + check with condensed output. Init skips silently if index exists. Also runs `scan-feature-flags.js` and `scan-env-vars.js` after setup to produce `flags.json`/`env-vars.json` (plus `diff-<prev>.json`/`env-diff-<prev>.json` if a prior inventory exists), and — after check (Phase 3.5) — `scan-changelog.js` to produce `changelog-impact.json`, all under `patches/<version>/`. | Yes (when index exists) |
+| `--port` | Composes setup + init + check with condensed output. Init skips silently if index exists. Also runs `scan-feature-flags.js` and `scan-env-vars.js` after setup to produce `flags.json`/`env-vars.json` (plus `diff-<prev>.json`/`env-diff-<prev>.json` if a prior inventory exists), and — after check (Phase 3.5) — `scan-changelog.js` to produce `changelog-impact.json`, all under `patches/<version>/`. Finally (Phase 3.6) emits a broken-patch **work order** (`type:"port_broken"`): per broken patch, its file path + `found`/`expected` diagnostics + top changelog matches, joined for direct action. | Yes (when index exists) |
 | `--check` | Dry-runs all patches against target. Auto-falls back to latest patch version if none exists for the target version. | Yes |
 | `--apply` | Applies patches, writes metadata comment, runs syntax check, reassembles binary (native). Creates `.bak` before patching. | No |
 | `--restore` | Copies `.bak` over the live installation. | No |
