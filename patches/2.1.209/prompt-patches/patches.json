@@ -14,6 +14,14 @@
       "file": "bash-tool"
     },
     {
+      "name": "Bash background-command discipline (no poll, no |tail)",
+      "file": "bash-background-discipline"
+    },
+    {
+      "name": "Bash background-command discipline — legacy builder (no poll, no |tail)",
+      "file": "bash-background-discipline-legacy"
+    },
+    {
       "name": "Simplify PR creation section (~1.7KB)",
       "file": "pr-creation"
     },
@@ -134,8 +142,8 @@
       "file": "glob-path-param"
     },
     {
-      "name": "Slim Task tool intro (4.1KB → 0.6KB)",
-      "file": "task-tool-intro"
+      "name": "Slim Agent tool intro (4.1KB → 0.6KB)",
+      "file": "agent-tool-intro"
     },
     {
       "name": "Slim Grep output_mode param (227 → 70 chars)",
@@ -215,7 +223,7 @@
     },
     {
       "name": "Slim Agent tool when-not + usage notes + examples (~4KB)",
-      "file": "task-usage-notes"
+      "file": "agent-usage-notes"
     },
     {
       "name": "Strip fast-mode-info sentence (~150 chars)",

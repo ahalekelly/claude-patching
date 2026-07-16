@@ -1,3 +1,0 @@
-Launch agents for complex, multi-step tasks. Specify subagent_type parameter.
-
-Available agent types are listed in <system-reminder> messages in the conversation.${__PVAR__}
