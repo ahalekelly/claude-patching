@@ -148,11 +148,14 @@ Patches run in order. If an early patch removes a large block (e.g., `task-usage
 
 The built-in diagnostics detect this automatically as `chained (consumed by <patch>)`.
 
-### Native Unicode Escaping
+### Unicode Escaping
 
-Native (Bun) builds store unicode characters as escape sequences (`\u2014` instead of `—`). The `toNativeEscapes()` function handles this automatically.
+The bundle stores unicode as escape sequences (`\u2014`, not `—`), and that is the only form that survives CC's module loading — raw UTF-8 renders as mojibake with no syntax error to catch it. The engine handles both sides for you:
 
-**However**: if a `.find.txt` was written specifically for native (already contains literal `\u2019` etc.), then `toNativeEscapes()` is a no-op because there are no unicode characters to convert. This is expected — don't waste time debugging why the "native path" isn't triggering.
+- **`.find.txt`** — matched literal-first, then against an escaped variant, so either form on disk works. A find copied straight from the bundle slice already holds the em-dash as the six ASCII chars `\u2014`; `escapeNonAscii()` is a no-op on it and the literal attempt matches directly. Expected — don't debug why the "native path" is not triggering.
+- **`.replace.txt`** — escaped **unconditionally** before injection, regardless of what the find side looks like. Write literal characters; never hand-write `\u2014` in new files.
+
+If the invariant is ever broken (by this engine or by a JS patch), `--apply` fails at the encoding check before the binary is touched, naming the character, codepoint and count.
 
 ### Backticks in Fix Scripts
 

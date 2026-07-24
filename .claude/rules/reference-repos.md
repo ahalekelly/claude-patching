@@ -29,8 +29,14 @@ Prompt patches are now self-contained in `patches/<version>/prompt-patches/`. No
 - `${varName}` placeholders match template literal vars (`${n3}`, `${T3}`) — auto-adapts across versions
 - `__NAME__` placeholders match plain identifiers (`kY7`, `aDA`)
 - Placeholders become regex capture groups with backreferences in replacements
-- Handles native unicode escapes (em-dash, arrows, smart quotes → `\\uXXXX`)
+- Handles unicode encoding for you — see below
 - Ternaries inside `${...}` (e.g. `${flag()?'on':''}`) do NOT tokenize as a `${var}` placeholder — the brace content allows only `[a-zA-Z0-9_.$]+` plus an optional `()` call. The surrounding `${...?...:...}` framing must appear literally, but the bare function-name token inside the ternary can still be made resilient by substituting an `__NAME__` placeholder (e.g. `${__FLAG__()?'on':''}`) — the identifier capture group `[a-zA-Z0-9_$]+` will track minifier renames across versions.
+
+**Unicode: write literal characters, never `\uXXXX`.** One rule for both sides of a pair — the engine owns encoding:
+- `.find.txt` — the engine tries the literal text first, then an escaped variant, so either form on disk will match.
+- `.replace.txt` — `escapeNonAscii()` converts every codepoint >U+007F to `\uXXXX` **unconditionally** before injection. Raw UTF-8 in the bundle is decoded single-byte by CC's module loading and renders as mojibake (`—` → `â` plus two invisible control chars) with no syntax error to catch it.
+- Pre-escaped text is left untouched, so older hand-escaped files stay valid — but don't write new ones that way.
+- Backstop: `lib/patch-runner.js` fails any `--apply` whose output *gains* non-ASCII characters, reporting the char, codepoint, count and a snippet. This covers JS patches too, where escaping is still the author's job (spinner frames, injected symbols).
 
 **Backtick escaping inside JS source.** When a target prompt string sits inside a template literal (delimited by `` ` ``), inner backticks at the source level are escaped as `\``. Inside `${...}` interpolations the context flips back to JS expression mode — backticks inside `"..."` or `'...'` strings within that interpolation stay plain. This matters because `.find.txt` content is matched byte-for-byte against the extracted JS:
 - Template-literal bullets like ``- \`old_string\` must…`` → write `\`` in find.txt

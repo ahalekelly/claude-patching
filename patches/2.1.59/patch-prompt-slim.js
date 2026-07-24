@@ -19,25 +19,46 @@ const {
   parsePatchList, hasLocalPromptPatches, localPromptDir,
 } = require('../../lib/prompt-baseline');
 
-// Unicode characters that native (Bun) builds escape differently
-const UNICODE_ESCAPES = [
-  ['\u2014', '\\u2014'],  // em-dash
-  ['\u2192', '\\u2192'],  // arrow
-  ['\u2013', '\\u2013'],  // en-dash
-  ['\u201c', '\\u201c'],  // left double quote
-  ['\u201d', '\\u201d'],  // right double quote
-  ['\u2018', '\\u2018'],  // left single quote
-  ['\u2019', '\\u2019'],  // right single quote
-  ['\u2026', '\\u2026'],  // ellipsis
-];
+// ============================================================
+// Unicode encoding
+//
+// The bundle stores non-ASCII in string literals as `\uXXXX` escapes \u2014 that's
+// what the upstream bundler emits, and it's the only form that survives CC's
+// module loading. A raw UTF-8 em-dash written into the source gets decoded as
+// latin1 downstream and renders as mojibake (`\u00e2` + two invisible control
+// chars), silently, with no syntax error to catch it.
+//
+// So the two sides are NOT symmetric, and must not share one conditional:
+//
+//   find    \u2014 try literal first, then escaped. Either may be what's on disk.
+//   replace \u2014 ALWAYS escaped. Raw bytes in injected source are never correct.
+//
+// Patch authors therefore write literal characters in both .find.txt and
+// .replace.txt; encoding is this engine's job, not something to remember.
+// ============================================================
 
-function toNativeEscapes(str) {
-  let result = str;
-  for (const [char, escape] of UNICODE_ESCAPES) {
-    result = result.split(char).join(escape);
+/**
+ * Escape every non-ASCII codepoint as `\uXXXX`.
+ *
+ * Astral chars (emoji) are already stored as surrogate pairs in a JS string, so
+ * iterating by code unit emits the two `\uXXXX` halves \u2014 which is exactly the
+ * valid JS form. Deliberately general rather than a fixed character table: a
+ * table silently misses `\u2022`, `\u00d7`, `\u2264`, NBSP, emoji, and whatever the next patch
+ * happens to paste in.
+ */
+function escapeNonAscii(str) {
+  let result = '';
+  for (let i = 0; i < str.length; i++) {
+    const code = str.charCodeAt(i);
+    result += code > 0x7f
+      ? `\\u${code.toString(16).padStart(4, '0')}`
+      : str[i];
   }
   return result;
 }
+
+// Retained name \u2014 the find-side fallback variant is still "the native form".
+const toNativeEscapes = escapeNonAscii;
 
 // ============================================================
 // Regex engine — adapted from upstream patch-cli.js
@@ -344,11 +365,18 @@ for (const { name, file } of patches) {
 
   const { find, replace } = pair;
 
-  // Build regex and native variants
-  const regexPatch = createRegexPatch(find, replace);
+  // Build regex and native variants.
+  //
+  // The replacement is escaped unconditionally — it is what gets written into
+  // the bundle, so it must always be in `\uXXXX` form. Gating that on
+  // `findNative !== find` (as this once did) leaves raw UTF-8 in the output
+  // whenever the find side is pure ASCII: silent mojibake, no syntax error.
+  // Only the FIND side needs a literal-vs-escaped fallback pair.
+  const replaceEscaped = escapeNonAscii(replace);
   const findNative = toNativeEscapes(find);
-  const replaceNative = toNativeEscapes(replace);
-  const regexPatchNative = (findNative !== find) ? createRegexPatch(findNative, replaceNative) : null;
+
+  const regexPatch = createRegexPatch(find, replaceEscaped);
+  const regexPatchNative = (findNative !== find) ? createRegexPatch(findNative, replaceEscaped) : null;
 
   let applied = false;
   let method = '';
@@ -365,17 +393,17 @@ for (const { name, file } of patches) {
       applied = true;
     }
   } else if (content.includes(find)) {
-    content = content.replace(find, replace);
+    content = content.replace(find, replaceEscaped);
     method = 'string';
     applied = true;
   } else if (findNative !== find && content.includes(findNative)) {
-    content = content.replace(findNative, replaceNative);
+    content = content.replace(findNative, replaceEscaped);
     method = 'string+native';
     applied = true;
   }
 
   if (applied) {
-    const saved = find.length - replace.length;
+    const saved = find.length - replaceEscaped.length;
     totalSaved += saved;
     appliedCount++;
     appliedPatchFinds.push({ name, file, find });

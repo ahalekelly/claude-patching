@@ -90,7 +90,7 @@ This runs **setup** → **init** → **flag scan** → **env scan** → **check*
    node claude-patching.js --native --apply
    ```
 
-6. **Verify with `claude --version`** — The syntax check (built into `--apply`) catches JS errors before the binary is assembled, but always confirm the binary loads.
+6. **Verify with `claude --version`** — The encoding and syntax checks (built into `--apply`) catch injected raw non-ASCII and JS errors before the binary is assembled, but always confirm the binary loads.
 
 ## What Each Command Does
 
@@ -101,7 +101,7 @@ This runs **setup** → **init** → **flag scan** → **env scan** → **check*
 | `--init` | Creates `patches/<version>/index.json` from latest existing index, imports prompt patches by copying the latest local version ≤ target | No — errors if index already exists |
 | `--port` | Composes setup + init + check with condensed output. Init skips silently if index exists. Also runs `scan-feature-flags.js` and `scan-env-vars.js` after setup to produce `flags.json`/`env-vars.json` (plus `diff-<prev>.json`/`env-diff-<prev>.json` if a prior inventory exists), and — after check (Phase 3.5) — `scan-changelog.js` to produce `changelog-impact.json`, all under `patches/<version>/`. Finally (Phase 3.6) emits a broken-patch **work order** (`type:"port_broken"`): per broken patch, its file path + `found`/`expected` diagnostics + top changelog matches, joined for direct action. | Yes (when index exists) |
 | `--check` | Dry-runs all patches against target. Auto-falls back to latest patch version if none exists for the target version. | Yes |
-| `--apply` | Applies patches, writes metadata comment, runs syntax check, reassembles binary (native). Creates `.bak` before patching. | No |
+| `--apply` | Applies patches, writes metadata comment, runs encoding + syntax checks, reassembles binary (native). Creates `.bak` before patching. | No |
 | `--restore` | Copies `.bak` over the live installation. | No |
 
 ## Detailed Rules
@@ -119,6 +119,8 @@ Scoped rules in `.claude/rules/` provide context-sensitive reference:
 ## Prompt Patches
 
 System prompt patches live in `patches/<version>/prompt-patches/` as `.find.txt`/`.replace.txt` pairs, listed in `patches.json`. The set is fully self-contained — `--init` populates a new version by copying the latest local version ≤ target. No external dependencies.
+
+**Write literal unicode characters in both `.find.txt` and `.replace.txt` — never hand-write `\uXXXX`.** The engine matches the find side either way and escapes the replacement unconditionally; raw UTF-8 reaching the bundle renders as mojibake. `--apply` fails if a patch gains non-ASCII. Details in the `reference-repos.md` rule.
 
 Some patches retain historical `customPatches` / `suppressedPatches` keys in `patches.json` (formerly used to merge upstream imports). These fields are now inert and propagate forward only as metadata.
 

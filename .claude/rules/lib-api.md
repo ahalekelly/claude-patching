@@ -59,6 +59,12 @@ Core detection and utility functions.
 - `formatBytes(n)` → human-readable string
 - `safeStats(path)` → `{ exists, size?, mtime? }`
 
+**Encoding invariant:**
+- `nonAsciiCounts(str)` → `Map<char, count>` of code units >U+007F
+- `findGainedNonAscii(before, after, { limit = 5, window = 40 })` → `[{ char, code, added, context }]` — characters `after` gained relative to `before`, each located by the first surrounding window absent from `before`
+
+`patch-runner` calls `findGainedNonAscii` before the syntax check and fails the apply on any gain: raw UTF-8 in the bundle renders as mojibake with no syntax error. Patches must emit `\uXXXX`. See the regex-engine section of `reference-repos.md`.
+
 **Version detection:** Use `extractVersion(content)`, not a custom regex.
 The pattern is `VERSION:"X.Y.Z"` — NOT `CLI_VERSION`.
 
