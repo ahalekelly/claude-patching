@@ -1,0 +1,161 @@
+{
+  "fromVersion": "2.1.219",
+  "toVersion": "2.1.220",
+  "generatedAt": "2026-07-25T10:08:10.742Z",
+  "versionCount": 1,
+  "entryCount": 1,
+  "changelog": [
+    {
+      "version": "2.1.220",
+      "bullets": [
+        "Bug fixes and reliability improvements"
+      ]
+    }
+  ],
+  "patchImpacts": [
+    {
+      "id": "prompt-slim",
+      "broken": true,
+      "matches": []
+    },
+    {
+      "id": "ghostty-term",
+      "broken": false,
+      "matches": []
+    },
+    {
+      "id": "system-reminders",
+      "broken": false,
+      "matches": []
+    },
+    {
+      "id": "no-collapse-reads",
+      "broken": false,
+      "matches": []
+    },
+    {
+      "id": "quiet-notifications",
+      "broken": false,
+      "matches": []
+    },
+    {
+      "id": "read-summary",
+      "broken": false,
+      "matches": []
+    },
+    {
+      "id": "feature-flag-toggles",
+      "broken": false,
+      "matches": []
+    },
+    {
+      "id": "toolsearch-visibility",
+      "broken": false,
+      "matches": []
+    },
+    {
+      "id": "flag-env-override",
+      "broken": false,
+      "matches": []
+    },
+    {
+      "id": "cron-visibility",
+      "broken": false,
+      "matches": []
+    },
+    {
+      "id": "keyword-highlights",
+      "broken": false,
+      "matches": []
+    },
+    {
+      "id": "tool-defer-whitelist",
+      "broken": false,
+      "matches": []
+    },
+    {
+      "id": "code-blocks",
+      "broken": false,
+      "matches": []
+    },
+    {
+      "id": "abbreviations",
+      "broken": false,
+      "matches": []
+    },
+    {
+      "id": "worktree-dedup",
+      "broken": false,
+      "matches": []
+    },
+    {
+      "id": "disable-bundled-skills",
+      "broken": false,
+      "matches": []
+    },
+    {
+      "id": "disable-skills",
+      "broken": false,
+      "matches": []
+    },
+    {
+      "id": "spinner",
+      "broken": false,
+      "matches": []
+    },
+    {
+      "id": "thinking-display-summarized",
+      "broken": false,
+      "matches": []
+    },
+    {
+      "id": "thinking-visibility",
+      "broken": false,
+      "matches": []
+    },
+    {
+      "id": "thinking-no-fold",
+      "broken": false,
+      "matches": []
+    },
+    {
+      "id": "trim-context-bloat",
+      "broken": false,
+      "matches": []
+    },
+    {
+      "id": "hook-envelope-strip",
+      "broken": false,
+      "matches": []
+    },
+    {
+      "id": "env-block-trim",
+      "broken": false,
+      "matches": []
+    },
+    {
+      "id": "auto-color",
+      "broken": false,
+      "matches": []
+    },
+    {
+      "id": "mode-cycle-order",
+      "broken": false,
+      "matches": []
+    },
+    {
+      "id": "explore-haiku",
+      "broken": false,
+      "matches": []
+    },
+    {
+      "id": "subagent-nesting",
+      "broken": false,
+      "matches": []
+    }
+  ],
+  "reasoning": {
+    "_summary": "2.1.219→2.1.220 is a maintenance bump (changelog: \"Bug fixes and reliability improvements\", 1 bullet). 27/28 JS patches ported unchanged. Only prompt-slim drifted, on a single pair.",
+    "prompt-slim": "NOISE. 70/71 pairs matched verbatim. Sole diverged pair: agent-usage-notes, where the run_in_background/name gate function renamed nZ()→oZ() — a silent minifier rename with no changelog footprint. Fixed by placeholder-izing the hardcoded nZ() to __FUNC5__() in the .find.txt (find-only; the replace tail was already rewritten and never referenced it). Now 71/71."
+  }
+}
