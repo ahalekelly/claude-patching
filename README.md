@@ -16,7 +16,7 @@ The stamp file `<binary>.patched` holds the patched binary's inode, size, and mt
 
 - `check-and-apply.sh` — pre-launch check: stamp fast path, concurrent-launch lock, `git pull` of the patch repo when a new version's patch set is missing, then `apply-display-patches.sh`. Exit 0 = silent/patched, exit 1 = printed something the wrapper should hold for.
 - `apply-display-patches.sh` — backs up the stock binary to `<binary>.orig` on first run and always rebuilds from that backup, so re-running on an already-patched binary is safe: unpacks the JS, applies the patches listed in its header, repacks, relinks the app bundle, writes the `.patched` stamp. Fails loudly (binary untouched) if any patch doesn't match the installed version.
-- `repo/` — clone of [phate45/claude-patching](https://github.com/phate45/claude-patching), the patch source. `git -C repo pull` when a new Claude Code version needs a newer patch set. Its own ELF pipeline is Linux-only; only its per-version patch scripts are used here.
+- `repo/` — clone of [phate45/claude-patching](https://github.com/phate45/claude-patching), the patch source. `git -C repo pull` when a new Claude Code version needs a newer patch set. Its own ELF pipeline is Linux-only; only its per-version patch scripts are used here. Triangular remotes: `pull` tracks upstream (phate45), `push` goes to the [ahalekelly/claude-patching](https://github.com/ahalekelly/claude-patching) fork (`origin`) — branch work for upstream PRs happens in the fork.
 - `node_modules/` — [tweakcc](https://github.com/Piebald-AI/tweakcc), used for macOS Mach-O unpack/repack.
 
 ## Repatches and already-running processes
