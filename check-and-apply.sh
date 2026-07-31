@@ -8,14 +8,16 @@
 #             lock held); the wrapper requires an Enter before launching so the
 #             message isn't lost when the TUI takes over the screen
 #
-# The stamp file <binary>.patched marks a patched binary; apply-display-patches.sh
-# writes it after a successful repack.
+# The stamp file <binary>.patched holds the identity of the binary that was
+# patched, so a binary swapped underneath it (an update reinstalling the same
+# version, a restore) fails the check and gets repatched.
 set -uo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 BIN="$(realpath "$HOME/.local/bin/claude")"
 VER="$(basename "$BIN")"
-[[ -f "$BIN.patched" ]] && exit 0
+STAMP="$(stat -f '%i %z %m' "$BIN")"
+[[ -f "$BIN.patched" && "$(<"$BIN.patched")" == "$STAMP" ]] && exit 0
 
 # Lock out concurrent launches; self-heal a stale lock from a crashed run
 if ! mkdir "$BIN.lock" 2>/dev/null; then
