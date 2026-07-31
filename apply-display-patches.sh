@@ -1,18 +1,29 @@
 #!/usr/bin/env bash
 # Repatch the native Claude Code binary with phate45/claude-patching display patches.
 #
-# Patches applied (see repo/README.md "Display & UX"):
+# Patches applied (see repo/README.md for details):
 #   no-collapse-reads      Read/Grep/Glob shown individually, not "Read 3 files"
 #   read-summary           Read(file.js · lines 200-229) instead of Read(file.js)
 #   toolsearch-visibility  ToolSearch calls visible
+#   quiet-notifications    task notifications don't re-carry output the session
+#                          already read via TaskOutput
+#   cron-visibility        cron/loop-fired prompts visible with a CronJob prefix,
+#                          which also reaches the model
+#   tool-defer-whitelist   tools in CLAUDE_CODE_IMMEDIATE_TOOLS (settings.json
+#                          env) skip ToolSearch deferral
+#   worktree-dedup         duplicate CLAUDE.md/.claude/rules content injected
+#                          once, nearest copy wins
+#   trim-context-bloat     drops userEmail, currentDate, and the model-family
+#                          paragraph from the system prompt (a UserPromptSubmit
+#                          hook in settings.json supplies live date/time instead)
 # Plus local patches (not from the repo):
 #   defer-tool-descriptions  Workflow/Artifact tool descriptions become short
 #                            stubs pointing at the workflow-tool/artifact-tool
 #                            skills, which hold the full text
 #   sticky-prompt-header     previous-prompt header above the transcript shows
 #                            whenever the prompt is off-screen (stock: only
-#                            when scrolled up), in bold "text" color (stock:
-#                            grey on grey)
+#                            when scrolled up), styled like a transcript user
+#                            message (stock: grey on grey)
 #   task-reminder-conditional  the periodic task_reminder nag only fires when
 #                            the session's task list is non-empty
 # Deliberately NOT applied: thinking-visibility / thinking-no-fold — they pin
@@ -32,7 +43,7 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO="$ROOT/repo"
 TWEAKCC="$ROOT/node_modules/.bin/tweakcc"
-PATCH_IDS="no-collapse-reads read-summary toolsearch-visibility"
+PATCH_IDS="no-collapse-reads read-summary toolsearch-visibility quiet-notifications cron-visibility tool-defer-whitelist worktree-dedup trim-context-bloat"
 
 BIN="$(realpath "$HOME/.local/bin/claude")"
 VER="$(basename "$BIN")"
