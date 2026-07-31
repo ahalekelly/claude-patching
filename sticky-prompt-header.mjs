@@ -55,12 +55,14 @@ replaceOne(
 
 // The header's prompt line, stock:
 //   jsxs(h,{color:"subtle",wrap:"truncate-end",children:[pointer," ",text]})
-// Restyle it to match how transcript user messages render: pointer in
-// "subtle", prompt text in "text", regular weight, same grey background.
+// Restyle it like a transcript user message but a step less prominent:
+// pointer in "subtle", prompt text in dimmed "text" (theme foreground at
+// reduced intensity — legible, unlike the stock subtle-on-grey, but visibly
+// quieter than a real prompt), same grey background.
 replaceOne(
   "header contrast",
   /([$\w]+)\.jsxs\(([$\w]+),\{color:"subtle",wrap:"truncate-end",children:\[([$\w]+)\.pointer," ",([$\w]+)\]\}\)/g,
-  '$1.jsxs($2,{wrap:"truncate-end",children:[$1.jsx($2,{color:"subtle",children:$3.pointer})," ",$1.jsx($2,{color:"text",children:$4})]})',
+  '$1.jsxs($2,{wrap:"truncate-end",children:[$1.jsx($2,{color:"subtle",children:$3.pointer})," ",$1.jsx($2,{color:"text",dimColor:!0,children:$4})]})',
 );
 
 writeFileSync(jsPath, js);
