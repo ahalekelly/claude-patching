@@ -27,15 +27,22 @@
 // dead string. Anything unexpected fails loudly so the wrapper aborts before
 // repack and the binary stays untouched.
 //
-// If a Claude Code update changes these descriptions, refresh the skills too:
-// the full text lives in ~/.agents/skills/{workflow-tool,artifact-tool}/SKILL.md
-// and should track upstream. Diff hint: unpack old and new binaries and compare
-// the literals at the anchors below.
+// Content drift: each target carries the sha256[:16] of its literal's raw
+// source text in the stock bundle. The SKILL.md files are snapshots of that
+// text, so when an update rewrites a description without moving the anchors,
+// the hash mismatch fails the patch and names the skill to refresh — layout
+// drift and content drift both abort loudly, binary untouched. After
+// refreshing a SKILL.md from the new text (diff hint: unpack old and new
+// binaries and compare the literals at the anchors below), update its hash
+// here; the mismatch error prints the new value.
 import { readFileSync, writeFileSync } from "node:fs";
+import { createHash } from "node:crypto";
 
 const TARGETS = [
   {
     label: "Workflow description",
+    skill: "workflow-tool",
+    hash: "54a255eba06f67ac",
     min: 3000, // the real description is ~20k chars
     max: 60000,
     anchor:
@@ -48,6 +55,8 @@ REQUIRED before writing or editing any workflow script: invoke the Skill tool wi
   },
   {
     label: "Artifact intro chunk",
+    skill: "artifact-tool",
+    hash: "6d161738624d6976",
     min: 800, // UI labels reusing this phrase are <300 chars; the chunk is ~1.5k
     max: 5000,
     anchor: "Render an HTML or Markdown file to an Artifact",
@@ -61,12 +70,16 @@ Hard rules that always apply: pages must be fully self-contained — a strict CS
   },
   {
     label: "Artifact rules chunk",
+    skill: "artifact-tool",
+    hash: "662e12606a519911",
     anchor:
       "**To update**: Edit the file, then call Artifact again with the same file path",
     blankUse: true,
   },
   {
     label: "Artifact capabilities chunk",
+    skill: "artifact-tool",
+    hash: "b96d2fa287c9dc8b",
     anchor: "**Runtime capabilities** (optional): depending on what is enabled",
     blankUse: true,
   },
@@ -79,13 +92,73 @@ if (!jsPath) {
 }
 let js = readFileSync(jsPath, "utf8");
 
+const drift = [];
 for (const target of TARGETS) {
   if (target.blankUse) blankUseSite(target);
   else replaceLiteral(target);
 }
+if (drift.length) {
+  console.error("ERROR: upstream description text changed — refresh each SKILL.md below from the new text, then update its hash here:");
+  for (const line of drift) console.error("  " + line);
+  process.exit(1);
+}
 writeFileSync(jsPath, js);
 
-function replaceLiteral({ label, anchor, replacement, min, max }) {
+function checkHash({ label, skill, hash }, text) {
+  const actual = createHash("sha256").update(text).digest("hex").slice(0, 16);
+  if (actual !== hash)
+    drift.push(`${label}: hash ${actual} != expected ${hash} — refresh ~/.agents/skills/${skill}/SKILL.md`);
+}
+
+// Index of a literal's closing delimiter; `start` is the first content char.
+// Template literals need a real scan: ${} interpolations may nest strings and
+// further template literals, so a flat search for the closing backtick lands
+// inside an interpolation.
+function literalEnd(start, quote) {
+  if (quote === "`") return scanTemplate(start);
+  let i = start;
+  while (i < js.length && js[i] !== quote) i += js[i] === "\\" ? 2 : 1;
+  return i < js.length ? i : -1;
+}
+
+function scanTemplate(start) {
+  let i = start;
+  while (i < js.length) {
+    if (js[i] === "\\") { i += 2; continue; }
+    if (js[i] === "`") return i;
+    if (js[i] === "$" && js[i + 1] === "{") { i = scanExpression(i + 2); continue; }
+    i++;
+  }
+  return -1;
+}
+
+// First index after the "}" closing a ${...} interpolation; `start` is the
+// first char after "${". Skips string and template-literal contents so their
+// braces don't count toward depth.
+function scanExpression(start) {
+  let depth = 1;
+  let i = start;
+  while (i < js.length) {
+    const c = js[i];
+    if (c === '"' || c === "'") {
+      const end = literalEnd(i + 1, c);
+      if (end === -1) return js.length;
+      i = end + 1;
+    } else if (c === "`") {
+      const end = scanTemplate(i + 1);
+      if (end === -1) return js.length;
+      i = end + 1;
+    } else {
+      if (c === "{") depth++;
+      if (c === "}" && --depth === 0) return i + 1;
+      i++;
+    }
+  }
+  return js.length;
+}
+
+function replaceLiteral(target) {
+  const { label, anchor, replacement, min, max } = target;
   let replaced = 0;
   let from = 0;
   while (true) {
@@ -96,13 +169,8 @@ function replaceLiteral({ label, anchor, replacement, min, max }) {
     const quote = js[i - 1];
     if (quote !== '"' && quote !== "'" && quote !== "`") continue; // anchor mid-string (e.g. quoted in other prose)
 
-    // Scan to the closing delimiter. Escape pairs are skipped atomically, so
-    // any char we land on is unescaped.
-    let j = i;
-    while (j < js.length && js[j] !== quote) {
-      j += js[j] === "\\" ? 2 : 1;
-    }
-    if (j >= js.length) {
+    const j = literalEnd(i, quote);
+    if (j === -1) {
       console.error(`ERROR: ${label}: unterminated literal at ${i}`);
       process.exit(1);
     }
@@ -118,6 +186,7 @@ function replaceLiteral({ label, anchor, replacement, min, max }) {
       console.error(`ERROR: ${label}: unexpected char ${JSON.stringify(next)} after literal at ${i} — refusing`);
       process.exit(1);
     }
+    checkHash(target, js.slice(i, j));
 
     const encoded = JSON.stringify(replacement);
     js = js.slice(0, i - 1) + encoded + js.slice(j + 1);
@@ -131,7 +200,8 @@ function replaceLiteral({ label, anchor, replacement, min, max }) {
   }
 }
 
-function blankUseSite({ label, anchor }) {
+function blankUseSite(target) {
+  const { label, anchor } = target;
   const i = js.indexOf(anchor);
   if (i === -1) {
     console.error(`ERROR: ${label}: anchor not found`);
@@ -146,6 +216,12 @@ function blankUseSite({ label, anchor }) {
     console.error(`ERROR: ${label}: anchor not at a literal start`);
     process.exit(1);
   }
+  const end = literalEnd(i, quote);
+  if (end === -1) {
+    console.error(`ERROR: ${label}: unterminated literal at ${i}`);
+    process.exit(1);
+  }
+  checkHash(target, js.slice(i, end));
   const m = js.slice(Math.max(0, i - 40), i - 1).match(/([$A-Za-z_][$\w]*)=$/);
   if (!m) {
     console.error(`ERROR: ${label}: could not derive the chunk's variable name from its definition`);
