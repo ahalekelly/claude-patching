@@ -5,6 +5,10 @@
 #   no-collapse-reads      Read/Grep/Glob shown individually, not "Read 3 files"
 #   read-summary           Read(file.js · lines 200-229) instead of Read(file.js)
 #   toolsearch-visibility  ToolSearch calls visible
+# Plus one local patch (not from the repo):
+#   defer-tool-descriptions  Workflow/Artifact tool descriptions become short
+#                            stubs pointing at the workflow-tool/artifact-tool
+#                            skills, which hold the full text
 # Deliberately NOT applied: thinking-visibility / thinking-no-fold — they pin
 # thinking blocks permanently inline; stock behavior (streams while thinking,
 # collapses to a pill after) is what we want, via showThinkingSummaries.
@@ -42,6 +46,9 @@ for id in $PATCH_IDS; do
   echo "--- $id"
   node "$REPO/patches/$file" "$JS"
 done
+
+echo "--- defer-tool-descriptions (local)"
+node "$ROOT/defer-tool-descriptions.mjs" "$JS"
 
 if [[ ! -f "$BIN.orig" ]]; then
   cp "$BIN" "$BIN.orig"
