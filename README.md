@@ -17,6 +17,15 @@ The stamp file `<binary>.patched` holds the patched binary's inode, size, and mt
 - `repo/` — clone of [phate45/claude-patching](https://github.com/phate45/claude-patching), the patch source. `git -C repo pull` when a new Claude Code version needs a newer patch set. Its own ELF pipeline is Linux-only; only its per-version patch scripts are used here.
 - `node_modules/` — [tweakcc](https://github.com/Piebald-AI/tweakcc), used for macOS Mach-O unpack/repack.
 
+## Repatches and already-running processes
+
+A repatch only changes the file on disk; every claude process keeps the JS it loaded at start. Two consequences beyond the obvious "restart your sessions":
+
+- **The daemon's warm spares serve stale code.** The Claude Code daemon pre-forks spare processes (`claude bg-spare` + `bg-pty-host` pairs under `/tmp/cc-daemon-501/<daemon>/spare/`) that load the binary's JS at fork time. Daemon-launched sessions (desktop app, FleetView) claim a spare on start, so a session "restarted" right after a repatch can still run pre-patch code — repeatedly, until the pool cycles. Diagnose with `ps -axo pid,lstart,command | grep bg-spare` and compare spare fork times against the binary mtime; killing stale unclaimed spares is safe, the daemon reforks fresh ones. Terminal launches via the zsh wrapper exec the binary directly and never touch the spare pool.
+- **The inode swap can kill live sessions.** Sessions launched from the replaced inode may die when the binary is swapped underneath them; they resume cleanly, but a repatch mid-conversation is what that crash was.
+
+To verify a patch's behavior end to end without trusting a user report, drive the TUI in a scripted PTY: spawn the binary under `pty.fork()` with a [pyte](https://github.com/selectel/pyte) screen emulator, send a prompt, push it off-screen with `!seq 1 300` (local bash, no model tokens), and assert on the rendered rows.
+
 ## Restoring the stock binary
 
 macOS caches a Mach-O's code signature per inode, so overwriting the live binary in place leaves the kernel SIGKILLing (`exit 137`) every launch of that inode even when the bytes are byte-for-byte correct. Always write a new file and rename it into place, then relink the app bundle:
