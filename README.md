@@ -1,10 +1,12 @@
 # claude-patching
 
-Patches for the native Claude Code binary: display patches, a prompt-size patch, and a sticky-header patch.
+Patches for the native Claude Code binary: display patches, a prompt-size patch, a sticky-header patch, and a task-reminder patch.
 
 The display patches make the normal (typeable) chat view show transcript-level tool detail: individual Read/Grep/Glob calls, Read line ranges, and ToolSearch calls. Claude Code has no setting for this — the only built-in options are collapsed one-liners or full `verbose` — so the binary is patched directly. Thinking display is intentionally left stock (`showThinkingSummaries: true` in settings.json streams summaries while thinking, collapsing to a pill after); upstream's thinking-visibility/thinking-no-fold patches would pin thinking permanently inline.
 
 The sticky-header patch, `sticky-prompt-header.mjs` (local, not from the upstream repo), changes the one-line header above the transcript that shows the previous prompt: stock Claude Code renders it only while scrolled up, in grey-on-grey; patched, it shows whenever the prompt has scrolled off the top (including while following live output) and renders in bold theme text color. Click-to-jump is unchanged.
+
+The task-reminder patch, `task-reminder-conditional.mjs` (local, not from the upstream repo), gates the periodic "The task tools haven't been used recently..." system reminder on the session's task list being non-empty. Stock Claude Code injects it on a timer (~100 tokens, several times per session) whether or not task tracking is in use; patched, it only fires when tasks exist but have gone unattended. Upstream's `system-reminders` patch offers only keep/concise/remove for this reminder; the conditional keeps it where it's useful.
 
 The prompt-size patch, `defer-tool-descriptions.mjs` (local, not from the upstream repo), replaces the Workflow and Artifact tool descriptions — ~6.5k standing tokens in every session's system prompt — with short stubs that point at the `workflow-tool` and `artifact-tool` skills in `~/.agents/skills/`, which hold the full original text. Sessions only pay for the full guidance when they actually use those tools. When a Claude Code update changes those descriptions, the patch fails loudly on both layout drift (anchors moved) and content drift (each target's literal is checked against a stored sha256 of the text the SKILL.md snapshots were taken from): refresh the two SKILL.md files to match the new text, then update the hashes in the script — the failure message prints the new values.
 
