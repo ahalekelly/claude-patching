@@ -93,4 +93,11 @@ APP="$HOME/.local/share/claude/ClaudeCode.app/Contents/MacOS/claude"
 { stat -f '%i %z %m' "$BIN"
   cat "$ROOT/apply-display-patches.sh" "$ROOT/defer-tool-descriptions.mjs" "$ROOT/sticky-prompt-header.mjs" "$ROOT/task-reminder-conditional.mjs" "$INDEX" 2>/dev/null | shasum
 } > "$BIN.patched"
+
+# The daemon pre-forks warm spare processes that load the binary's JS at fork
+# time; sessions claimed from a pre-repatch spare run stale code. Kill the
+# unclaimed spares (their cmdline carries --bg-spare) so the daemon reforks
+# from the freshly patched binary.
+pkill -f -- '--bg-spare' 2>/dev/null || true
+
 echo "Done. Restart Claude Code sessions to pick up the patches."
