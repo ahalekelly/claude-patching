@@ -42,4 +42,5 @@ if [[ ! -f "$BIN.orig" ]]; then
   echo "Backed up stock binary to $BIN.orig"
 fi
 "$TWEAKCC" repack "$JS" "$BIN"
+touch "$BIN.patched"   # stamp checked by check-and-apply.sh (SessionStart hook)
 echo "Done. Restart Claude Code sessions to pick up the patches."
