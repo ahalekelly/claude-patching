@@ -34,14 +34,23 @@ function replaceOne(label, regex, replacement) {
   console.log(`sticky-prompt-header: ${label} patched`);
 }
 
-// The sticky tracker's walk-back that finds the prompt scrolled off the top:
+// The sticky tracker: a bottom-up scan over the mounted range [t,r) computes
+// d = first item fully below the viewport top edge, then a walk-back from d-1
+// finds the newest prompt scrolled off the top:
+//   for(let b=r-1;b>=t;b--){let C=o(b);if(C>=0){if(C<u)break;p=C}d=b}
 //   let f=-1,m=null;if(d>0&&!c)for(...)
-// where c = viewport is following the bottom. Drop the !c so the walk-back
-// (and thus the header) also runs while at the bottom.
+// Two changes, in one replacement (the guard's d binds it to the loop, so the
+// generic loop shape can't false-positive elsewhere):
+// - When the scan breaks on its first iteration (the bottom-most item
+//   straddles the viewport top — e.g. one tall streaming block), d keeps its
+//   initial value t instead of meaning "everything is scrolled off". Set d=r
+//   in that case so the walk-back still runs and finds the latest prompt.
+// - Drop the &&!c (c = viewport following the bottom) so the header also
+//   shows while at the bottom, not only when scrolled up.
 replaceOne(
   "always-visible guard",
-  /let ([$\w]+)=-1,([$\w]+)=null;if\(([$\w]+)>0&&!([$\w]+)\)for/g,
-  "let $1=-1,$2=null;if($3>0)for",
+  /for\(let ([$\w]+)=([$\w]+)-1;\1>=([$\w]+);\1--\)\{let ([$\w]+)=([$\w]+)\(\1\);if\(\4>=0\)\{if\(\4<([$\w]+)\)break;([$\w]+)=\4\}([$\w]+)=\1\}let ([$\w]+)=-1,([$\w]+)=null;if\(\8>0&&!([$\w]+)\)for/g,
+  "for(let $1=$2-1;$1>=$3;$1--){let $4=$5($1);if($4>=0){if($4<$6){if($1===$2-1)$8=$2;break}$7=$4}$8=$1}let $9=-1,$10=null;if($8>0)for",
 );
 
 // The header's prompt text inside the QHa-style component:
