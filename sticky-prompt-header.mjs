@@ -53,12 +53,14 @@ replaceOne(
   "for(let $1=$2-1;$1>=$3;$1--){let $4=$5($1);if($4>=0){if($4<$6){if($1===$2-1)$8=$2;break}$7=$4}$8=$1}let $9=-1,$10=null;if($8>0)for",
 );
 
-// The header's prompt text inside the QHa-style component:
+// The header's prompt line, stock:
 //   jsxs(h,{color:"subtle",wrap:"truncate-end",children:[pointer," ",text]})
+// Restyle it to match how transcript user messages render: pointer in
+// "subtle", prompt text in "text", regular weight, same grey background.
 replaceOne(
   "header contrast",
-  /color:"subtle",wrap:"truncate-end"/g,
-  'color:"text",bold:!0,wrap:"truncate-end"',
+  /([$\w]+)\.jsxs\(([$\w]+),\{color:"subtle",wrap:"truncate-end",children:\[([$\w]+)\.pointer," ",([$\w]+)\]\}\)/g,
+  '$1.jsxs($2,{wrap:"truncate-end",children:[$1.jsx($2,{color:"subtle",children:$3.pointer})," ",$1.jsx($2,{color:"text",children:$4})]})',
 );
 
 writeFileSync(jsPath, js);
