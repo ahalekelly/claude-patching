@@ -3,7 +3,6 @@
 #
 # Patches applied (see repo/README.md for details):
 #   no-collapse-reads      Read/Grep/Glob shown individually, not "Read 3 files"
-#   read-summary           Read(file.js · lines 200-229) instead of Read(file.js)
 #   toolsearch-visibility  ToolSearch calls visible
 #   quiet-notifications    task notifications don't re-carry output the session
 #                          already read via TaskOutput
@@ -43,7 +42,7 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO="$ROOT/repo"
 TWEAKCC="$ROOT/node_modules/.bin/tweakcc"
-PATCH_IDS="no-collapse-reads read-summary toolsearch-visibility quiet-notifications cron-visibility tool-defer-whitelist worktree-dedup trim-context-bloat"
+PATCH_IDS="no-collapse-reads toolsearch-visibility quiet-notifications cron-visibility tool-defer-whitelist worktree-dedup trim-context-bloat"
 
 BIN="$(realpath "$HOME/.local/bin/claude")"
 VER="$(basename "$BIN")"

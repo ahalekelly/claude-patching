@@ -2,7 +2,7 @@
 
 Patches for the native Claude Code binary: display patches, a prompt-size patch, a sticky-header patch, and a task-reminder patch.
 
-The display patches make the normal (typeable) chat view show transcript-level tool detail: individual Read/Grep/Glob calls, Read line ranges, and ToolSearch calls. Claude Code has no setting for this — the only built-in options are collapsed one-liners or full `verbose` — so the binary is patched directly. Thinking display is intentionally left stock (`showThinkingSummaries: true` in settings.json streams summaries while thinking, collapsing to a pill after); upstream's thinking-visibility/thinking-no-fold patches would pin thinking permanently inline.
+The display patches make the normal (typeable) chat view show transcript-level tool detail: individual Read/Grep/Glob calls and ToolSearch calls. Claude Code has no setting for this — the only built-in options are collapsed one-liners or full `verbose` — so the binary is patched directly. Thinking display is intentionally left stock (`showThinkingSummaries: true` in settings.json streams summaries while thinking, collapsing to a pill after); upstream's thinking-visibility/thinking-no-fold patches would pin thinking permanently inline.
 
 The sticky-header patch, `sticky-prompt-header.mjs` (local, not from the upstream repo), changes the one-line header above the transcript that shows the previous prompt: stock Claude Code renders it only while scrolled up, in grey-on-grey; patched, it shows whenever the prompt has scrolled off the top (including while following live output) and renders in bold theme text color. Click-to-jump is unchanged.
 
