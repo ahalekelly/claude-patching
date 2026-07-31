@@ -56,13 +56,14 @@ replaceOne(
 // The header's prompt line, stock:
 //   jsxs(h,{color:"subtle",wrap:"truncate-end",children:[pointer," ",text]})
 // Restyle it like a transcript user message but a step less prominent:
-// pointer in "subtle", prompt text in dimmed "text" (theme foreground at
-// reduced intensity — legible, unlike the stock subtle-on-grey, but visibly
-// quieter than a real prompt), same grey background.
+// pointer in "subtle", prompt text in "inactive" — the theme's true
+// intermediate grey between "text" and "subtle" in both light and dark
+// themes (dimColor is unusable here: SGR faint rendering is terminal-
+// dependent and observed to make the text MORE prominent), same background.
 replaceOne(
   "header contrast",
   /([$\w]+)\.jsxs\(([$\w]+),\{color:"subtle",wrap:"truncate-end",children:\[([$\w]+)\.pointer," ",([$\w]+)\]\}\)/g,
-  '$1.jsxs($2,{wrap:"truncate-end",children:[$1.jsx($2,{color:"subtle",children:$3.pointer})," ",$1.jsx($2,{color:"text",dimColor:!0,children:$4})]})',
+  '$1.jsxs($2,{wrap:"truncate-end",children:[$1.jsx($2,{color:"subtle",children:$3.pointer})," ",$1.jsx($2,{color:"inactive",children:$4})]})',
 );
 
 writeFileSync(jsPath, js);
