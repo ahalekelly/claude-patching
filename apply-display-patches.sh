@@ -36,9 +36,16 @@ if [[ ! -f "$INDEX" ]]; then
   exit 1
 fi
 
+# The stock backup is the canonical patch source: back it up on first run,
+# always rebuild from it. Re-running on an already-patched binary is safe.
+if [[ ! -f "$BIN.orig" ]]; then
+  cp "$BIN" "$BIN.orig"
+  echo "Backed up stock binary to $BIN.orig"
+fi
+
 WORK="$(mktemp -d)"
 JS="$WORK/cli-$VER.js"
-"$TWEAKCC" unpack "$JS" "$BIN"
+"$TWEAKCC" unpack "$JS" "$BIN.orig"
 
 for id in $PATCH_IDS; do
   file="$(jq -re --arg id "$id" '.patches[] | select(.id==$id) | .file' "$INDEX")" ||
@@ -50,10 +57,6 @@ done
 echo "--- defer-tool-descriptions (local)"
 node "$ROOT/defer-tool-descriptions.mjs" "$JS"
 
-if [[ ! -f "$BIN.orig" ]]; then
-  cp "$BIN" "$BIN.orig"
-  echo "Backed up stock binary to $BIN.orig"
-fi
 "$TWEAKCC" repack "$JS" "$BIN"
 
 # Repack writes a fresh file, leaving the desktop app's hardlink on the old
@@ -61,7 +64,10 @@ fi
 APP="$HOME/.local/share/claude/ClaudeCode.app/Contents/MacOS/claude"
 [[ -e "$APP" ]] && ln -f "$BIN" "$APP"
 
-# Identity stamp read by check-and-apply.sh — records which binary was patched,
-# so anything that replaces it (an update, a restore) invalidates the stamp.
-stat -f '%i %z %m' "$BIN" > "$BIN.patched"
+# Stamp read by check-and-apply.sh (keep the expression in sync there): the
+# patched binary's identity plus a patch-set fingerprint, so a swapped binary
+# or an edited patch set invalidates the stamp and the next launch repatches.
+{ stat -f '%i %z %m' "$BIN"
+  cat "$ROOT/apply-display-patches.sh" "$ROOT/defer-tool-descriptions.mjs" "$INDEX" 2>/dev/null | shasum
+} > "$BIN.patched"
 echo "Done. Restart Claude Code sessions to pick up the patches."
