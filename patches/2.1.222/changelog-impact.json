@@ -1,0 +1,1261 @@
+{
+  "fromVersion": "2.1.220",
+  "toVersion": "2.1.222",
+  "generatedAt": "2026-08-05T11:15:53.533Z",
+  "versionCount": 2,
+  "entryCount": 60,
+  "changelog": [
+    {
+      "version": "2.1.222",
+      "bullets": [
+        "Fixed worktree-isolated sessions and their subagents being able to run destructive git commands against the main checkout; isolation now applies to file edits and Bash in every session type",
+        "Fixed PreToolUse auto-allow hooks bypassing tool restrictions in background agent tasks (summaries, compaction, renames)",
+        "Fixed `/usage-credits` on Team and Enterprise showing \"you've already sent a usage credit request\" for members whose earlier request was dismissed, blocking them from sending a new one",
+        "Fixed the startup connectivity check hanging and then failing behind an HTTPS proxy; it now uses the same proxy-aware transport as API requests and times out with a clear message",
+        "Fixed \"Connection closed mid-response\" errors being reported on responses that had actually completed",
+        "Fixed `/usage` overattributing usage to MCP servers: a server's share now reflects only the requests that actually consumed its tool results, instead of every turn after any call to it",
+        "Fixed sessions not linking to pull requests created after the branch was pushed, including through the GitHub REST API",
+        "Fixed org-restricted `model: opus`-style subagent and teammate family aliases dropping to the parent model instead of stepping down to the newest org-allowed model in the family",
+        "Fixed stream idle timeout firing on custom `ANTHROPIC_BASE_URL` gateways despite server keep-alive pings arriving on the wire",
+        "Fixed claude.ai connectors being falsely marked as needing authorization when the session token is invalid — they now show a `/login` hint instead",
+        "Fixed tool errors not being displayed for tools no longer available locally, for example after an MCP server is removed",
+        "Fixed `SendMessage` rejecting a long summary — it now truncates instead, so sends no longer fail on a character limit",
+        "Fixed the spinner's effort label in a subagent's transcript view showing the session's effort level instead of the subagent's own `effort:` setting",
+        "Fixed rare crashes when a file watcher hit a filesystem error or during file-watcher teardown",
+        "Fixed screen readers re-reading the whole input line on every backspace in `--ax-screen-reader` mode — end-of-line deletions now echo just the deleted characters",
+        "Fixed host model-selection keys not taking precedence over a stale on-disk `managed-settings.json` when `CLAUDE_CODE_PROVIDER_MANAGED_BY_HOST` is set",
+        "Improved auto mode safety: messages sent to other agent sessions via `SendMessage` are now evaluated by the permission classifier before dispatch",
+        "Improved the refusal when Claude tries to invoke a skill with `disable-model-invocation`: Claude is now told to ask you to run the skill instead of replicating its workflow",
+        "Improved the `/diff` view, the Remote Control workspace diff, and file-edit diffs in Claude Code on the web sessions to use raw git blob content, ignoring workspace-configured diff drivers and textconv",
+        "Changed Remote Control auto-start so repo-local settings (`.claude/settings.json` or `.claude/settings.local.json`) can no longer turn it on (they can still turn it off); enable it at user scope via `/config`",
+        "Removed ultraplan feature"
+      ]
+    },
+    {
+      "version": "2.1.221",
+      "bullets": [
+        "[VSCode] Added Focus view: a chat-menu toggle that hides tool activity behind an expandable per-turn summary with a live running-tool indicator, toggled with `Ctrl+Alt+F` or the \"Claude Code: Toggle Focus view\" command",
+        "Added `mode: \"mask\"` for sandbox credential files on Linux and WSL — sandboxed commands read a sentinel copy (the whole file, or just the spans captured by an `extract` regex) while the sandbox proxy substitutes the real value on egress; on macOS file masking falls back to `deny`",
+        "Added warnings to `claude plugin validate` when a marketplace or plugin name would be rejected by Claude Desktop's managed marketplace sync",
+        "Added a `prompt-audit` subcommand to the `claude-api` skill for auditing prompts and tool descriptions for patterns written for older models",
+        "Fixed a Bash tool permission-check bypass where zsh could execute hidden commands in `[[ ]]` regex conditionals; affected commands now prompt for permission",
+        "Fixed PowerShell permission checks mishandling paths containing quote characters on Windows; such paths now prompt for approval",
+        "Fixed the thinking toggle having no effect for the rest of a session that started with thinking off; disabling an MCP server mid-connect no longer silently reverts",
+        "Fixed MCP servers from `--mcp-config` not being connected before the first turn in print mode (`-p`), which made the model emit tool calls as literal text",
+        "Fixed @-mentioned files being silently dropped when pressing Esc to retract a prompt and resubmitting it",
+        "Fixed a crash when preparing API requests for SDK MCP tools named after built-in object properties such as `constructor`",
+        "Fixed WebSearch failing with a 400 error at effort `xhigh`/`max` when thinking is disabled",
+        "Fixed sandboxed large uploads failing with TLS errors through the sandbox proxy",
+        "Fixed Team and Enterprise spend-limit message incorrectly blaming the org's monthly limit instead of your individual spend limit",
+        "Fixed Bedrock authentication with AWS SSO named profiles failing in desktop-managed sessions on Windows machines that set a stray `HOME` environment variable",
+        "Fixed `CLAUDE_CODE_RESUME_INTERRUPTED_TURN=0` not disabling interrupted-turn auto-resume; falsy values are now honored",
+        "Fixed a rare wake-from-sleep race where two Claude Code processes could both refresh the same MCP connector or WIF OAuth token at once, forcing re-authentication",
+        "Fixed renaming a session from Claude Code Desktop or claude.ai not updating the CLI's session name; session names from every rename surface are now sanitized",
+        "Fixed plugin- and org-delivered skills named after terminal-only built-ins (e.g. `/help`, `/feedback`) being un-invocable in non-interactive sessions",
+        "Fixed the \"Plugins changed\" notification lingering after plugins were reloaded instead of clearing",
+        "Fixed Vim mode: the yank register now survives dialogs, history search, and the transcript view instead of being silently emptied",
+        "Fixed Vim mode: undoing back to an empty prompt now arms the \"press ← again\" confirm before returning to the agent view",
+        "Improved tool search on Google Vertex AI: re-enabled for Claude 4.5-generation and newer models",
+        "Improved auto mode: permission checks for parallel tool calls are now cache-efficient, and switching modes while a check is pending reliably prompts instead of applying the stale result",
+        "Reduced prompt-cache costs for auto-mode permission checks by reusing the cached conversation prefix across decisions",
+        "Improved Stats panel to count cache tokens in its token totals, with a breakdown by input, output, cache read, and cache write",
+        "Improved `/ultrareview` error messages when a repo shares no history with its base: a checkout with no branches is now refused up front with advice to create one, and refusal hints no longer suggest `git fetch --unshallow` on clones that are already complete",
+        "Improved Windows startup: process creation times are now read via a native kernel32 call instead of spawning PowerShell, so endpoint security tools that gate `powershell.exe` no longer prompt",
+        "Changed background sessions to commit and push to preserve work, open a draft PR only when the task calls for one, follow your CLAUDE.md git instructions, and always end by reporting where the work lives",
+        "Changed `/plugin install` to refresh a stale marketplace catalog and retry before reporting a plugin not found",
+        "Changed plugins installed from `/plugin` to activate immediately when safe, instead of always requiring `/reload-plugins`",
+        "Changed plugins to accept `\".\"` as a `skills` path, and the root-level `SKILL.md` validation error now suggests using the plugin root",
+        "Changed `/status` to show the session kind: `interactive`, or a background job that is `attached` or `unattended`",
+        "Changed emoji autocomplete to accept common alternate shortcodes like `:thumbsup:`, `:thumbsdown:`, and `:love:`",
+        "Changed sessions forked with `/fork` to create a new worktree of their own instead of working in the original session's checkout",
+        "Changed Claude in Chrome to close the browser tabs it opens once it no longer needs them",
+        "Changed fast mode to report on the stream when usage credits run out mid-session, instead of failing silently",
+        "Changed Monitor: a watch that exits without producing any output now says so instead of reporting \"stream ended\"",
+        "Changed the Gateway `model` field validation: non-string values are rejected with a 400 instead of being forwarded",
+        "Removed the repeated \"Permission mode changed while the auto-mode classifier call was queued\" notice from approval prompts"
+      ]
+    }
+  ],
+  "patchImpacts": [
+    {
+      "id": "prompt-slim",
+      "broken": true,
+      "matches": [
+        {
+          "version": "2.1.221",
+          "bulletIndex": 15,
+          "bullet": "Fixed a rare wake-from-sleep race where two Claude Code processes could both refresh the same MCP connector or WIF OAuth token at once, forcing re-authentication",
+          "score": -6.9877
+        },
+        {
+          "version": "2.1.222",
+          "bulletIndex": 19,
+          "bullet": "Changed Remote Control auto-start so repo-local settings (`.claude/settings.json` or `.claude/settings.local.json`) can no longer turn it on (they can still turn it off); enable it at user scope via `/config`",
+          "score": -5.7268
+        },
+        {
+          "version": "2.1.221",
+          "bulletIndex": 26,
+          "bullet": "Improved Windows startup: process creation times are now read via a native kernel32 call instead of spawning PowerShell, so endpoint security tools that gate `powershell.exe` no longer prompt",
+          "score": -5.0767
+        },
+        {
+          "version": "2.1.221",
+          "bulletIndex": 16,
+          "bullet": "Fixed renaming a session from Claude Code Desktop or claude.ai not updating the CLI's session name; session names from every rename surface are now sanitized",
+          "score": -4.943
+        },
+        {
+          "version": "2.1.221",
+          "bulletIndex": 4,
+          "bullet": "Fixed a Bash tool permission-check bypass where zsh could execute hidden commands in `[[ ]]` regex conditionals; affected commands now prompt for permission",
+          "score": -4.8303
+        },
+        {
+          "version": "2.1.221",
+          "bulletIndex": 32,
+          "bullet": "Changed emoji autocomplete to accept common alternate shortcodes like `:thumbsup:`, `:thumbsdown:`, and `:love:`",
+          "score": -4.4639
+        }
+      ]
+    },
+    {
+      "id": "explore-haiku",
+      "broken": false,
+      "matches": [
+        {
+          "version": "2.1.221",
+          "bulletIndex": 35,
+          "bullet": "Changed fast mode to report on the stream when usage credits run out mid-session, instead of failing silently",
+          "score": -18.5462
+        },
+        {
+          "version": "2.1.222",
+          "bulletIndex": 7,
+          "bullet": "Fixed org-restricted `model: opus`-style subagent and teammate family aliases dropping to the parent model instead of stepping down to the newest org-allowed model in the family",
+          "score": -10.4684
+        },
+        {
+          "version": "2.1.222",
+          "bulletIndex": 12,
+          "bullet": "Fixed the spinner's effort label in a subagent's transcript view showing the session's effort level instead of the subagent's own `effort:` setting",
+          "score": -6.8269
+        },
+        {
+          "version": "2.1.221",
+          "bulletIndex": 26,
+          "bullet": "Improved Windows startup: process creation times are now read via a native kernel32 call instead of spawning PowerShell, so endpoint security tools that gate `powershell.exe` no longer prompt",
+          "score": -6.7191
+        },
+        {
+          "version": "2.1.222",
+          "bulletIndex": 16,
+          "bullet": "Improved auto mode safety: messages sent to other agent sessions via `SendMessage` are now evaluated by the permission classifier before dispatch",
+          "score": -6.692
+        },
+        {
+          "version": "2.1.222",
+          "bulletIndex": 1,
+          "bullet": "Fixed PreToolUse auto-allow hooks bypassing tool restrictions in background agent tasks (summaries, compaction, renames)",
+          "score": -6.506
+        }
+      ]
+    },
+    {
+      "id": "disable-skills",
+      "broken": false,
+      "matches": [
+        {
+          "version": "2.1.221",
+          "bulletIndex": 16,
+          "bullet": "Fixed renaming a session from Claude Code Desktop or claude.ai not updating the CLI's session name; session names from every rename surface are now sanitized",
+          "score": -16.396
+        },
+        {
+          "version": "2.1.222",
+          "bulletIndex": 17,
+          "bullet": "Improved the refusal when Claude tries to invoke a skill with `disable-model-invocation`: Claude is now told to ask you to run the skill instead of replicating its workflow",
+          "score": -14.4419
+        },
+        {
+          "version": "2.1.221",
+          "bulletIndex": 17,
+          "bullet": "Fixed plugin- and org-delivered skills named after terminal-only built-ins (e.g. `/help`, `/feedback`) being un-invocable in non-interactive sessions",
+          "score": -8.5811
+        },
+        {
+          "version": "2.1.221",
+          "bulletIndex": 30,
+          "bullet": "Changed plugins to accept `\".\"` as a `skills` path, and the root-level `SKILL.md` validation error now suggests using the plugin root",
+          "score": -8.3788
+        },
+        {
+          "version": "2.1.221",
+          "bulletIndex": 2,
+          "bullet": "Added warnings to `claude plugin validate` when a marketplace or plugin name would be rejected by Claude Desktop's managed marketplace sync",
+          "score": -8.0233
+        },
+        {
+          "version": "2.1.221",
+          "bulletIndex": 0,
+          "bullet": "[VSCode] Added Focus view: a chat-menu toggle that hides tool activity behind an expandable per-turn summary with a live running-tool indicator, toggled with `Ctrl+Alt+F` or the \"Claude Code: Toggle Focus view\" command",
+          "score": -6.7898
+        }
+      ]
+    },
+    {
+      "id": "thinking-display-summarized",
+      "broken": false,
+      "matches": [
+        {
+          "version": "2.1.222",
+          "bulletIndex": 19,
+          "bullet": "Changed Remote Control auto-start so repo-local settings (`.claude/settings.json` or `.claude/settings.local.json`) can no longer turn it on (they can still turn it off); enable it at user scope via `/config`",
+          "score": -16.1431
+        },
+        {
+          "version": "2.1.221",
+          "bulletIndex": 6,
+          "bullet": "Fixed the thinking toggle having no effect for the rest of a session that started with thinking off; disabling an MCP server mid-connect no longer silently reverts",
+          "score": -9.1002
+        },
+        {
+          "version": "2.1.222",
+          "bulletIndex": 2,
+          "bullet": "Fixed `/usage-credits` on Team and Enterprise showing \"you've already sent a usage credit request\" for members whose earlier request was dismissed, blocking them from sending a new one",
+          "score": -8.1785
+        },
+        {
+          "version": "2.1.222",
+          "bulletIndex": 8,
+          "bullet": "Fixed stream idle timeout firing on custom `ANTHROPIC_BASE_URL` gateways despite server keep-alive pings arriving on the wire",
+          "score": -7.7461
+        },
+        {
+          "version": "2.1.222",
+          "bulletIndex": 7,
+          "bullet": "Fixed org-restricted `model: opus`-style subagent and teammate family aliases dropping to the parent model instead of stepping down to the newest org-allowed model in the family",
+          "score": -6.6196
+        },
+        {
+          "version": "2.1.221",
+          "bulletIndex": 7,
+          "bullet": "Fixed MCP servers from `--mcp-config` not being connected before the first turn in print mode (`-p`), which made the model emit tool calls as literal text",
+          "score": -6.3502
+        }
+      ]
+    },
+    {
+      "id": "disable-bundled-skills",
+      "broken": false,
+      "matches": [
+        {
+          "version": "2.1.222",
+          "bulletIndex": 17,
+          "bullet": "Improved the refusal when Claude tries to invoke a skill with `disable-model-invocation`: Claude is now told to ask you to run the skill instead of replicating its workflow",
+          "score": -13.5639
+        },
+        {
+          "version": "2.1.221",
+          "bulletIndex": 16,
+          "bullet": "Fixed renaming a session from Claude Code Desktop or claude.ai not updating the CLI's session name; session names from every rename surface are now sanitized",
+          "score": -13.4662
+        },
+        {
+          "version": "2.1.221",
+          "bulletIndex": 7,
+          "bullet": "Fixed MCP servers from `--mcp-config` not being connected before the first turn in print mode (`-p`), which made the model emit tool calls as literal text",
+          "score": -10.8497
+        },
+        {
+          "version": "2.1.221",
+          "bulletIndex": 17,
+          "bullet": "Fixed plugin- and org-delivered skills named after terminal-only built-ins (e.g. `/help`, `/feedback`) being un-invocable in non-interactive sessions",
+          "score": -8.5811
+        },
+        {
+          "version": "2.1.221",
+          "bulletIndex": 30,
+          "bullet": "Changed plugins to accept `\".\"` as a `skills` path, and the root-level `SKILL.md` validation error now suggests using the plugin root",
+          "score": -8.3788
+        },
+        {
+          "version": "2.1.221",
+          "bulletIndex": 9,
+          "bullet": "Fixed a crash when preparing API requests for SDK MCP tools named after built-in object properties such as `constructor`",
+          "score": -7.1907
+        }
+      ]
+    },
+    {
+      "id": "cron-visibility",
+      "broken": false,
+      "matches": [
+        {
+          "version": "2.1.221",
+          "bulletIndex": 23,
+          "bullet": "Reduced prompt-cache costs for auto-mode permission checks by reusing the cached conversation prefix across decisions",
+          "score": -13.5264
+        },
+        {
+          "version": "2.1.222",
+          "bulletIndex": 16,
+          "bullet": "Improved auto mode safety: messages sent to other agent sessions via `SendMessage` are now evaluated by the permission classifier before dispatch",
+          "score": -11.6996
+        },
+        {
+          "version": "2.1.221",
+          "bulletIndex": 22,
+          "bullet": "Improved auto mode: permission checks for parallel tool calls are now cache-efficient, and switching modes while a check is pending reliably prompts instead of applying the stale result",
+          "score": -10.2104
+        },
+        {
+          "version": "2.1.221",
+          "bulletIndex": 7,
+          "bullet": "Fixed MCP servers from `--mcp-config` not being connected before the first turn in print mode (`-p`), which made the model emit tool calls as literal text",
+          "score": -9.192
+        },
+        {
+          "version": "2.1.221",
+          "bulletIndex": 29,
+          "bullet": "Changed plugins installed from `/plugin` to activate immediately when safe, instead of always requiring `/reload-plugins`",
+          "score": -8.9086
+        },
+        {
+          "version": "2.1.221",
+          "bulletIndex": 24,
+          "bullet": "Improved Stats panel to count cache tokens in its token totals, with a breakdown by input, output, cache read, and cache write",
+          "score": -7.6272
+        }
+      ]
+    },
+    {
+      "id": "tool-defer-whitelist",
+      "broken": false,
+      "matches": [
+        {
+          "version": "2.1.221",
+          "bulletIndex": 16,
+          "bullet": "Fixed renaming a session from Claude Code Desktop or claude.ai not updating the CLI's session name; session names from every rename surface are now sanitized",
+          "score": -13.2693
+        },
+        {
+          "version": "2.1.222",
+          "bulletIndex": 10,
+          "bullet": "Fixed tool errors not being displayed for tools no longer available locally, for example after an MCP server is removed",
+          "score": -10.8349
+        },
+        {
+          "version": "2.1.222",
+          "bulletIndex": 2,
+          "bullet": "Fixed `/usage-credits` on Team and Enterprise showing \"you've already sent a usage credit request\" for members whose earlier request was dismissed, blocking them from sending a new one",
+          "score": -9.5802
+        },
+        {
+          "version": "2.1.222",
+          "bulletIndex": 5,
+          "bullet": "Fixed `/usage` overattributing usage to MCP servers: a server's share now reflects only the requests that actually consumed its tool results, instead of every turn after any call to it",
+          "score": -9.5646
+        },
+        {
+          "version": "2.1.221",
+          "bulletIndex": 9,
+          "bullet": "Fixed a crash when preparing API requests for SDK MCP tools named after built-in object properties such as `constructor`",
+          "score": -8.5008
+        },
+        {
+          "version": "2.1.221",
+          "bulletIndex": 29,
+          "bullet": "Changed plugins installed from `/plugin` to activate immediately when safe, instead of always requiring `/reload-plugins`",
+          "score": -7.7791
+        }
+      ]
+    },
+    {
+      "id": "subagent-nesting",
+      "broken": false,
+      "matches": [
+        {
+          "version": "2.1.221",
+          "bulletIndex": 33,
+          "bullet": "Changed sessions forked with `/fork` to create a new worktree of their own instead of working in the original session's checkout",
+          "score": -12.9776
+        },
+        {
+          "version": "2.1.221",
+          "bulletIndex": 35,
+          "bullet": "Changed fast mode to report on the stream when usage credits run out mid-session, instead of failing silently",
+          "score": -11.0855
+        },
+        {
+          "version": "2.1.222",
+          "bulletIndex": 0,
+          "bullet": "Fixed worktree-isolated sessions and their subagents being able to run destructive git commands against the main checkout; isolation now applies to file edits and Bash in every session type",
+          "score": -10.9157
+        },
+        {
+          "version": "2.1.221",
+          "bulletIndex": 26,
+          "bullet": "Improved Windows startup: process creation times are now read via a native kernel32 call instead of spawning PowerShell, so endpoint security tools that gate `powershell.exe` no longer prompt",
+          "score": -10.8216
+        },
+        {
+          "version": "2.1.222",
+          "bulletIndex": 1,
+          "bullet": "Fixed PreToolUse auto-allow hooks bypassing tool restrictions in background agent tasks (summaries, compaction, renames)",
+          "score": -10.7835
+        },
+        {
+          "version": "2.1.222",
+          "bulletIndex": 12,
+          "bullet": "Fixed the spinner's effort label in a subagent's transcript view showing the session's effort level instead of the subagent's own `effort:` setting",
+          "score": -9.8066
+        }
+      ]
+    },
+    {
+      "id": "system-reminders",
+      "broken": false,
+      "matches": [
+        {
+          "version": "2.1.221",
+          "bulletIndex": 1,
+          "bullet": "Added `mode: \"mask\"` for sandbox credential files on Linux and WSL — sandboxed commands read a sentinel copy (the whole file, or just the spans captured by an `extract` regex) while the sandbox proxy substitutes the real value on egress; on macOS file masking falls back to `deny`",
+          "score": -11.5841
+        },
+        {
+          "version": "2.1.222",
+          "bulletIndex": 18,
+          "bullet": "Improved the `/diff` view, the Remote Control workspace diff, and file-edit diffs in Claude Code on the web sessions to use raw git blob content, ignoring workspace-configured diff drivers and textconv",
+          "score": -10.5216
+        },
+        {
+          "version": "2.1.221",
+          "bulletIndex": 24,
+          "bullet": "Improved Stats panel to count cache tokens in its token totals, with a breakdown by input, output, cache read, and cache write",
+          "score": -9.4082
+        },
+        {
+          "version": "2.1.221",
+          "bulletIndex": 15,
+          "bullet": "Fixed a rare wake-from-sleep race where two Claude Code processes could both refresh the same MCP connector or WIF OAuth token at once, forcing re-authentication",
+          "score": -9.2867
+        },
+        {
+          "version": "2.1.222",
+          "bulletIndex": 10,
+          "bullet": "Fixed tool errors not being displayed for tools no longer available locally, for example after an MCP server is removed",
+          "score": -7.9585
+        },
+        {
+          "version": "2.1.221",
+          "bulletIndex": 26,
+          "bullet": "Improved Windows startup: process creation times are now read via a native kernel32 call instead of spawning PowerShell, so endpoint security tools that gate `powershell.exe` no longer prompt",
+          "score": -6.8011
+        }
+      ]
+    },
+    {
+      "id": "mode-cycle-order",
+      "broken": false,
+      "matches": [
+        {
+          "version": "2.1.221",
+          "bulletIndex": 23,
+          "bullet": "Reduced prompt-cache costs for auto-mode permission checks by reusing the cached conversation prefix across decisions",
+          "score": -10.4222
+        },
+        {
+          "version": "2.1.221",
+          "bulletIndex": 4,
+          "bullet": "Fixed a Bash tool permission-check bypass where zsh could execute hidden commands in `[[ ]]` regex conditionals; affected commands now prompt for permission",
+          "score": -9.5218
+        },
+        {
+          "version": "2.1.222",
+          "bulletIndex": 16,
+          "bullet": "Improved auto mode safety: messages sent to other agent sessions via `SendMessage` are now evaluated by the permission classifier before dispatch",
+          "score": -8.4605
+        },
+        {
+          "version": "2.1.221",
+          "bulletIndex": 22,
+          "bullet": "Improved auto mode: permission checks for parallel tool calls are now cache-efficient, and switching modes while a check is pending reliably prompts instead of applying the stale result",
+          "score": -7.6086
+        },
+        {
+          "version": "2.1.221",
+          "bulletIndex": 38,
+          "bullet": "Removed the repeated \"Permission mode changed while the auto-mode classifier call was queued\" notice from approval prompts",
+          "score": -6.7691
+        },
+        {
+          "version": "2.1.222",
+          "bulletIndex": 1,
+          "bullet": "Fixed PreToolUse auto-allow hooks bypassing tool restrictions in background agent tasks (summaries, compaction, renames)",
+          "score": -6.5609
+        }
+      ]
+    },
+    {
+      "id": "feature-flag-toggles",
+      "broken": false,
+      "matches": [
+        {
+          "version": "2.1.222",
+          "bulletIndex": 20,
+          "bullet": "Removed ultraplan feature",
+          "score": -10.0487
+        },
+        {
+          "version": "2.1.221",
+          "bulletIndex": 16,
+          "bullet": "Fixed renaming a session from Claude Code Desktop or claude.ai not updating the CLI's session name; session names from every rename surface are now sanitized",
+          "score": -9.1017
+        },
+        {
+          "version": "2.1.221",
+          "bulletIndex": 35,
+          "bullet": "Changed fast mode to report on the stream when usage credits run out mid-session, instead of failing silently",
+          "score": -6.6398
+        },
+        {
+          "version": "2.1.221",
+          "bulletIndex": 4,
+          "bullet": "Fixed a Bash tool permission-check bypass where zsh could execute hidden commands in `[[ ]]` regex conditionals; affected commands now prompt for permission",
+          "score": -6.57
+        },
+        {
+          "version": "2.1.221",
+          "bulletIndex": 22,
+          "bullet": "Improved auto mode: permission checks for parallel tool calls are now cache-efficient, and switching modes while a check is pending reliably prompts instead of applying the stale result",
+          "score": -6.4466
+        },
+        {
+          "version": "2.1.221",
+          "bulletIndex": 1,
+          "bullet": "Added `mode: \"mask\"` for sandbox credential files on Linux and WSL — sandboxed commands read a sentinel copy (the whole file, or just the spans captured by an `extract` regex) while the sandbox proxy substitutes the real value on egress; on macOS file masking falls back to `deny`",
+          "score": -6.2222
+        }
+      ]
+    },
+    {
+      "id": "auto-color",
+      "broken": false,
+      "matches": [
+        {
+          "version": "2.1.221",
+          "bulletIndex": 16,
+          "bullet": "Fixed renaming a session from Claude Code Desktop or claude.ai not updating the CLI's session name; session names from every rename surface are now sanitized",
+          "score": -10.0458
+        },
+        {
+          "version": "2.1.222",
+          "bulletIndex": 6,
+          "bullet": "Fixed sessions not linking to pull requests created after the branch was pushed, including through the GitHub REST API",
+          "score": -9.2822
+        },
+        {
+          "version": "2.1.222",
+          "bulletIndex": 1,
+          "bullet": "Fixed PreToolUse auto-allow hooks bypassing tool restrictions in background agent tasks (summaries, compaction, renames)",
+          "score": -7.5305
+        },
+        {
+          "version": "2.1.221",
+          "bulletIndex": 14,
+          "bullet": "Fixed `CLAUDE_CODE_RESUME_INTERRUPTED_TURN=0` not disabling interrupted-turn auto-resume; falsy values are now honored",
+          "score": -6.6518
+        },
+        {
+          "version": "2.1.221",
+          "bulletIndex": 23,
+          "bullet": "Reduced prompt-cache costs for auto-mode permission checks by reusing the cached conversation prefix across decisions",
+          "score": -6.2979
+        },
+        {
+          "version": "2.1.221",
+          "bulletIndex": 17,
+          "bullet": "Fixed plugin- and org-delivered skills named after terminal-only built-ins (e.g. `/help`, `/feedback`) being un-invocable in non-interactive sessions",
+          "score": -5.4783
+        }
+      ]
+    },
+    {
+      "id": "worktree-dedup",
+      "broken": false,
+      "matches": [
+        {
+          "version": "2.1.221",
+          "bulletIndex": 8,
+          "bullet": "Fixed @-mentioned files being silently dropped when pressing Esc to retract a prompt and resubmitting it",
+          "score": -10.0158
+        },
+        {
+          "version": "2.1.222",
+          "bulletIndex": 0,
+          "bullet": "Fixed worktree-isolated sessions and their subagents being able to run destructive git commands against the main checkout; isolation now applies to file edits and Bash in every session type",
+          "score": -9.8977
+        },
+        {
+          "version": "2.1.221",
+          "bulletIndex": 33,
+          "bullet": "Changed sessions forked with `/fork` to create a new worktree of their own instead of working in the original session's checkout",
+          "score": -8.7749
+        },
+        {
+          "version": "2.1.222",
+          "bulletIndex": 19,
+          "bullet": "Changed Remote Control auto-start so repo-local settings (`.claude/settings.json` or `.claude/settings.local.json`) can no longer turn it on (they can still turn it off); enable it at user scope via `/config`",
+          "score": -8.7002
+        },
+        {
+          "version": "2.1.221",
+          "bulletIndex": 16,
+          "bullet": "Fixed renaming a session from Claude Code Desktop or claude.ai not updating the CLI's session name; session names from every rename surface are now sanitized",
+          "score": -6.6255
+        },
+        {
+          "version": "2.1.221",
+          "bulletIndex": 7,
+          "bullet": "Fixed MCP servers from `--mcp-config` not being connected before the first turn in print mode (`-p`), which made the model emit tool calls as literal text",
+          "score": -6.0215
+        }
+      ]
+    },
+    {
+      "id": "trim-context-bloat",
+      "broken": false,
+      "matches": [
+        {
+          "version": "2.1.221",
+          "bulletIndex": 37,
+          "bullet": "Changed the Gateway `model` field validation: non-string values are rejected with a 400 instead of being forwarded",
+          "score": -10.0015
+        },
+        {
+          "version": "2.1.221",
+          "bulletIndex": 16,
+          "bullet": "Fixed renaming a session from Claude Code Desktop or claude.ai not updating the CLI's session name; session names from every rename surface are now sanitized",
+          "score": -9.5554
+        },
+        {
+          "version": "2.1.221",
+          "bulletIndex": 7,
+          "bullet": "Fixed MCP servers from `--mcp-config` not being connected before the first turn in print mode (`-p`), which made the model emit tool calls as literal text",
+          "score": -8.9889
+        },
+        {
+          "version": "2.1.221",
+          "bulletIndex": 27,
+          "bullet": "Changed background sessions to commit and push to preserve work, open a draft PR only when the task calls for one, follow your CLAUDE.md git instructions, and always end by reporting where the work lives",
+          "score": -8.2645
+        },
+        {
+          "version": "2.1.222",
+          "bulletIndex": 7,
+          "bullet": "Fixed org-restricted `model: opus`-style subagent and teammate family aliases dropping to the parent model instead of stepping down to the newest org-allowed model in the family",
+          "score": -8.1301
+        },
+        {
+          "version": "2.1.221",
+          "bulletIndex": 4,
+          "bullet": "Fixed a Bash tool permission-check bypass where zsh could execute hidden commands in `[[ ]]` regex conditionals; affected commands now prompt for permission",
+          "score": -8.0271
+        }
+      ]
+    },
+    {
+      "id": "abbreviations",
+      "broken": false,
+      "matches": [
+        {
+          "version": "2.1.221",
+          "bulletIndex": 15,
+          "bullet": "Fixed a rare wake-from-sleep race where two Claude Code processes could both refresh the same MCP connector or WIF OAuth token at once, forcing re-authentication",
+          "score": -9.8695
+        },
+        {
+          "version": "2.1.222",
+          "bulletIndex": 15,
+          "bullet": "Fixed host model-selection keys not taking precedence over a stale on-disk `managed-settings.json` when `CLAUDE_CODE_PROVIDER_MANAGED_BY_HOST` is set",
+          "score": -7.6899
+        },
+        {
+          "version": "2.1.222",
+          "bulletIndex": 9,
+          "bullet": "Fixed claude.ai connectors being falsely marked as needing authorization when the session token is invalid — they now show a `/login` hint instead",
+          "score": -7.6129
+        },
+        {
+          "version": "2.1.221",
+          "bulletIndex": 4,
+          "bullet": "Fixed a Bash tool permission-check bypass where zsh could execute hidden commands in `[[ ]]` regex conditionals; affected commands now prompt for permission",
+          "score": -6.0349
+        },
+        {
+          "version": "2.1.221",
+          "bulletIndex": 24,
+          "bullet": "Improved Stats panel to count cache tokens in its token totals, with a breakdown by input, output, cache read, and cache write",
+          "score": -6.0349
+        },
+        {
+          "version": "2.1.222",
+          "bulletIndex": 2,
+          "bullet": "Fixed `/usage-credits` on Team and Enterprise showing \"you've already sent a usage credit request\" for members whose earlier request was dismissed, blocking them from sending a new one",
+          "score": -6.01
+        }
+      ]
+    },
+    {
+      "id": "flag-env-override",
+      "broken": false,
+      "matches": [
+        {
+          "version": "2.1.221",
+          "bulletIndex": 16,
+          "bullet": "Fixed renaming a session from Claude Code Desktop or claude.ai not updating the CLI's session name; session names from every rename surface are now sanitized",
+          "score": -9.8489
+        },
+        {
+          "version": "2.1.222",
+          "bulletIndex": 15,
+          "bullet": "Fixed host model-selection keys not taking precedence over a stale on-disk `managed-settings.json` when `CLAUDE_CODE_PROVIDER_MANAGED_BY_HOST` is set",
+          "score": -9.7343
+        },
+        {
+          "version": "2.1.222",
+          "bulletIndex": 19,
+          "bullet": "Changed Remote Control auto-start so repo-local settings (`.claude/settings.json` or `.claude/settings.local.json`) can no longer turn it on (they can still turn it off); enable it at user scope via `/config`",
+          "score": -7.6501
+        },
+        {
+          "version": "2.1.222",
+          "bulletIndex": 6,
+          "bullet": "Fixed sessions not linking to pull requests created after the branch was pushed, including through the GitHub REST API",
+          "score": -7.3293
+        },
+        {
+          "version": "2.1.221",
+          "bulletIndex": 14,
+          "bullet": "Fixed `CLAUDE_CODE_RESUME_INTERRUPTED_TURN=0` not disabling interrupted-turn auto-resume; falsy values are now honored",
+          "score": -7.0481
+        },
+        {
+          "version": "2.1.221",
+          "bulletIndex": 15,
+          "bullet": "Fixed a rare wake-from-sleep race where two Claude Code processes could both refresh the same MCP connector or WIF OAuth token at once, forcing re-authentication",
+          "score": -6.3729
+        }
+      ]
+    },
+    {
+      "id": "toolsearch-visibility",
+      "broken": false,
+      "matches": [
+        {
+          "version": "2.1.221",
+          "bulletIndex": 9,
+          "bullet": "Fixed a crash when preparing API requests for SDK MCP tools named after built-in object properties such as `constructor`",
+          "score": -9.764
+        },
+        {
+          "version": "2.1.222",
+          "bulletIndex": 10,
+          "bullet": "Fixed tool errors not being displayed for tools no longer available locally, for example after an MCP server is removed",
+          "score": -7.6696
+        },
+        {
+          "version": "2.1.221",
+          "bulletIndex": 22,
+          "bullet": "Improved auto mode: permission checks for parallel tool calls are now cache-efficient, and switching modes while a check is pending reliably prompts instead of applying the stale result",
+          "score": -6.5542
+        },
+        {
+          "version": "2.1.222",
+          "bulletIndex": 5,
+          "bullet": "Fixed `/usage` overattributing usage to MCP servers: a server's share now reflects only the requests that actually consumed its tool results, instead of every turn after any call to it",
+          "score": -4.9658
+        },
+        {
+          "version": "2.1.221",
+          "bulletIndex": 4,
+          "bullet": "Fixed a Bash tool permission-check bypass where zsh could execute hidden commands in `[[ ]]` regex conditionals; affected commands now prompt for permission",
+          "score": -4.552
+        },
+        {
+          "version": "2.1.222",
+          "bulletIndex": 20,
+          "bullet": "Removed ultraplan feature",
+          "score": -4.3408
+        }
+      ]
+    },
+    {
+      "id": "thinking-no-fold",
+      "broken": false,
+      "matches": [
+        {
+          "version": "2.1.221",
+          "bulletIndex": 0,
+          "bullet": "[VSCode] Added Focus view: a chat-menu toggle that hides tool activity behind an expandable per-turn summary with a live running-tool indicator, toggled with `Ctrl+Alt+F` or the \"Claude Code: Toggle Focus view\" command",
+          "score": -9.433
+        },
+        {
+          "version": "2.1.222",
+          "bulletIndex": 5,
+          "bullet": "Fixed `/usage` overattributing usage to MCP servers: a server's share now reflects only the requests that actually consumed its tool results, instead of every turn after any call to it",
+          "score": -8.0341
+        },
+        {
+          "version": "2.1.221",
+          "bulletIndex": 30,
+          "bullet": "Changed plugins to accept `\".\"` as a `skills` path, and the root-level `SKILL.md` validation error now suggests using the plugin root",
+          "score": -6.9287
+        },
+        {
+          "version": "2.1.222",
+          "bulletIndex": 12,
+          "bullet": "Fixed the spinner's effort label in a subagent's transcript view showing the session's effort level instead of the subagent's own `effort:` setting",
+          "score": -6.8969
+        },
+        {
+          "version": "2.1.222",
+          "bulletIndex": 11,
+          "bullet": "Fixed `SendMessage` rejecting a long summary — it now truncates instead, so sends no longer fail on a character limit",
+          "score": -6.5532
+        },
+        {
+          "version": "2.1.222",
+          "bulletIndex": 2,
+          "bullet": "Fixed `/usage-credits` on Team and Enterprise showing \"you've already sent a usage credit request\" for members whose earlier request was dismissed, blocking them from sending a new one",
+          "score": -6.3231
+        }
+      ]
+    },
+    {
+      "id": "quiet-notifications",
+      "broken": false,
+      "matches": [
+        {
+          "version": "2.1.222",
+          "bulletIndex": 16,
+          "bullet": "Improved auto mode safety: messages sent to other agent sessions via `SendMessage` are now evaluated by the permission classifier before dispatch",
+          "score": -9.3051
+        },
+        {
+          "version": "2.1.221",
+          "bulletIndex": 22,
+          "bullet": "Improved auto mode: permission checks for parallel tool calls are now cache-efficient, and switching modes while a check is pending reliably prompts instead of applying the stale result",
+          "score": -9.2362
+        },
+        {
+          "version": "2.1.221",
+          "bulletIndex": 18,
+          "bullet": "Fixed the \"Plugins changed\" notification lingering after plugins were reloaded instead of clearing",
+          "score": -8.2462
+        },
+        {
+          "version": "2.1.221",
+          "bulletIndex": 37,
+          "bullet": "Changed the Gateway `model` field validation: non-string values are rejected with a 400 instead of being forwarded",
+          "score": -7.6385
+        },
+        {
+          "version": "2.1.222",
+          "bulletIndex": 7,
+          "bullet": "Fixed org-restricted `model: opus`-style subagent and teammate family aliases dropping to the parent model instead of stepping down to the newest org-allowed model in the family",
+          "score": -7.6333
+        },
+        {
+          "version": "2.1.221",
+          "bulletIndex": 20,
+          "bullet": "Fixed Vim mode: undoing back to an empty prompt now arms the \"press ← again\" confirm before returning to the agent view",
+          "score": -7.5331
+        }
+      ]
+    },
+    {
+      "id": "spinner",
+      "broken": false,
+      "matches": [
+        {
+          "version": "2.1.221",
+          "bulletIndex": 15,
+          "bullet": "Fixed a rare wake-from-sleep race where two Claude Code processes could both refresh the same MCP connector or WIF OAuth token at once, forcing re-authentication",
+          "score": -9.2547
+        },
+        {
+          "version": "2.1.221",
+          "bulletIndex": 16,
+          "bullet": "Fixed renaming a session from Claude Code Desktop or claude.ai not updating the CLI's session name; session names from every rename surface are now sanitized",
+          "score": -6.9191
+        },
+        {
+          "version": "2.1.221",
+          "bulletIndex": 26,
+          "bullet": "Improved Windows startup: process creation times are now read via a native kernel32 call instead of spawning PowerShell, so endpoint security tools that gate `powershell.exe` no longer prompt",
+          "score": -6.6196
+        },
+        {
+          "version": "2.1.221",
+          "bulletIndex": 4,
+          "bullet": "Fixed a Bash tool permission-check bypass where zsh could execute hidden commands in `[[ ]]` regex conditionals; affected commands now prompt for permission",
+          "score": -6.0349
+        },
+        {
+          "version": "2.1.222",
+          "bulletIndex": 3,
+          "bullet": "Fixed the startup connectivity check hanging and then failing behind an HTTPS proxy; it now uses the same proxy-aware transport as API requests and times out with a clear message",
+          "score": -5.1847
+        },
+        {
+          "version": "2.1.221",
+          "bulletIndex": 22,
+          "bullet": "Improved auto mode: permission checks for parallel tool calls are now cache-efficient, and switching modes while a check is pending reliably prompts instead of applying the stale result",
+          "score": -5.0342
+        }
+      ]
+    },
+    {
+      "id": "code-blocks",
+      "broken": false,
+      "matches": [
+        {
+          "version": "2.1.222",
+          "bulletIndex": 3,
+          "bullet": "Fixed the startup connectivity check hanging and then failing behind an HTTPS proxy; it now uses the same proxy-aware transport as API requests and times out with a clear message",
+          "score": -7.9311
+        },
+        {
+          "version": "2.1.221",
+          "bulletIndex": 4,
+          "bullet": "Fixed a Bash tool permission-check bypass where zsh could execute hidden commands in `[[ ]]` regex conditionals; affected commands now prompt for permission",
+          "score": -6.57
+        },
+        {
+          "version": "2.1.221",
+          "bulletIndex": 22,
+          "bullet": "Improved auto mode: permission checks for parallel tool calls are now cache-efficient, and switching modes while a check is pending reliably prompts instead of applying the stale result",
+          "score": -5.9264
+        },
+        {
+          "version": "2.1.221",
+          "bulletIndex": 15,
+          "bullet": "Fixed a rare wake-from-sleep race where two Claude Code processes could both refresh the same MCP connector or WIF OAuth token at once, forcing re-authentication",
+          "score": -4.8254
+        },
+        {
+          "version": "2.1.221",
+          "bulletIndex": 33,
+          "bullet": "Changed sessions forked with `/fork` to create a new worktree of their own instead of working in the original session's checkout",
+          "score": -4.7379
+        },
+        {
+          "version": "2.1.221",
+          "bulletIndex": 24,
+          "bullet": "Improved Stats panel to count cache tokens in its token totals, with a breakdown by input, output, cache read, and cache write",
+          "score": -4.4304
+        }
+      ]
+    },
+    {
+      "id": "read-summary",
+      "broken": false,
+      "matches": [
+        {
+          "version": "2.1.221",
+          "bulletIndex": 0,
+          "bullet": "[VSCode] Added Focus view: a chat-menu toggle that hides tool activity behind an expandable per-turn summary with a live running-tool indicator, toggled with `Ctrl+Alt+F` or the \"Claude Code: Toggle Focus view\" command",
+          "score": -7.9258
+        },
+        {
+          "version": "2.1.222",
+          "bulletIndex": 5,
+          "bullet": "Fixed `/usage` overattributing usage to MCP servers: a server's share now reflects only the requests that actually consumed its tool results, instead of every turn after any call to it",
+          "score": -6.8181
+        },
+        {
+          "version": "2.1.222",
+          "bulletIndex": 11,
+          "bullet": "Fixed `SendMessage` rejecting a long summary — it now truncates instead, so sends no longer fail on a character limit",
+          "score": -6.7632
+        },
+        {
+          "version": "2.1.221",
+          "bulletIndex": 26,
+          "bullet": "Improved Windows startup: process creation times are now read via a native kernel32 call instead of spawning PowerShell, so endpoint security tools that gate `powershell.exe` no longer prompt",
+          "score": -5.8269
+        },
+        {
+          "version": "2.1.221",
+          "bulletIndex": 22,
+          "bullet": "Improved auto mode: permission checks for parallel tool calls are now cache-efficient, and switching modes while a check is pending reliably prompts instead of applying the stale result",
+          "score": -5.4495
+        },
+        {
+          "version": "2.1.221",
+          "bulletIndex": 7,
+          "bullet": "Fixed MCP servers from `--mcp-config` not being connected before the first turn in print mode (`-p`), which made the model emit tool calls as literal text",
+          "score": -5.3817
+        }
+      ]
+    },
+    {
+      "id": "env-block-trim",
+      "broken": false,
+      "matches": [
+        {
+          "version": "2.1.221",
+          "bulletIndex": 29,
+          "bullet": "Changed plugins installed from `/plugin` to activate immediately when safe, instead of always requiring `/reload-plugins`",
+          "score": -7.7791
+        },
+        {
+          "version": "2.1.222",
+          "bulletIndex": 9,
+          "bullet": "Fixed claude.ai connectors being falsely marked as needing authorization when the session token is invalid — they now show a `/login` hint instead",
+          "score": -4.8256
+        },
+        {
+          "version": "2.1.221",
+          "bulletIndex": 31,
+          "bullet": "Changed `/status` to show the session kind: `interactive`, or a background job that is `attached` or `unattended`",
+          "score": -4.106
+        },
+        {
+          "version": "2.1.221",
+          "bulletIndex": 37,
+          "bullet": "Changed the Gateway `model` field validation: non-string values are rejected with a 400 instead of being forwarded",
+          "score": -4.0253
+        },
+        {
+          "version": "2.1.222",
+          "bulletIndex": 10,
+          "bullet": "Fixed tool errors not being displayed for tools no longer available locally, for example after an MCP server is removed",
+          "score": -3.8731
+        },
+        {
+          "version": "2.1.222",
+          "bulletIndex": 4,
+          "bullet": "Fixed \"Connection closed mid-response\" errors being reported on responses that had actually completed",
+          "score": -3.7422
+        }
+      ]
+    },
+    {
+      "id": "hook-envelope-strip",
+      "broken": false,
+      "matches": [
+        {
+          "version": "2.1.222",
+          "bulletIndex": 14,
+          "bullet": "Fixed screen readers re-reading the whole input line on every backspace in `--ax-screen-reader` mode — end-of-line deletions now echo just the deleted characters",
+          "score": -7.7391
+        },
+        {
+          "version": "2.1.221",
+          "bulletIndex": 18,
+          "bullet": "Fixed the \"Plugins changed\" notification lingering after plugins were reloaded instead of clearing",
+          "score": -7.0429
+        },
+        {
+          "version": "2.1.221",
+          "bulletIndex": 7,
+          "bullet": "Fixed MCP servers from `--mcp-config` not being connected before the first turn in print mode (`-p`), which made the model emit tool calls as literal text",
+          "score": -5.7716
+        },
+        {
+          "version": "2.1.221",
+          "bulletIndex": 5,
+          "bullet": "Fixed PowerShell permission checks mishandling paths containing quote characters on Windows; such paths now prompt for approval",
+          "score": -5.7091
+        },
+        {
+          "version": "2.1.222",
+          "bulletIndex": 5,
+          "bullet": "Fixed `/usage` overattributing usage to MCP servers: a server's share now reflects only the requests that actually consumed its tool results, instead of every turn after any call to it",
+          "score": -5.3457
+        },
+        {
+          "version": "2.1.221",
+          "bulletIndex": 4,
+          "bullet": "Fixed a Bash tool permission-check bypass where zsh could execute hidden commands in `[[ ]]` regex conditionals; affected commands now prompt for permission",
+          "score": -4.8303
+        }
+      ]
+    },
+    {
+      "id": "no-collapse-reads",
+      "broken": false,
+      "matches": [
+        {
+          "version": "2.1.221",
+          "bulletIndex": 0,
+          "bullet": "[VSCode] Added Focus view: a chat-menu toggle that hides tool activity behind an expandable per-turn summary with a live running-tool indicator, toggled with `Ctrl+Alt+F` or the \"Claude Code: Toggle Focus view\" command",
+          "score": -7.4181
+        },
+        {
+          "version": "2.1.222",
+          "bulletIndex": 5,
+          "bullet": "Fixed `/usage` overattributing usage to MCP servers: a server's share now reflects only the requests that actually consumed its tool results, instead of every turn after any call to it",
+          "score": -7.4041
+        },
+        {
+          "version": "2.1.221",
+          "bulletIndex": 22,
+          "bullet": "Improved auto mode: permission checks for parallel tool calls are now cache-efficient, and switching modes while a check is pending reliably prompts instead of applying the stale result",
+          "score": -6.5542
+        },
+        {
+          "version": "2.1.221",
+          "bulletIndex": 21,
+          "bullet": "Improved tool search on Google Vertex AI: re-enabled for Claude 4.5-generation and newer models",
+          "score": -5.4029
+        },
+        {
+          "version": "2.1.222",
+          "bulletIndex": 3,
+          "bullet": "Fixed the startup connectivity check hanging and then failing behind an HTTPS proxy; it now uses the same proxy-aware transport as API requests and times out with a clear message",
+          "score": -5.1847
+        },
+        {
+          "version": "2.1.221",
+          "bulletIndex": 26,
+          "bullet": "Improved Windows startup: process creation times are now read via a native kernel32 call instead of spawning PowerShell, so endpoint security tools that gate `powershell.exe` no longer prompt",
+          "score": -5.0342
+        }
+      ]
+    },
+    {
+      "id": "keyword-highlights",
+      "broken": false,
+      "matches": [
+        {
+          "version": "2.1.222",
+          "bulletIndex": 6,
+          "bullet": "Fixed sessions not linking to pull requests created after the branch was pushed, including through the GitHub REST API",
+          "score": -7.3293
+        },
+        {
+          "version": "2.1.221",
+          "bulletIndex": 14,
+          "bullet": "Fixed `CLAUDE_CODE_RESUME_INTERRUPTED_TURN=0` not disabling interrupted-turn auto-resume; falsy values are now honored",
+          "score": -7.0481
+        },
+        {
+          "version": "2.1.221",
+          "bulletIndex": 16,
+          "bullet": "Fixed renaming a session from Claude Code Desktop or claude.ai not updating the CLI's session name; session names from every rename surface are now sanitized",
+          "score": -6.9191
+        },
+        {
+          "version": "2.1.221",
+          "bulletIndex": 7,
+          "bullet": "Fixed MCP servers from `--mcp-config` not being connected before the first turn in print mode (`-p`), which made the model emit tool calls as literal text",
+          "score": -6.8407
+        },
+        {
+          "version": "2.1.221",
+          "bulletIndex": 4,
+          "bullet": "Fixed a Bash tool permission-check bypass where zsh could execute hidden commands in `[[ ]]` regex conditionals; affected commands now prompt for permission",
+          "score": -6.0349
+        },
+        {
+          "version": "2.1.221",
+          "bulletIndex": 22,
+          "bullet": "Improved auto mode: permission checks for parallel tool calls are now cache-efficient, and switching modes while a check is pending reliably prompts instead of applying the stale result",
+          "score": -5.8269
+        }
+      ]
+    },
+    {
+      "id": "ghostty-term",
+      "broken": false,
+      "matches": [
+        {
+          "version": "2.1.221",
+          "bulletIndex": 30,
+          "bullet": "Changed plugins to accept `\".\"` as a `skills` path, and the root-level `SKILL.md` validation error now suggests using the plugin root",
+          "score": -6.9287
+        },
+        {
+          "version": "2.1.221",
+          "bulletIndex": 16,
+          "bullet": "Fixed renaming a session from Claude Code Desktop or claude.ai not updating the CLI's session name; session names from every rename surface are now sanitized",
+          "score": -6.9191
+        },
+        {
+          "version": "2.1.222",
+          "bulletIndex": 3,
+          "bullet": "Fixed the startup connectivity check hanging and then failing behind an HTTPS proxy; it now uses the same proxy-aware transport as API requests and times out with a clear message",
+          "score": -5.6445
+        },
+        {
+          "version": "2.1.221",
+          "bulletIndex": 17,
+          "bullet": "Fixed plugin- and org-delivered skills named after terminal-only built-ins (e.g. `/help`, `/feedback`) being un-invocable in non-interactive sessions",
+          "score": -3.6651
+        },
+        {
+          "version": "2.1.221",
+          "bulletIndex": 14,
+          "bullet": "Fixed `CLAUDE_CODE_RESUME_INTERRUPTED_TURN=0` not disabling interrupted-turn auto-resume; falsy values are now honored",
+          "score": -3.6001
+        },
+        {
+          "version": "2.1.222",
+          "bulletIndex": 2,
+          "bullet": "Fixed `/usage-credits` on Team and Enterprise showing \"you've already sent a usage credit request\" for members whose earlier request was dismissed, blocking them from sending a new one",
+          "score": -3.533
+        }
+      ]
+    },
+    {
+      "id": "thinking-visibility",
+      "broken": false,
+      "matches": [
+        {
+          "version": "2.1.221",
+          "bulletIndex": 16,
+          "bullet": "Fixed renaming a session from Claude Code Desktop or claude.ai not updating the CLI's session name; session names from every rename surface are now sanitized",
+          "score": -6.9191
+        },
+        {
+          "version": "2.1.222",
+          "bulletIndex": 5,
+          "bullet": "Fixed `/usage` overattributing usage to MCP servers: a server's share now reflects only the requests that actually consumed its tool results, instead of every turn after any call to it",
+          "score": -6.7959
+        },
+        {
+          "version": "2.1.221",
+          "bulletIndex": 26,
+          "bullet": "Improved Windows startup: process creation times are now read via a native kernel32 call instead of spawning PowerShell, so endpoint security tools that gate `powershell.exe` no longer prompt",
+          "score": -6.7191
+        },
+        {
+          "version": "2.1.221",
+          "bulletIndex": 19,
+          "bullet": "Fixed Vim mode: the yank register now survives dialogs, history search, and the transcript view instead of being silently emptied",
+          "score": -6.0145
+        },
+        {
+          "version": "2.1.221",
+          "bulletIndex": 35,
+          "bullet": "Changed fast mode to report on the stream when usage credits run out mid-session, instead of failing silently",
+          "score": -5.751
+        },
+        {
+          "version": "2.1.221",
+          "bulletIndex": 38,
+          "bullet": "Removed the repeated \"Permission mode changed while the auto-mode classifier call was queued\" notice from approval prompts",
+          "score": -5.3559
+        }
+      ]
+    }
+  ],
+  "reasoning": {
+    "fast-mode-info": "Signal-adjacent but really trivial text drift: bundle dropped \"/4.7\" from the fast-mode model list (Opus 5/4.8/4.7 -> Opus 5/4.8). Only prompt-slim pair that diverged; updated find.txt. All 27 JS patches ported unchanged from 2.1.220.",
+    "_summary": "2.1.220 -> 2.1.222 was a near-noop port. 27/28 JS+prompt patches matched verbatim; single fix was the fast-mode model-list text. No minifier/structural breaks."
+  }
+}

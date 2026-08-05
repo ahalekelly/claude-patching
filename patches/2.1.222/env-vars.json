@@ -1,0 +1,7766 @@
+{
+  "version": "2.1.222",
+  "scannedAt": "2026-08-05T11:15:45.392Z",
+  "prefixes": [
+    "CLAUDE_CODE_",
+    "ANTHROPIC_"
+  ],
+  "prefixCounts": {
+    "CLAUDE_CODE_": 436,
+    "ANTHROPIC_": 60
+  },
+  "vars": {
+    "ANTHROPIC_API_KEY": {
+      "prefix": "ANTHROPIC_",
+      "forms": [
+        "other",
+        "process.env",
+        "property",
+        "string"
+      ],
+      "occurrences": 128,
+      "lines": [
+        21240,
+        27215,
+        61134,
+        127779,
+        191396,
+        191396,
+        191424,
+        191443,
+        191443,
+        191710,
+        191711,
+        191712,
+        191713,
+        192869,
+        192869,
+        192968,
+        192968,
+        192977,
+        230930,
+        245157,
+        358859,
+        396506,
+        396510,
+        396512,
+        396512,
+        396531,
+        396532,
+        547760,
+        582880,
+        583044,
+        583045,
+        583046,
+        583057,
+        583060,
+        583066,
+        583068,
+        583071,
+        583080,
+        583085,
+        583106,
+        584236,
+        584237,
+        584238,
+        584249,
+        584252,
+        584258,
+        584260,
+        584263,
+        584272,
+        584277,
+        584340,
+        584525,
+        600499,
+        602269,
+        696274,
+        696278,
+        696279,
+        717559,
+        717607,
+        717607,
+        727670,
+        727763,
+        727995,
+        729160,
+        729283,
+        729284,
+        729284,
+        729314,
+        729396,
+        729588,
+        729636,
+        730099,
+        730368,
+        821419,
+        821419,
+        821596,
+        821606,
+        821627,
+        821653,
+        821692,
+        821717,
+        821755,
+        821781,
+        821806,
+        821854,
+        821859,
+        822098,
+        822114,
+        822120,
+        822210,
+        822649,
+        822678,
+        822936,
+        822984,
+        823428,
+        823428,
+        823816,
+        825181,
+        825198,
+        825380,
+        825382,
+        825382,
+        825382,
+        825382,
+        825382,
+        825487,
+        825487,
+        825487,
+        825487,
+        825487,
+        825487,
+        825487,
+        825487,
+        825487,
+        825550,
+        825550,
+        826544,
+        826690,
+        828451,
+        829894,
+        830667,
+        846462,
+        861338,
+        880001,
+        894389,
+        894394,
+        894407,
+        894415
+      ]
+    },
+    "ANTHROPIC_AUTH_TOKEN": {
+      "prefix": "ANTHROPIC_",
+      "forms": [
+        "other",
+        "process.env",
+        "property",
+        "string"
+      ],
+      "occurrences": 52,
+      "lines": [
+        21241,
+        27214,
+        61134,
+        106953,
+        114119,
+        125162,
+        127779,
+        191480,
+        191781,
+        192869,
+        192869,
+        192970,
+        192970,
+        192977,
+        192983,
+        230931,
+        523284,
+        547755,
+        579066,
+        579342,
+        582795,
+        582809,
+        582826,
+        582871,
+        582914,
+        582915,
+        583011,
+        583068,
+        583068,
+        584260,
+        584260,
+        584331,
+        584356,
+        584357,
+        584495,
+        584525,
+        602269,
+        603281,
+        603288,
+        717534,
+        823816,
+        825181,
+        825382,
+        825382,
+        825487,
+        825487,
+        825487,
+        825487,
+        825550,
+        829894,
+        830667,
+        898737
+      ]
+    },
+    "ANTHROPIC_AWS_API_KEY": {
+      "prefix": "ANTHROPIC_",
+      "forms": [
+        "other",
+        "process.env",
+        "string"
+      ],
+      "occurrences": 10,
+      "lines": [
+        27213,
+        61134,
+        61134,
+        127779,
+        511957,
+        578693,
+        579191,
+        891497,
+        891498,
+        891507
+      ]
+    },
+    "ANTHROPIC_AWS_BASE_URL": {
+      "prefix": "ANTHROPIC_",
+      "forms": [
+        "other",
+        "process.env",
+        "property",
+        "string"
+      ],
+      "occurrences": 10,
+      "lines": [
+        34048,
+        61134,
+        393319,
+        511957,
+        578685,
+        578686,
+        579353,
+        579571,
+        580076,
+        694007
+      ]
+    },
+    "ANTHROPIC_AWS_WORKSPACE_ID": {
+      "prefix": "ANTHROPIC_",
+      "forms": [
+        "other",
+        "property",
+        "string"
+      ],
+      "occurrences": 7,
+      "lines": [
+        34047,
+        61134,
+        511957,
+        578694,
+        578695,
+        694012,
+        825531
+      ]
+    },
+    "ANTHROPIC_BASE_URL": {
+      "prefix": "ANTHROPIC_",
+      "forms": [
+        "other",
+        "process.env",
+        "property",
+        "string"
+      ],
+      "occurrences": 51,
+      "lines": [
+        17313,
+        17337,
+        21235,
+        34046,
+        61134,
+        61134,
+        98326,
+        105730,
+        105884,
+        106925,
+        106940,
+        106951,
+        117949,
+        117949,
+        190940,
+        192983,
+        192989,
+        230929,
+        245312,
+        337353,
+        337354,
+        337457,
+        337857,
+        376908,
+        393419,
+        451152,
+        499135,
+        511957,
+        514979,
+        579313,
+        579363,
+        581053,
+        582808,
+        582815,
+        582826,
+        585186,
+        603279,
+        603279,
+        603281,
+        603288,
+        693952,
+        712553,
+        721289,
+        823879,
+        825382,
+        825487,
+        825487,
+        826684,
+        857893,
+        859921,
+        898737
+      ]
+    },
+    "ANTHROPIC_BEDROCK_BASE_URL": {
+      "prefix": "ANTHROPIC_",
+      "forms": [
+        "other",
+        "process.env",
+        "property",
+        "string"
+      ],
+      "occurrences": 15,
+      "lines": [
+        34045,
+        61134,
+        97988,
+        97989,
+        97992,
+        98023,
+        98024,
+        98027,
+        405072,
+        405513,
+        497755,
+        499151,
+        579349,
+        629473,
+        693958
+      ]
+    },
+    "ANTHROPIC_BEDROCK_MANTLE_BASE_URL": {
+      "prefix": "ANTHROPIC_",
+      "forms": [
+        "other",
+        "process.env",
+        "property",
+        "string"
+      ],
+      "occurrences": 9,
+      "lines": [
+        34044,
+        61134,
+        405226,
+        405227,
+        412998,
+        499153,
+        511957,
+        579351,
+        694053
+      ]
+    },
+    "ANTHROPIC_BEDROCK_SERVICE_TIER": {
+      "prefix": "ANTHROPIC_",
+      "forms": [
+        "other",
+        "process.env",
+        "property",
+        "string"
+      ],
+      "occurrences": 7,
+      "lines": [
+        34043,
+        61135,
+        61140,
+        511957,
+        579093,
+        579094,
+        693967
+      ]
+    },
+    "ANTHROPIC_BETAS": {
+      "prefix": "ANTHROPIC_",
+      "forms": [
+        "other",
+        "property"
+      ],
+      "occurrences": 2,
+      "lines": [
+        33978,
+        580167
+      ]
+    },
+    "ANTHROPIC_CONFIG_DIR": {
+      "prefix": "ANTHROPIC_",
+      "forms": [
+        "other",
+        "process.env",
+        "string"
+      ],
+      "occurrences": 4,
+      "lines": [
+        17362,
+        33835,
+        104489,
+        825487
+      ]
+    },
+    "ANTHROPIC_CUSTOM_HEADERS": {
+      "prefix": "ANTHROPIC_",
+      "forms": [
+        "other",
+        "process.env",
+        "property",
+        "string"
+      ],
+      "occurrences": 20,
+      "lines": [
+        21260,
+        33977,
+        61118,
+        61134,
+        61140,
+        61231,
+        106957,
+        114106,
+        114121,
+        127779,
+        191480,
+        191881,
+        230989,
+        579033,
+        579033,
+        579392,
+        579407,
+        602267,
+        604721,
+        708588
+      ]
+    },
+    "ANTHROPIC_CUSTOM_MODEL_OPTION": {
+      "prefix": "ANTHROPIC_",
+      "forms": [
+        "other",
+        "property",
+        "string"
+      ],
+      "occurrences": 7,
+      "lines": [
+        33930,
+        61134,
+        61140,
+        115088,
+        117030,
+        393770,
+        871667
+      ]
+    },
+    "ANTHROPIC_CUSTOM_MODEL_OPTION_DESCRIPTION": {
+      "prefix": "ANTHROPIC_",
+      "forms": [
+        "other",
+        "property",
+        "string"
+      ],
+      "occurrences": 4,
+      "lines": [
+        33929,
+        61134,
+        61140,
+        117034
+      ]
+    },
+    "ANTHROPIC_CUSTOM_MODEL_OPTION_NAME": {
+      "prefix": "ANTHROPIC_",
+      "forms": [
+        "other",
+        "property",
+        "string"
+      ],
+      "occurrences": 4,
+      "lines": [
+        33928,
+        61134,
+        61140,
+        117033
+      ]
+    },
+    "ANTHROPIC_CUSTOM_MODEL_OPTION_SUPPORTED_CAPABILITIES": {
+      "prefix": "ANTHROPIC_",
+      "forms": [
+        "string"
+      ],
+      "occurrences": 3,
+      "lines": [
+        61134,
+        61140,
+        115089
+      ]
+    },
+    "ANTHROPIC_DEFAULT_FABLE_MODEL": {
+      "prefix": "ANTHROPIC_",
+      "forms": [
+        "other",
+        "process.env",
+        "property",
+        "string"
+      ],
+      "occurrences": 16,
+      "lines": [
+        33927,
+        61134,
+        61140,
+        107660,
+        107673,
+        107771,
+        115076,
+        116473,
+        562568,
+        626648,
+        626667,
+        630196,
+        631408,
+        631414,
+        632223,
+        792488
+      ]
+    },
+    "ANTHROPIC_DEFAULT_FABLE_MODEL_DESCRIPTION": {
+      "prefix": "ANTHROPIC_",
+      "forms": [
+        "other",
+        "process.env",
+        "string"
+      ],
+      "occurrences": 5,
+      "lines": [
+        33926,
+        61134,
+        61140,
+        116477,
+        116478
+      ]
+    },
+    "ANTHROPIC_DEFAULT_FABLE_MODEL_NAME": {
+      "prefix": "ANTHROPIC_",
+      "forms": [
+        "other",
+        "process.env",
+        "string"
+      ],
+      "occurrences": 4,
+      "lines": [
+        33925,
+        61134,
+        61140,
+        116476
+      ]
+    },
+    "ANTHROPIC_DEFAULT_FABLE_MODEL_SUPPORTED_CAPABILITIES": {
+      "prefix": "ANTHROPIC_",
+      "forms": [
+        "string"
+      ],
+      "occurrences": 3,
+      "lines": [
+        61134,
+        61140,
+        115077
+      ]
+    },
+    "ANTHROPIC_DEFAULT_HAIKU_MODEL": {
+      "prefix": "ANTHROPIC_",
+      "forms": [
+        "other",
+        "process.env",
+        "property",
+        "string"
+      ],
+      "occurrences": 26,
+      "lines": [
+        33924,
+        61134,
+        61140,
+        107548,
+        107805,
+        108179,
+        115085,
+        116650,
+        405607,
+        412867,
+        413105,
+        413106,
+        413168,
+        413168,
+        413191,
+        413191,
+        562189,
+        626647,
+        626668,
+        630195,
+        631407,
+        631415,
+        632222,
+        792488,
+        863223,
+        863325
+      ]
+    },
+    "ANTHROPIC_DEFAULT_HAIKU_MODEL_DESCRIPTION": {
+      "prefix": "ANTHROPIC_",
+      "forms": [
+        "other",
+        "property",
+        "string"
+      ],
+      "occurrences": 5,
+      "lines": [
+        33923,
+        61134,
+        61140,
+        116654,
+        116655
+      ]
+    },
+    "ANTHROPIC_DEFAULT_HAIKU_MODEL_NAME": {
+      "prefix": "ANTHROPIC_",
+      "forms": [
+        "other",
+        "property",
+        "string"
+      ],
+      "occurrences": 4,
+      "lines": [
+        33922,
+        61134,
+        61140,
+        116653
+      ]
+    },
+    "ANTHROPIC_DEFAULT_HAIKU_MODEL_SUPPORTED_CAPABILITIES": {
+      "prefix": "ANTHROPIC_",
+      "forms": [
+        "string"
+      ],
+      "occurrences": 3,
+      "lines": [
+        61134,
+        61140,
+        115086
+      ]
+    },
+    "ANTHROPIC_DEFAULT_OPUS_MODEL": {
+      "prefix": "ANTHROPIC_",
+      "forms": [
+        "other",
+        "property",
+        "string"
+      ],
+      "occurrences": 35,
+      "lines": [
+        33921,
+        61134,
+        61140,
+        107540,
+        107540,
+        107687,
+        107781,
+        108181,
+        115079,
+        116508,
+        191550,
+        393858,
+        395353,
+        401721,
+        401725,
+        405319,
+        405603,
+        412658,
+        412863,
+        412886,
+        412951,
+        413103,
+        413104,
+        413119,
+        413120,
+        413131,
+        562187,
+        562568,
+        626646,
+        626666,
+        630194,
+        631406,
+        631413,
+        632221,
+        792488
+      ]
+    },
+    "ANTHROPIC_DEFAULT_OPUS_MODEL_DESCRIPTION": {
+      "prefix": "ANTHROPIC_",
+      "forms": [
+        "other",
+        "process.env",
+        "property",
+        "string"
+      ],
+      "occurrences": 7,
+      "lines": [
+        33920,
+        61134,
+        61140,
+        116514,
+        116515,
+        413170,
+        413193
+      ]
+    },
+    "ANTHROPIC_DEFAULT_OPUS_MODEL_NAME": {
+      "prefix": "ANTHROPIC_",
+      "forms": [
+        "other",
+        "process.env",
+        "property",
+        "string"
+      ],
+      "occurrences": 6,
+      "lines": [
+        33919,
+        61134,
+        61140,
+        116513,
+        413170,
+        413193
+      ]
+    },
+    "ANTHROPIC_DEFAULT_OPUS_MODEL_SUPPORTED_CAPABILITIES": {
+      "prefix": "ANTHROPIC_",
+      "forms": [
+        "string"
+      ],
+      "occurrences": 3,
+      "lines": [
+        61134,
+        61140,
+        115080
+      ]
+    },
+    "ANTHROPIC_DEFAULT_SONNET_MODEL": {
+      "prefix": "ANTHROPIC_",
+      "forms": [
+        "other",
+        "property",
+        "string"
+      ],
+      "occurrences": 29,
+      "lines": [
+        33918,
+        61134,
+        61140,
+        107539,
+        107539,
+        107703,
+        107795,
+        108180,
+        115082,
+        116412,
+        401720,
+        401725,
+        405319,
+        405599,
+        412658,
+        412859,
+        413101,
+        413102,
+        413116,
+        413117,
+        413130,
+        562188,
+        626645,
+        626665,
+        630193,
+        631405,
+        631412,
+        632220,
+        792488
+      ]
+    },
+    "ANTHROPIC_DEFAULT_SONNET_MODEL_DESCRIPTION": {
+      "prefix": "ANTHROPIC_",
+      "forms": [
+        "other",
+        "property",
+        "string"
+      ],
+      "occurrences": 5,
+      "lines": [
+        33917,
+        61134,
+        61140,
+        116418,
+        116419
+      ]
+    },
+    "ANTHROPIC_DEFAULT_SONNET_MODEL_NAME": {
+      "prefix": "ANTHROPIC_",
+      "forms": [
+        "other",
+        "property",
+        "string"
+      ],
+      "occurrences": 4,
+      "lines": [
+        33916,
+        61134,
+        61140,
+        116417
+      ]
+    },
+    "ANTHROPIC_DEFAULT_SONNET_MODEL_SUPPORTED_CAPABILITIES": {
+      "prefix": "ANTHROPIC_",
+      "forms": [
+        "string"
+      ],
+      "occurrences": 3,
+      "lines": [
+        61134,
+        61140,
+        115083
+      ]
+    },
+    "ANTHROPIC_ENVIRONMENT_ID": {
+      "prefix": "ANTHROPIC_",
+      "forms": [
+        "process.env",
+        "string"
+      ],
+      "occurrences": 5,
+      "lines": [
+        826586,
+        826606,
+        826637,
+        826653,
+        826682
+      ]
+    },
+    "ANTHROPIC_ENVIRONMENT_KEY": {
+      "prefix": "ANTHROPIC_",
+      "forms": [
+        "other",
+        "process.env",
+        "string"
+      ],
+      "occurrences": 11,
+      "lines": [
+        825640,
+        826522,
+        826554,
+        826585,
+        826605,
+        826629,
+        826637,
+        826652,
+        826683,
+        826714,
+        826719
+      ]
+    },
+    "ANTHROPIC_FEDERATION_RULE_ID": {
+      "prefix": "ANTHROPIC_",
+      "forms": [
+        "other",
+        "process.env",
+        "string"
+      ],
+      "occurrences": 10,
+      "lines": [
+        17307,
+        17345,
+        17580,
+        27212,
+        104444,
+        104509,
+        105877,
+        583068,
+        584260,
+        825382
+      ]
+    },
+    "ANTHROPIC_FOUNDRY_API_KEY": {
+      "prefix": "ANTHROPIC_",
+      "forms": [
+        "other",
+        "process.env",
+        "string"
+      ],
+      "occurrences": 8,
+      "lines": [
+        27211,
+        61134,
+        61140,
+        127779,
+        562784,
+        562791,
+        579133,
+        823017
+      ]
+    },
+    "ANTHROPIC_FOUNDRY_AUTH_TOKEN": {
+      "prefix": "ANTHROPIC_",
+      "forms": [
+        "other",
+        "property",
+        "string"
+      ],
+      "occurrences": 5,
+      "lines": [
+        27210,
+        61134,
+        127779,
+        579132,
+        579132
+      ]
+    },
+    "ANTHROPIC_FOUNDRY_BASE_URL": {
+      "prefix": "ANTHROPIC_",
+      "forms": [
+        "other",
+        "property",
+        "string"
+      ],
+      "occurrences": 5,
+      "lines": [
+        34042,
+        61134,
+        194013,
+        562783,
+        693993
+      ]
+    },
+    "ANTHROPIC_FOUNDRY_RESOURCE": {
+      "prefix": "ANTHROPIC_",
+      "forms": [
+        "other",
+        "property",
+        "string"
+      ],
+      "occurrences": 7,
+      "lines": [
+        34041,
+        61134,
+        194013,
+        194013,
+        562785,
+        562794,
+        693998
+      ]
+    },
+    "ANTHROPIC_GOOGLE_CLOUD_BASE_URL": {
+      "prefix": "ANTHROPIC_",
+      "forms": [
+        "other",
+        "property",
+        "string"
+      ],
+      "occurrences": 6,
+      "lines": [
+        34040,
+        61134,
+        511957,
+        578877,
+        579355,
+        694024
+      ]
+    },
+    "ANTHROPIC_GOOGLE_CLOUD_LOCATION": {
+      "prefix": "ANTHROPIC_",
+      "forms": [
+        "other",
+        "property",
+        "string"
+      ],
+      "occurrences": 7,
+      "lines": [
+        34039,
+        61134,
+        511957,
+        578879,
+        579203,
+        579203,
+        694041
+      ]
+    },
+    "ANTHROPIC_GOOGLE_CLOUD_PROJECT": {
+      "prefix": "ANTHROPIC_",
+      "forms": [
+        "other",
+        "property",
+        "string"
+      ],
+      "occurrences": 8,
+      "lines": [
+        34038,
+        61134,
+        511957,
+        578862,
+        578878,
+        579203,
+        579203,
+        694034
+      ]
+    },
+    "ANTHROPIC_GOOGLE_CLOUD_WORKSPACE_ID": {
+      "prefix": "ANTHROPIC_",
+      "forms": [
+        "other",
+        "property",
+        "string"
+      ],
+      "occurrences": 8,
+      "lines": [
+        34037,
+        61134,
+        511957,
+        578880,
+        578891,
+        579203,
+        579203,
+        694029
+      ]
+    },
+    "ANTHROPIC_IDENTITY_TOKEN": {
+      "prefix": "ANTHROPIC_",
+      "forms": [
+        "other",
+        "string"
+      ],
+      "occurrences": 3,
+      "lines": [
+        17579,
+        17622,
+        825382
+      ]
+    },
+    "ANTHROPIC_IDENTITY_TOKEN_FILE": {
+      "prefix": "ANTHROPIC_",
+      "forms": [
+        "other",
+        "string"
+      ],
+      "occurrences": 6,
+      "lines": [
+        17306,
+        17339,
+        17579,
+        17620,
+        105880,
+        825382
+      ]
+    },
+    "ANTHROPIC_LOG": {
+      "prefix": "ANTHROPIC_",
+      "forms": [
+        "other",
+        "string"
+      ],
+      "occurrences": 4,
+      "lines": [
+        21259,
+        21259,
+        501719,
+        823886
+      ]
+    },
+    "ANTHROPIC_MODEL": {
+      "prefix": "ANTHROPIC_",
+      "forms": [
+        "other",
+        "process.env",
+        "property",
+        "string"
+      ],
+      "occurrences": 15,
+      "lines": [
+        33915,
+        61134,
+        61140,
+        107612,
+        108465,
+        115294,
+        201312,
+        337356,
+        337357,
+        394002,
+        394015,
+        602298,
+        792488,
+        860341,
+        897684
+      ]
+    },
+    "ANTHROPIC_ORGANIZATION_ID": {
+      "prefix": "ANTHROPIC_",
+      "forms": [
+        "other",
+        "process.env",
+        "string"
+      ],
+      "occurrences": 10,
+      "lines": [
+        17305,
+        17337,
+        17581,
+        27209,
+        104444,
+        104509,
+        105878,
+        583068,
+        584260,
+        825382
+      ]
+    },
+    "ANTHROPIC_PROFILE": {
+      "prefix": "ANTHROPIC_",
+      "forms": [
+        "other",
+        "process.env",
+        "string"
+      ],
+      "occurrences": 13,
+      "lines": [
+        17382,
+        27208,
+        104448,
+        104511,
+        104530,
+        104538,
+        584786,
+        825382,
+        825382,
+        825487,
+        825487,
+        825487,
+        825487
+      ]
+    },
+    "ANTHROPIC_SCOPE": {
+      "prefix": "ANTHROPIC_",
+      "forms": [
+        "string"
+      ],
+      "occurrences": 3,
+      "lines": [
+        17322,
+        17337,
+        105893
+      ]
+    },
+    "ANTHROPIC_SERVICE_ACCOUNT_ID": {
+      "prefix": "ANTHROPIC_",
+      "forms": [
+        "string"
+      ],
+      "occurrences": 4,
+      "lines": [
+        17317,
+        17346,
+        105888,
+        825382
+      ]
+    },
+    "ANTHROPIC_SESSION_ID": {
+      "prefix": "ANTHROPIC_",
+      "forms": [
+        "string"
+      ],
+      "occurrences": 1,
+      "lines": [
+        826680
+      ]
+    },
+    "ANTHROPIC_SMALL_FAST_MODEL": {
+      "prefix": "ANTHROPIC_",
+      "forms": [
+        "other",
+        "process.env",
+        "property",
+        "string"
+      ],
+      "occurrences": 17,
+      "lines": [
+        33914,
+        61134,
+        61140,
+        107545,
+        107552,
+        337359,
+        337360,
+        405607,
+        412867,
+        413107,
+        413108,
+        626649,
+        631409,
+        863224,
+        863225,
+        863326,
+        863327
+      ]
+    },
+    "ANTHROPIC_SMALL_FAST_MODEL_AWS_REGION": {
+      "prefix": "ANTHROPIC_",
+      "forms": [
+        "other",
+        "process.env",
+        "property",
+        "string"
+      ],
+      "occurrences": 7,
+      "lines": [
+        34036,
+        61134,
+        61140,
+        64228,
+        405508,
+        405508,
+        579368
+      ]
+    },
+    "ANTHROPIC_UNIX_SOCKET": {
+      "prefix": "ANTHROPIC_",
+      "forms": [
+        "other",
+        "process.env",
+        "property",
+        "string"
+      ],
+      "occurrences": 22,
+      "lines": [
+        34035,
+        61110,
+        61139,
+        61231,
+        89006,
+        192794,
+        192869,
+        192869,
+        192975,
+        192975,
+        194190,
+        200341,
+        230926,
+        230928,
+        393433,
+        393462,
+        547750,
+        582795,
+        582867,
+        584327,
+        584508,
+        721288
+      ]
+    },
+    "ANTHROPIC_VERTEX_BASE_URL": {
+      "prefix": "ANTHROPIC_",
+      "forms": [
+        "other",
+        "process.env",
+        "property",
+        "string"
+      ],
+      "occurrences": 9,
+      "lines": [
+        34034,
+        61134,
+        412552,
+        412828,
+        497755,
+        499161,
+        579357,
+        631662,
+        693976
+      ]
+    },
+    "ANTHROPIC_VERTEX_PROJECT_ID": {
+      "prefix": "ANTHROPIC_",
+      "forms": [
+        "other",
+        "process.env",
+        "property",
+        "string"
+      ],
+      "occurrences": 9,
+      "lines": [
+        34033,
+        61134,
+        412554,
+        412597,
+        412605,
+        412815,
+        579291,
+        631402,
+        693981
+      ]
+    },
+    "ANTHROPIC_WEBHOOK_SIGNING_KEY": {
+      "prefix": "ANTHROPIC_",
+      "forms": [
+        "other",
+        "string"
+      ],
+      "occurrences": 4,
+      "lines": [
+        826656,
+        826715,
+        826746,
+        826752
+      ]
+    },
+    "ANTHROPIC_WORK_ID": {
+      "prefix": "ANTHROPIC_",
+      "forms": [
+        "string"
+      ],
+      "occurrences": 1,
+      "lines": [
+        826681
+      ]
+    },
+    "ANTHROPIC_WORKSPACE_ID": {
+      "prefix": "ANTHROPIC_",
+      "forms": [
+        "other",
+        "process.env",
+        "string"
+      ],
+      "occurrences": 7,
+      "lines": [
+        17312,
+        17337,
+        17456,
+        27207,
+        104443,
+        105883,
+        825382
+      ]
+    },
+    "CLAUDE_CODE_3P_PROBE_WROTE_OPUS_DEFAULT": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property",
+        "string"
+      ],
+      "occurrences": 5,
+      "lines": [
+        33913,
+        61134,
+        107540,
+        401721,
+        401726
+      ]
+    },
+    "CLAUDE_CODE_3P_PROBE_WROTE_SONNET_DEFAULT": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property",
+        "string"
+      ],
+      "occurrences": 6,
+      "lines": [
+        33912,
+        61134,
+        107539,
+        107704,
+        401720,
+        401726
+      ]
+    },
+    "CLAUDE_CODE_ACCESSIBILITY": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property",
+        "string"
+      ],
+      "occurrences": 6,
+      "lines": [
+        33421,
+        61140,
+        262917,
+        266341,
+        267552,
+        267558
+      ]
+    },
+    "CLAUDE_CODE_ACCOUNT_TAGGED_ID": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property"
+      ],
+      "occurrences": 2,
+      "lines": [
+        27201,
+        127905
+      ]
+    },
+    "CLAUDE_CODE_ACCOUNT_UUID": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env",
+        "property",
+        "string"
+      ],
+      "occurrences": 6,
+      "lines": [
+        27200,
+        231195,
+        498726,
+        582351,
+        585205,
+        587540
+      ]
+    },
+    "CLAUDE_CODE_ACT_DONT_REDERIVE": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property"
+      ],
+      "occurrences": 2,
+      "lines": [
+        33420,
+        497692
+      ]
+    },
+    "CLAUDE_CODE_ACTION": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env",
+        "property"
+      ],
+      "occurrences": 3,
+      "lines": [
+        33796,
+        49232,
+        580980
+      ]
+    },
+    "CLAUDE_CODE_ADDITIONAL_DIRECTORIES_CLAUDE_MD": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property"
+      ],
+      "occurrences": 4,
+      "lines": [
+        33795,
+        199824,
+        876226,
+        876227
+      ]
+    },
+    "CLAUDE_CODE_ADDITIONAL_PROTECTION": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env"
+      ],
+      "occurrences": 2,
+      "lines": [
+        33794,
+        579035
+      ]
+    },
+    "CLAUDE_CODE_AGENT": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env",
+        "property"
+      ],
+      "occurrences": 3,
+      "lines": [
+        33793,
+        109466,
+        859824
+      ]
+    },
+    "CLAUDE_CODE_AGENT_PROXY_GH_SHIM": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property",
+        "string"
+      ],
+      "occurrences": 4,
+      "lines": [
+        34018,
+        231195,
+        857943,
+        858049
+      ]
+    },
+    "CLAUDE_CODE_AGENT_PROXY_GIT_CONFIG": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property",
+        "string"
+      ],
+      "occurrences": 4,
+      "lines": [
+        34017,
+        231195,
+        857941,
+        858049
+      ]
+    },
+    "CLAUDE_CODE_AGENT_VIEW_RELAUNCH": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "string"
+      ],
+      "occurrences": 1,
+      "lines": [
+        394303
+      ]
+    },
+    "CLAUDE_CODE_ALT_SCREEN_FULL_REPAINT": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env",
+        "property"
+      ],
+      "occurrences": 6,
+      "lines": [
+        33419,
+        266341,
+        269087,
+        603245,
+        685847,
+        833596
+      ]
+    },
+    "CLAUDE_CODE_ALTGR_AS_TEXT": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "property"
+      ],
+      "occurrences": 1,
+      "lines": [
+        252212
+      ]
+    },
+    "CLAUDE_CODE_ALWAYS_ENABLE_EFFORT": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property",
+        "string"
+      ],
+      "occurrences": 3,
+      "lines": [
+        33911,
+        61140,
+        115635
+      ]
+    },
+    "CLAUDE_CODE_AMBER_ASTROLABE": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property"
+      ],
+      "occurrences": 2,
+      "lines": [
+        33418,
+        115004
+      ]
+    },
+    "CLAUDE_CODE_API_BASE_URL": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env"
+      ],
+      "occurrences": 2,
+      "lines": [
+        34016,
+        451152
+      ]
+    },
+    "CLAUDE_CODE_API_KEY_FILE_DESCRIPTOR": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env",
+        "property",
+        "string"
+      ],
+      "occurrences": 8,
+      "lines": [
+        27199,
+        118640,
+        192869,
+        192869,
+        231193,
+        582881,
+        584341,
+        584495
+      ]
+    },
+    "CLAUDE_CODE_API_KEY_HELPER_TTL_MS": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property",
+        "string"
+      ],
+      "occurrences": 4,
+      "lines": [
+        27198,
+        61140,
+        583153,
+        583156
+      ]
+    },
+    "CLAUDE_CODE_ARTIFACT": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property",
+        "string"
+      ],
+      "occurrences": 6,
+      "lines": [
+        33792,
+        123026,
+        123027,
+        123041,
+        127702,
+        191881
+      ]
+    },
+    "CLAUDE_CODE_ARTIFACT_ASSET_BASE_URL": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "string"
+      ],
+      "occurrences": 3,
+      "lines": [
+        33789,
+        61134,
+        230935
+      ]
+    },
+    "CLAUDE_CODE_ARTIFACT_AUTO_OPEN": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property"
+      ],
+      "occurrences": 2,
+      "lines": [
+        33788,
+        537177
+      ]
+    },
+    "CLAUDE_CODE_ARTIFACT_COMMENTS": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property"
+      ],
+      "occurrences": 2,
+      "lines": [
+        33417,
+        530833
+      ]
+    },
+    "CLAUDE_CODE_ARTIFACT_COMMENTS_AUTOREACT": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property"
+      ],
+      "occurrences": 2,
+      "lines": [
+        33416,
+        532196
+      ]
+    },
+    "CLAUDE_CODE_ARTIFACT_DIRECT_UPLOAD": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property"
+      ],
+      "occurrences": 2,
+      "lines": [
+        33415,
+        492069
+      ]
+    },
+    "CLAUDE_CODE_ARTIFACT_LIVE_BASE_URL": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "string"
+      ],
+      "occurrences": 3,
+      "lines": [
+        33787,
+        61134,
+        230936
+      ]
+    },
+    "CLAUDE_CODE_ARTIFACT_MCP": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "property"
+      ],
+      "occurrences": 1,
+      "lines": [
+        533890
+      ]
+    },
+    "CLAUDE_CODE_ARTIFACTS_API_BASE_URL": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "string"
+      ],
+      "occurrences": 3,
+      "lines": [
+        33791,
+        61134,
+        230933
+      ]
+    },
+    "CLAUDE_CODE_ARTIFACTS_API_TOKEN": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env",
+        "property",
+        "string"
+      ],
+      "occurrences": 6,
+      "lines": [
+        33790,
+        61134,
+        127715,
+        127727,
+        127779,
+        230934
+      ]
+    },
+    "CLAUDE_CODE_ASSUME_FIRST_PARTY_BASE_URL": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other"
+      ],
+      "occurrences": 8,
+      "lines": [
+        33998,
+        61134,
+        61134,
+        98321,
+        191881,
+        192988,
+        192988,
+        499135
+      ]
+    },
+    "CLAUDE_CODE_ATTRIBUTION_HEADER": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env"
+      ],
+      "occurrences": 2,
+      "lines": [
+        33973,
+        108770
+      ]
+    },
+    "CLAUDE_CODE_AUTH_FAIL_EXIT_MS": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property"
+      ],
+      "occurrences": 3,
+      "lines": [
+        27197,
+        583680,
+        583740
+      ]
+    },
+    "CLAUDE_CODE_AUTO_BACKGROUND_TIMEOUT_MS": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "property"
+      ],
+      "occurrences": 1,
+      "lines": [
+        328650
+      ]
+    },
+    "CLAUDE_CODE_AUTO_COMPACT_WINDOW": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env",
+        "string"
+      ],
+      "occurrences": 9,
+      "lines": [
+        33786,
+        61140,
+        200662,
+        200663,
+        200663,
+        393137,
+        393145,
+        688247,
+        688379
+      ]
+    },
+    "CLAUDE_CODE_AUTO_CONNECT_IDE": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property"
+      ],
+      "occurrences": 3,
+      "lines": [
+        33414,
+        271233,
+        271234
+      ]
+    },
+    "CLAUDE_CODE_AUTO_MODE_CLASSIFY_EDITS": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "property"
+      ],
+      "occurrences": 1,
+      "lines": [
+        503309
+      ]
+    },
+    "CLAUDE_CODE_AUTO_MODE_EDIT_REMOVAL": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "property"
+      ],
+      "occurrences": 1,
+      "lines": [
+        318773
+      ]
+    },
+    "CLAUDE_CODE_AUTO_MODE_EDIT_REMOVAL_CAP": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "property"
+      ],
+      "occurrences": 1,
+      "lines": [
+        318793
+      ]
+    },
+    "CLAUDE_CODE_AUTO_MODE_EXTERNAL_PERMISSIONS": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other"
+      ],
+      "occurrences": 1,
+      "lines": [
+        33785
+      ]
+    },
+    "CLAUDE_CODE_AUTO_MODE_GIT_STATUS": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "property"
+      ],
+      "occurrences": 1,
+      "lines": [
+        369264
+      ]
+    },
+    "CLAUDE_CODE_AUTO_MODE_GIT_STATUS_LIMIT": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "property"
+      ],
+      "occurrences": 1,
+      "lines": [
+        369304
+      ]
+    },
+    "CLAUDE_CODE_AUTO_MODE_GIT_STATUS_UPLOADS": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "property"
+      ],
+      "occurrences": 1,
+      "lines": [
+        369284
+      ]
+    },
+    "CLAUDE_CODE_AUTO_MODE_MODEL": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "string"
+      ],
+      "occurrences": 3,
+      "lines": [
+        33910,
+        61135,
+        64228
+      ]
+    },
+    "CLAUDE_CODE_AUTO_MODE_OUTCOME_CODES": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "property"
+      ],
+      "occurrences": 2,
+      "lines": [
+        325925,
+        372177
+      ]
+    },
+    "CLAUDE_CODE_AUTO_MODE_PRIOR_ASSISTANT_CONTEXT": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "property"
+      ],
+      "occurrences": 2,
+      "lines": [
+        370942,
+        370943
+      ]
+    },
+    "CLAUDE_CODE_AUTO_MODE_REPO_VISIBILITY": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "property"
+      ],
+      "occurrences": 1,
+      "lines": [
+        193915
+      ]
+    },
+    "CLAUDE_CODE_AUTO_MODE_TEMPERATURE": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "property"
+      ],
+      "occurrences": 1,
+      "lines": [
+        372172
+      ]
+    },
+    "CLAUDE_CODE_AWS_CHAIN_RESOLVE_TIMEOUT_MS": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property"
+      ],
+      "occurrences": 2,
+      "lines": [
+        27196,
+        583351
+      ]
+    },
+    "CLAUDE_CODE_BASALT_COVE": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property"
+      ],
+      "occurrences": 2,
+      "lines": [
+        33413,
+        114970
+      ]
+    },
+    "CLAUDE_CODE_BASE_REF": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property",
+        "string"
+      ],
+      "occurrences": 3,
+      "lines": [
+        33784,
+        318702,
+        898930
+      ]
+    },
+    "CLAUDE_CODE_BASE_REFS": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env",
+        "string"
+      ],
+      "occurrences": 3,
+      "lines": [
+        33783,
+        123358,
+        898930
+      ]
+    },
+    "CLAUDE_CODE_BASH_SANDBOX_SHOW_INDICATOR": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env"
+      ],
+      "occurrences": 2,
+      "lines": [
+        33412,
+        363239
+      ]
+    },
+    "CLAUDE_CODE_BENCH_LIVE_COUNTS": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env"
+      ],
+      "occurrences": 2,
+      "lines": [
+        27288,
+        266341
+      ]
+    },
+    "CLAUDE_CODE_BG_CLASSIFIER_MODEL": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "string"
+      ],
+      "occurrences": 3,
+      "lines": [
+        33909,
+        61135,
+        64228
+      ]
+    },
+    "CLAUDE_CODE_BG_TASKS_REPORT_RUNNING": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property"
+      ],
+      "occurrences": 4,
+      "lines": [
+        33411,
+        872050,
+        872059,
+        875994
+      ]
+    },
+    "CLAUDE_CODE_BISON_CAIRN": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property"
+      ],
+      "occurrences": 2,
+      "lines": [
+        33410,
+        115008
+      ]
+    },
+    "CLAUDE_CODE_BLOCKING_LIMIT_OVERRIDE": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env"
+      ],
+      "occurrences": 2,
+      "lines": [
+        33782,
+        200780
+      ]
+    },
+    "CLAUDE_CODE_BRIDGE_SESSION_ID": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env",
+        "property",
+        "string"
+      ],
+      "occurrences": 6,
+      "lines": [
+        33781,
+        345196,
+        345197,
+        602298,
+        708584,
+        898930
+      ]
+    },
+    "CLAUDE_CODE_BRIEF": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property"
+      ],
+      "occurrences": 6,
+      "lines": [
+        33780,
+        349882,
+        628906,
+        670912,
+        793938,
+        859672
+      ]
+    },
+    "CLAUDE_CODE_BRIEF_UPLOAD": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env"
+      ],
+      "occurrences": 2,
+      "lines": [
+        33779,
+        515174
+      ]
+    },
+    "CLAUDE_CODE_BS_AS_CTRL_BACKSPACE": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "property"
+      ],
+      "occurrences": 1,
+      "lines": [
+        252201
+      ]
+    },
+    "CLAUDE_CODE_BUBBLEWRAP": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property"
+      ],
+      "occurrences": 4,
+      "lines": [
+        33409,
+        106045,
+        106049,
+        616560
+      ]
+    },
+    "CLAUDE_CODE_BYOC_ENABLE_DATADOG": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env"
+      ],
+      "occurrences": 2,
+      "lines": [
+        27287,
+        103911
+      ]
+    },
+    "CLAUDE_CODE_CERT_STORE": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env",
+        "property",
+        "string"
+      ],
+      "occurrences": 7,
+      "lines": [
+        33972,
+        61135,
+        61231,
+        66613,
+        66621,
+        897254,
+        897254
+      ]
+    },
+    "CLAUDE_CODE_CHILD_SESSION": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property",
+        "string"
+      ],
+      "occurrences": 14,
+      "lines": [
+        33408,
+        49217,
+        109177,
+        109182,
+        109204,
+        109219,
+        129458,
+        302491,
+        309330,
+        322263,
+        602298,
+        708584,
+        779473,
+        898930
+      ]
+    },
+    "CLAUDE_CODE_CLASSIFIER_SUMMARY": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env"
+      ],
+      "occurrences": 3,
+      "lines": [
+        33778,
+        349781,
+        349781
+      ]
+    },
+    "CLAUDE_CODE_CLIENT_CERT": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env",
+        "property",
+        "string"
+      ],
+      "occurrences": 14,
+      "lines": [
+        33971,
+        61138,
+        61231,
+        67019,
+        67021,
+        67028,
+        67030,
+        231151,
+        231156,
+        231161,
+        694077,
+        694079,
+        721288,
+        897251
+      ]
+    },
+    "CLAUDE_CODE_CLIENT_KEY": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property",
+        "string"
+      ],
+      "occurrences": 13,
+      "lines": [
+        33970,
+        61138,
+        61231,
+        67020,
+        67021,
+        67033,
+        67035,
+        231152,
+        231156,
+        231161,
+        694081,
+        694083,
+        721288
+      ]
+    },
+    "CLAUDE_CODE_CLIENT_KEY_PASSPHRASE": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property",
+        "string"
+      ],
+      "occurrences": 4,
+      "lines": [
+        33969,
+        61138,
+        61231,
+        67038
+      ]
+    },
+    "CLAUDE_CODE_COLD_COMPACT": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env"
+      ],
+      "occurrences": 2,
+      "lines": [
+        33407,
+        367227
+      ]
+    },
+    "CLAUDE_CODE_COMMIT_LOG": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env"
+      ],
+      "occurrences": 2,
+      "lines": [
+        27286,
+        260092
+      ]
+    },
+    "CLAUDE_CODE_CONTAINER_ID": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env",
+        "property",
+        "string"
+      ],
+      "occurrences": 7,
+      "lines": [
+        33777,
+        127371,
+        231195,
+        459244,
+        579007,
+        580970,
+        580971
+      ]
+    },
+    "CLAUDE_CODE_COORDINATOR_EXTRA_TOOLS": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "process.env"
+      ],
+      "occurrences": 1,
+      "lines": [
+        793939
+      ]
+    },
+    "CLAUDE_CODE_COORDINATOR_MODE": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env",
+        "string"
+      ],
+      "occurrences": 6,
+      "lines": [
+        196365,
+        196449,
+        196450,
+        196453,
+        602298,
+        866245
+      ]
+    },
+    "CLAUDE_CODE_COORDINATOR_PROPAGATE_NESTED_MEMORY": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "property"
+      ],
+      "occurrences": 1,
+      "lines": [
+        463373
+      ]
+    },
+    "CLAUDE_CODE_CUSTOM_OAUTH_URL": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env",
+        "string"
+      ],
+      "occurrences": 5,
+      "lines": [
+        27195,
+        27359,
+        27410,
+        27413,
+        61231
+      ]
+    },
+    "CLAUDE_CODE_DAEMON_COLD_START": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env"
+      ],
+      "occurrences": 2,
+      "lines": [
+        33776,
+        586375
+      ]
+    },
+    "CLAUDE_CODE_DATADOG_FLUSH_INTERVAL_MS": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env"
+      ],
+      "occurrences": 2,
+      "lines": [
+        27285,
+        587298
+      ]
+    },
+    "CLAUDE_CODE_DD_ERROR_TRACKING_FLUSH_INTERVAL_MS": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env"
+      ],
+      "occurrences": 2,
+      "lines": [
+        27284,
+        123884
+      ]
+    },
+    "CLAUDE_CODE_DEBUG_LOG_LEVEL": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env"
+      ],
+      "occurrences": 2,
+      "lines": [
+        23699,
+        27282
+      ]
+    },
+    "CLAUDE_CODE_DEBUG_LOGS_DIR": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env"
+      ],
+      "occurrences": 2,
+      "lines": [
+        23664,
+        27283
+      ]
+    },
+    "CLAUDE_CODE_DEBUG_REPAINTS": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property"
+      ],
+      "occurrences": 2,
+      "lines": [
+        27281,
+        260031
+      ]
+    },
+    "CLAUDE_CODE_DECSTBM": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env"
+      ],
+      "occurrences": 2,
+      "lines": [
+        33775,
+        267538
+      ]
+    },
+    "CLAUDE_CODE_DESIGN_OAUTH_CLIENT_ID": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property"
+      ],
+      "occurrences": 4,
+      "lines": [
+        27194,
+        400477,
+        400521,
+        702516
+      ]
+    },
+    "CLAUDE_CODE_DEV_RAW_CHANGELOG_URL": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other"
+      ],
+      "occurrences": 1,
+      "lines": [
+        33774
+      ]
+    },
+    "CLAUDE_CODE_DIAGNOSTICS_FILE": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property",
+        "string"
+      ],
+      "occurrences": 3,
+      "lines": [
+        27280,
+        55440,
+        898930
+      ]
+    },
+    "CLAUDE_CODE_DISABLE_1M_CONTEXT": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property"
+      ],
+      "occurrences": 2,
+      "lines": [
+        33908,
+        579822
+      ]
+    },
+    "CLAUDE_CODE_DISABLE_ADAPTIVE_THINKING": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env",
+        "string"
+      ],
+      "occurrences": 3,
+      "lines": [
+        33406,
+        61140,
+        499499
+      ]
+    },
+    "CLAUDE_CODE_DISABLE_ADVISOR_TOOL": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property",
+        "string"
+      ],
+      "occurrences": 3,
+      "lines": [
+        33405,
+        61140,
+        316634
+      ]
+    },
+    "CLAUDE_CODE_DISABLE_AGENT_VIEW": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env",
+        "string"
+      ],
+      "occurrences": 5,
+      "lines": [
+        33404,
+        61140,
+        62797,
+        232436,
+        232436
+      ]
+    },
+    "CLAUDE_CODE_DISABLE_ALTERNATE_SCREEN": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property",
+        "string"
+      ],
+      "occurrences": 4,
+      "lines": [
+        33403,
+        61140,
+        125756,
+        762202
+      ]
+    },
+    "CLAUDE_CODE_DISABLE_ARTIFACT": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property",
+        "string"
+      ],
+      "occurrences": 6,
+      "lines": [
+        33402,
+        61140,
+        62800,
+        123002,
+        123077,
+        123122
+      ]
+    },
+    "CLAUDE_CODE_DISABLE_ATTACHMENTS": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property"
+      ],
+      "occurrences": 3,
+      "lines": [
+        33401,
+        497427,
+        559866
+      ]
+    },
+    "CLAUDE_CODE_DISABLE_AUTO_MEMORY": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env"
+      ],
+      "occurrences": 3,
+      "lines": [
+        33400,
+        122707,
+        585601
+      ]
+    },
+    "CLAUDE_CODE_DISABLE_BACKGROUND_TASKS": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property",
+        "string"
+      ],
+      "occurrences": 3,
+      "lines": [
+        33399,
+        61140,
+        179930
+      ]
+    },
+    "CLAUDE_CODE_DISABLE_BEDROCK_CONTENT_TYPE_GUARD": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property"
+      ],
+      "occurrences": 3,
+      "lines": [
+        33398,
+        579623,
+        579718
+      ]
+    },
+    "CLAUDE_CODE_DISABLE_BG_EXIT_HANDOFF": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property"
+      ],
+      "occurrences": 2,
+      "lines": [
+        33397,
+        614831
+      ]
+    },
+    "CLAUDE_CODE_DISABLE_BG_SHELL_PRESSURE_REAP": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property"
+      ],
+      "occurrences": 2,
+      "lines": [
+        33773,
+        353482
+      ]
+    },
+    "CLAUDE_CODE_DISABLE_BUNDLED_SKILLS": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property",
+        "string"
+      ],
+      "occurrences": 7,
+      "lines": [
+        33396,
+        61140,
+        62786,
+        122958,
+        506473,
+        506476,
+        506476
+      ]
+    },
+    "CLAUDE_CODE_DISABLE_CLAUDE_API_SKILL": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env"
+      ],
+      "occurrences": 2,
+      "lines": [
+        33395,
+        832862
+      ]
+    },
+    "CLAUDE_CODE_DISABLE_CLAUDE_CODE_SKILL": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env"
+      ],
+      "occurrences": 2,
+      "lines": [
+        33394,
+        832868
+      ]
+    },
+    "CLAUDE_CODE_DISABLE_CLAUDE_MDS": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env",
+        "property"
+      ],
+      "occurrences": 10,
+      "lines": [
+        33393,
+        181752,
+        199559,
+        199569,
+        199597,
+        560432,
+        560667,
+        639353,
+        691219,
+        859773
+      ]
+    },
+    "CLAUDE_CODE_DISABLE_CRON": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env",
+        "string"
+      ],
+      "occurrences": 3,
+      "lines": [
+        33392,
+        61140,
+        196001
+      ]
+    },
+    "CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property",
+        "string"
+      ],
+      "occurrences": 3,
+      "lines": [
+        33391,
+        61140,
+        106202
+      ]
+    },
+    "CLAUDE_CODE_DISABLE_EXPLORE_INHERIT_CAP": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property"
+      ],
+      "occurrences": 2,
+      "lines": [
+        33907,
+        232674
+      ]
+    },
+    "CLAUDE_CODE_DISABLE_EXPLORE_PLAN_AGENTS": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property",
+        "string"
+      ],
+      "occurrences": 3,
+      "lines": [
+        33390,
+        61140,
+        233002
+      ]
+    },
+    "CLAUDE_CODE_DISABLE_FAST_MODE": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env",
+        "property",
+        "string"
+      ],
+      "occurrences": 4,
+      "lines": [
+        33906,
+        61140,
+        106345,
+        350417
+      ]
+    },
+    "CLAUDE_CODE_DISABLE_FEEDBACK_SURVEY": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property",
+        "string"
+      ],
+      "occurrences": 10,
+      "lines": [
+        33389,
+        61140,
+        842674,
+        843300,
+        843467,
+        844718,
+        844900,
+        845139,
+        871519,
+        871536
+      ]
+    },
+    "CLAUDE_CODE_DISABLE_FILE_CHECKPOINTING": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property",
+        "string"
+      ],
+      "occurrences": 6,
+      "lines": [
+        33388,
+        61140,
+        317229,
+        317233,
+        396835,
+        696171
+      ]
+    },
+    "CLAUDE_CODE_DISABLE_GIT_INSTRUCTIONS": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env"
+      ],
+      "occurrences": 2,
+      "lines": [
+        33387,
+        199900
+      ]
+    },
+    "CLAUDE_CODE_DISABLE_LAUNCH_COMPOSER": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other"
+      ],
+      "occurrences": 1,
+      "lines": [
+        33386
+      ]
+    },
+    "CLAUDE_CODE_DISABLE_LEGACY_MODEL_REMAP": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property",
+        "string"
+      ],
+      "occurrences": 5,
+      "lines": [
+        33905,
+        61140,
+        107131,
+        107142,
+        108548
+      ]
+    },
+    "CLAUDE_CODE_DISABLE_MEMORY_BULK_INFLATE": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property"
+      ],
+      "occurrences": 2,
+      "lines": [
+        33385,
+        360457
+      ]
+    },
+    "CLAUDE_CODE_DISABLE_MEMORY_MASS_DELETE_HOLD": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property"
+      ],
+      "occurrences": 2,
+      "lines": [
+        33384,
+        359728
+      ]
+    },
+    "CLAUDE_CODE_DISABLE_MEMORY_PERIODIC_RESYNC": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property"
+      ],
+      "occurrences": 2,
+      "lines": [
+        33383,
+        360892
+      ]
+    },
+    "CLAUDE_CODE_DISABLE_MEMORY_STREAM_LIST": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property"
+      ],
+      "occurrences": 2,
+      "lines": [
+        33382,
+        360253
+      ]
+    },
+    "CLAUDE_CODE_DISABLE_MOUSE": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property",
+        "string"
+      ],
+      "occurrences": 4,
+      "lines": [
+        33381,
+        61140,
+        125845,
+        125845
+      ]
+    },
+    "CLAUDE_CODE_DISABLE_MOUSE_CLICKS": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property",
+        "string"
+      ],
+      "occurrences": 4,
+      "lines": [
+        33380,
+        61140,
+        125846,
+        125846
+      ]
+    },
+    "CLAUDE_CODE_DISABLE_NESTED_CHAIN_IDLE": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property"
+      ],
+      "occurrences": 2,
+      "lines": [
+        33379,
+        526151
+      ]
+    },
+    "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env",
+        "string"
+      ],
+      "occurrences": 14,
+      "lines": [
+        27636,
+        27651,
+        27651,
+        27656,
+        27656,
+        33378,
+        61140,
+        511957,
+        521912,
+        524004,
+        596343,
+        639354,
+        641714,
+        816533
+      ]
+    },
+    "CLAUDE_CODE_DISABLE_NONSTREAMING_FALLBACK": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env",
+        "string"
+      ],
+      "occurrences": 3,
+      "lines": [
+        33377,
+        61140,
+        500783
+      ]
+    },
+    "CLAUDE_CODE_DISABLE_NOTIFICATION_PRESENCE_CHECK": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property"
+      ],
+      "occurrences": 2,
+      "lines": [
+        33376,
+        521622
+      ]
+    },
+    "CLAUDE_CODE_DISABLE_OFFICIAL_MARKETPLACE_AUTOINSTALL": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property"
+      ],
+      "occurrences": 2,
+      "lines": [
+        33375,
+        846897
+      ]
+    },
+    "CLAUDE_CODE_DISABLE_ORG_MEMORY": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property"
+      ],
+      "occurrences": 4,
+      "lines": [
+        33374,
+        119753,
+        119963,
+        120796
+      ]
+    },
+    "CLAUDE_CODE_DISABLE_POLICY_SKILLS": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env"
+      ],
+      "occurrences": 2,
+      "lines": [
+        33373,
+        364339
+      ]
+    },
+    "CLAUDE_CODE_DISABLE_PRECOMPACT_SKIP": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env",
+        "property"
+      ],
+      "occurrences": 3,
+      "lines": [
+        33372,
+        554250,
+        598792
+      ]
+    },
+    "CLAUDE_CODE_DISABLE_REFUSAL_FALLBACK": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property"
+      ],
+      "occurrences": 2,
+      "lines": [
+        33371,
+        562157
+      ]
+    },
+    "CLAUDE_CODE_DISABLE_TERMINAL_TITLE": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property",
+        "string"
+      ],
+      "occurrences": 8,
+      "lines": [
+        33370,
+        61140,
+        267440,
+        449759,
+        836762,
+        852176,
+        863893,
+        879945
+      ]
+    },
+    "CLAUDE_CODE_DISABLE_THINKING": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env",
+        "string"
+      ],
+      "occurrences": 3,
+      "lines": [
+        33369,
+        61140,
+        499494
+      ]
+    },
+    "CLAUDE_CODE_DISABLE_VIRTUAL_SCROLL": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property",
+        "string"
+      ],
+      "occurrences": 4,
+      "lines": [
+        33368,
+        61140,
+        720617,
+        852177
+      ]
+    },
+    "CLAUDE_CODE_DISABLE_WORKFLOWS": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env",
+        "string"
+      ],
+      "occurrences": 5,
+      "lines": [
+        33367,
+        61140,
+        62799,
+        115559,
+        115582
+      ]
+    },
+    "CLAUDE_CODE_DISABLE_WORKING_SYNC": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property"
+      ],
+      "occurrences": 2,
+      "lines": [
+        33772,
+        874097
+      ]
+    },
+    "CLAUDE_CODE_DISPATCH_V2S": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "property"
+      ],
+      "occurrences": 1,
+      "lines": [
+        500001
+      ]
+    },
+    "CLAUDE_CODE_DONT_INHERIT_ENV": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env"
+      ],
+      "occurrences": 3,
+      "lines": [
+        33771,
+        322466,
+        322510
+      ]
+    },
+    "CLAUDE_CODE_DOWNLOAD_DEADLINE_MS_FOR_TESTING": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property"
+      ],
+      "occurrences": 2,
+      "lines": [
+        33770,
+        590124
+      ]
+    },
+    "CLAUDE_CODE_EAGER_FLUSH": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property"
+      ],
+      "occurrences": 6,
+      "lines": [
+        33968,
+        870078,
+        870284,
+        870894,
+        870925,
+        870970
+      ]
+    },
+    "CLAUDE_CODE_EFFORT_LEVEL": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env",
+        "string"
+      ],
+      "occurrences": 10,
+      "lines": [
+        33904,
+        61140,
+        115786,
+        471764,
+        471766,
+        471773,
+        471840,
+        471842,
+        471884,
+        471884
+      ]
+    },
+    "CLAUDE_CODE_EMIT_SESSION_STATE_EVENTS": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property"
+      ],
+      "occurrences": 2,
+      "lines": [
+        33769,
+        526191
+      ]
+    },
+    "CLAUDE_CODE_EMIT_TOOL_USE_SUMMARIES": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env"
+      ],
+      "occurrences": 2,
+      "lines": [
+        33768,
+        350415
+      ]
+    },
+    "CLAUDE_CODE_ENABLE_APPEND_SUBAGENT_PROMPT": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env",
+        "property"
+      ],
+      "occurrences": 5,
+      "lines": [
+        33366,
+        462934,
+        858854,
+        867613,
+        880012
+      ]
+    },
+    "CLAUDE_CODE_ENABLE_AUTO_MODE": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "string"
+      ],
+      "occurrences": 3,
+      "lines": [
+        61140,
+        539526,
+        539573
+      ]
+    },
+    "CLAUDE_CODE_ENABLE_AWAY_SUMMARY": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env",
+        "string"
+      ],
+      "occurrences": 3,
+      "lines": [
+        33365,
+        61140,
+        472259
+      ]
+    },
+    "CLAUDE_CODE_ENABLE_BACKGROUND_PLUGIN_REFRESH": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env"
+      ],
+      "occurrences": 2,
+      "lines": [
+        33364,
+        875523
+      ]
+    },
+    "CLAUDE_CODE_ENABLE_CFC": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property"
+      ],
+      "occurrences": 7,
+      "lines": [
+        33363,
+        691670,
+        691671,
+        691679,
+        846851,
+        860084,
+        860085
+      ]
+    },
+    "CLAUDE_CODE_ENABLE_DESIGN_SYNC": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "string"
+      ],
+      "occurrences": 2,
+      "lines": [
+        33362,
+        61140
+      ]
+    },
+    "CLAUDE_CODE_ENABLE_EXPERIMENTAL_ADVISOR_TOOL": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property"
+      ],
+      "occurrences": 4,
+      "lines": [
+        33361,
+        316636,
+        316645,
+        316714
+      ]
+    },
+    "CLAUDE_CODE_ENABLE_FEEDBACK_SURVEY_FOR_OTEL": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env",
+        "string"
+      ],
+      "occurrences": 3,
+      "lines": [
+        33360,
+        61140,
+        103919
+      ]
+    },
+    "CLAUDE_CODE_ENABLE_FINE_GRAINED_TOOL_STREAMING": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env",
+        "string"
+      ],
+      "occurrences": 3,
+      "lines": [
+        33359,
+        61140,
+        497754
+      ]
+    },
+    "CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property",
+        "string"
+      ],
+      "occurrences": 5,
+      "lines": [
+        34015,
+        106922,
+        393383,
+        393383,
+        893187
+      ]
+    },
+    "CLAUDE_CODE_ENABLE_LAUNCH_COMPOSER": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other"
+      ],
+      "occurrences": 1,
+      "lines": [
+        33358
+      ]
+    },
+    "CLAUDE_CODE_ENABLE_MENU_KIND_LANES": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property"
+      ],
+      "occurrences": 2,
+      "lines": [
+        33357,
+        774154
+      ]
+    },
+    "CLAUDE_CODE_ENABLE_PROMPT_SUGGESTION": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env",
+        "property",
+        "string"
+      ],
+      "occurrences": 6,
+      "lines": [
+        33356,
+        61140,
+        346377,
+        346406,
+        350031,
+        875816
+      ]
+    },
+    "CLAUDE_CODE_ENABLE_PROXY_AUTH_HELPER": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property",
+        "string"
+      ],
+      "occurrences": 3,
+      "lines": [
+        27193,
+        61231,
+        88915
+      ]
+    },
+    "CLAUDE_CODE_ENABLE_REFRESH_MCP_TOOLS": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property"
+      ],
+      "occurrences": 2,
+      "lines": [
+        33355,
+        538840
+      ]
+    },
+    "CLAUDE_CODE_ENABLE_REMOTE_RECAP": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property"
+      ],
+      "occurrences": 2,
+      "lines": [
+        33354,
+        472269
+      ]
+    },
+    "CLAUDE_CODE_ENABLE_SDK_FILE_CHECKPOINTING": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property"
+      ],
+      "occurrences": 3,
+      "lines": [
+        33353,
+        317233,
+        600650
+      ]
+    },
+    "CLAUDE_CODE_ENABLE_TASKS": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property",
+        "string"
+      ],
+      "occurrences": 3,
+      "lines": [
+        33352,
+        61140,
+        343826
+      ]
+    },
+    "CLAUDE_CODE_ENABLE_TELEMETRY": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env",
+        "property",
+        "string"
+      ],
+      "occurrences": 9,
+      "lines": [
+        61140,
+        448224,
+        448251,
+        448251,
+        448350,
+        858676,
+        858683,
+        858683,
+        890776
+      ]
+    },
+    "CLAUDE_CODE_ENABLE_TOKEN_USAGE_ATTACHMENT": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property"
+      ],
+      "occurrences": 2,
+      "lines": [
+        33351,
+        561468
+      ]
+    },
+    "CLAUDE_CODE_ENABLE_XAA": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property"
+      ],
+      "occurrences": 7,
+      "lines": [
+        33350,
+        62739,
+        244877,
+        292413,
+        305254,
+        606135,
+        890813
+      ]
+    },
+    "CLAUDE_CODE_ENHANCED_TELEMETRY_BETA": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env"
+      ],
+      "occurrences": 2,
+      "lines": [
+        27279,
+        128892
+      ]
+    },
+    "CLAUDE_CODE_ENTRYPOINT": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env",
+        "property",
+        "string"
+      ],
+      "occurrences": 75,
+      "lines": [
+        228,
+        33767,
+        49134,
+        49162,
+        49172,
+        49176,
+        49180,
+        49185,
+        49189,
+        49195,
+        49200,
+        49217,
+        49221,
+        49222,
+        49222,
+        49223,
+        49223,
+        49229,
+        49233,
+        49236,
+        105937,
+        105942,
+        105942,
+        108772,
+        109455,
+        116922,
+        123006,
+        123015,
+        123636,
+        125509,
+        127564,
+        127744,
+        193546,
+        200616,
+        230689,
+        231195,
+        232448,
+        233123,
+        233123,
+        233123,
+        245108,
+        336303,
+        336398,
+        342650,
+        342650,
+        349748,
+        349751,
+        467099,
+        492068,
+        539067,
+        539373,
+        539384,
+        550925,
+        552876,
+        580363,
+        580722,
+        580723,
+        580964,
+        582786,
+        597643,
+        597643,
+        600648,
+        600648,
+        806811,
+        820673,
+        856581,
+        860319,
+        864545,
+        864546,
+        864547,
+        864548,
+        864549,
+        864550,
+        864552,
+        874098
+      ]
+    },
+    "CLAUDE_CODE_ENVIRONMENT_KIND": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env",
+        "property"
+      ],
+      "occurrences": 15,
+      "lines": [
+        33766,
+        103911,
+        118274,
+        230945,
+        349746,
+        349750,
+        521466,
+        557285,
+        595305,
+        869369,
+        869401,
+        872954,
+        874087,
+        874097,
+        878127
+      ]
+    },
+    "CLAUDE_CODE_ENVIRONMENT_RUNNER_VERSION": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env"
+      ],
+      "occurrences": 3,
+      "lines": [
+        33765,
+        869359,
+        869365
+      ]
+    },
+    "CLAUDE_CODE_EXECPATH": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "string"
+      ],
+      "occurrences": 3,
+      "lines": [
+        322263,
+        322489,
+        602298
+      ]
+    },
+    "CLAUDE_CODE_EXIT_AFTER_FIRST_RENDER": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env",
+        "property"
+      ],
+      "occurrences": 3,
+      "lines": [
+        33764,
+        616549,
+        859721
+      ]
+    },
+    "CLAUDE_CODE_EXIT_AFTER_STOP_DELAY": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property"
+      ],
+      "occurrences": 2,
+      "lines": [
+        33763,
+        871427
+      ]
+    },
+    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property",
+        "string"
+      ],
+      "occurrences": 4,
+      "lines": [
+        33349,
+        61140,
+        346360,
+        511933
+      ]
+    },
+    "CLAUDE_CODE_EXPERIMENTAL_OBSERVER_AGENTS": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property"
+      ],
+      "occurrences": 2,
+      "lines": [
+        33348,
+        179938
+      ]
+    },
+    "CLAUDE_CODE_EXTRA_BODY": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env",
+        "property",
+        "string"
+      ],
+      "occurrences": 11,
+      "lines": [
+        33967,
+        498586,
+        498593,
+        498597,
+        498675,
+        603914,
+        604083,
+        604721,
+        711500,
+        711501,
+        711501
+      ]
+    },
+    "CLAUDE_CODE_EXTRA_METADATA": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env",
+        "string"
+      ],
+      "occurrences": 3,
+      "lines": [
+        33966,
+        498712,
+        498718
+      ]
+    },
+    "CLAUDE_CODE_FABLE_BRIDGE_DIALOG_TIMEOUT_MS": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property"
+      ],
+      "occurrences": 2,
+      "lines": [
+        33762,
+        350698
+      ]
+    },
+    "CLAUDE_CODE_FILE_READ_MAX_OUTPUT_TOKENS": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env",
+        "string"
+      ],
+      "occurrences": 3,
+      "lines": [
+        33965,
+        61140,
+        271981
+      ]
+    },
+    "CLAUDE_CODE_FLEET_PAST_SESSIONS": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "property"
+      ],
+      "occurrences": 1,
+      "lines": [
+        394242
+      ]
+    },
+    "CLAUDE_CODE_FLEETVIEW_SIMPLE": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property"
+      ],
+      "occurrences": 2,
+      "lines": [
+        33347,
+        835734
+      ]
+    },
+    "CLAUDE_CODE_FORCE_BRIDGE": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other"
+      ],
+      "occurrences": 1,
+      "lines": [
+        33761
+      ]
+    },
+    "CLAUDE_CODE_FORCE_EVALUATE_MEMORY": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other"
+      ],
+      "occurrences": 1,
+      "lines": [
+        33760
+      ]
+    },
+    "CLAUDE_CODE_FORCE_FULL_LOGO": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property"
+      ],
+      "occurrences": 2,
+      "lines": [
+        33758,
+        715384
+      ]
+    },
+    "CLAUDE_CODE_FORCE_FULLSCREEN_UPSELL": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property",
+        "string"
+      ],
+      "occurrences": 3,
+      "lines": [
+        33759,
+        762202,
+        849244
+      ]
+    },
+    "CLAUDE_CODE_FORCE_MEMORY_SURVEY": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other"
+      ],
+      "occurrences": 1,
+      "lines": [
+        33757
+      ]
+    },
+    "CLAUDE_CODE_FORCE_MID_CONVERSATION_SYSTEM": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property"
+      ],
+      "occurrences": 2,
+      "lines": [
+        33346,
+        580138
+      ]
+    },
+    "CLAUDE_CODE_FORCE_RC_LONG_TURN_NUDGE": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "property"
+      ],
+      "occurrences": 1,
+      "lines": [
+        749975
+      ]
+    },
+    "CLAUDE_CODE_FORCE_SANDBOX": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other"
+      ],
+      "occurrences": 1,
+      "lines": [
+        595307
+      ]
+    },
+    "CLAUDE_CODE_FORCE_SESSION_PERSISTENCE": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property"
+      ],
+      "occurrences": 3,
+      "lines": [
+        33345,
+        109181,
+        779476
+      ]
+    },
+    "CLAUDE_CODE_FORCE_STRIKETHROUGH": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property",
+        "string"
+      ],
+      "occurrences": 3,
+      "lines": [
+        33344,
+        61140,
+        661592
+      ]
+    },
+    "CLAUDE_CODE_FORCE_SYNC_OUTPUT": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env"
+      ],
+      "occurrences": 2,
+      "lines": [
+        33964,
+        261640
+      ]
+    },
+    "CLAUDE_CODE_FORCE_TIP_ID": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other"
+      ],
+      "occurrences": 1,
+      "lines": [
+        33756
+      ]
+    },
+    "CLAUDE_CODE_FORCE_WINDOWS_CREDMAN": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other"
+      ],
+      "occurrences": 1,
+      "lines": [
+        33343
+      ]
+    },
+    "CLAUDE_CODE_FORK_SUBAGENT": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env"
+      ],
+      "occurrences": 3,
+      "lines": [
+        33342,
+        196778,
+        196779
+      ]
+    },
+    "CLAUDE_CODE_FORWARD_SUBAGENT_TEXT": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property"
+      ],
+      "occurrences": 2,
+      "lines": [
+        33341,
+        859872
+      ]
+    },
+    "CLAUDE_CODE_FRAME_TIMING_LOG": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property"
+      ],
+      "occurrences": 2,
+      "lines": [
+        27278,
+        863377
+      ]
+    },
+    "CLAUDE_CODE_FRAME_TIMING_SAMPLE_EVERY": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property"
+      ],
+      "occurrences": 2,
+      "lines": [
+        27277,
+        863380
+      ]
+    },
+    "CLAUDE_CODE_GAULT_KESTREL": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property"
+      ],
+      "occurrences": 2,
+      "lines": [
+        33340,
+        114996
+      ]
+    },
+    "CLAUDE_CODE_GB_BASE_URL": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other"
+      ],
+      "occurrences": 1,
+      "lines": [
+        34014
+      ]
+    },
+    "CLAUDE_CODE_GB_DISK_CACHE_WHEN_TELEMETRY_OFF": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property"
+      ],
+      "occurrences": 2,
+      "lines": [
+        33339,
+        585182
+      ]
+    },
+    "CLAUDE_CODE_GB_REFRESH_INTERVAL_MS": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other"
+      ],
+      "occurrences": 1,
+      "lines": [
+        34013
+      ]
+    },
+    "CLAUDE_CODE_GIT_BASH_PATH": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property",
+        "string"
+      ],
+      "occurrences": 8,
+      "lines": [
+        33755,
+        53849,
+        53850,
+        53852,
+        53852,
+        53853,
+        53853,
+        858555
+      ]
+    },
+    "CLAUDE_CODE_GLOB_HIDDEN": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env"
+      ],
+      "occurrences": 2,
+      "lines": [
+        33338,
+        320412
+      ]
+    },
+    "CLAUDE_CODE_GLOB_NO_IGNORE": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env"
+      ],
+      "occurrences": 2,
+      "lines": [
+        33337,
+        320411
+      ]
+    },
+    "CLAUDE_CODE_GLOB_TIMEOUT_SECONDS": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property",
+        "string"
+      ],
+      "occurrences": 3,
+      "lines": [
+        33754,
+        61140,
+        166191
+      ]
+    },
+    "CLAUDE_CODE_GORSE_PLOVER": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property"
+      ],
+      "occurrences": 2,
+      "lines": [
+        33336,
+        115000
+      ]
+    },
+    "CLAUDE_CODE_GZIP_REQUEST_BODIES": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property"
+      ],
+      "occurrences": 2,
+      "lines": [
+        33963,
+        579561
+      ]
+    },
+    "CLAUDE_CODE_HERON_TALLOW": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property"
+      ],
+      "occurrences": 2,
+      "lines": [
+        33335,
+        327136
+      ]
+    },
+    "CLAUDE_CODE_HFI_BEARER_TOKEN": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other"
+      ],
+      "occurrences": 1,
+      "lines": [
+        27192
+      ]
+    },
+    "CLAUDE_CODE_HIDE_CWD": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property",
+        "string"
+      ],
+      "occurrences": 3,
+      "lines": [
+        33334,
+        61140,
+        714364
+      ]
+    },
+    "CLAUDE_CODE_HIDE_SETTINGS_HINT": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property"
+      ],
+      "occurrences": 2,
+      "lines": [
+        33753,
+        49194
+      ]
+    },
+    "CLAUDE_CODE_HOST_AUTH_ENV_VAR": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env",
+        "property",
+        "string"
+      ],
+      "occurrences": 12,
+      "lines": [
+        27191,
+        61110,
+        61116,
+        61122,
+        61135,
+        61139,
+        61231,
+        191781,
+        230947,
+        231193,
+        582786,
+        708589
+      ]
+    },
+    "CLAUDE_CODE_HOST_AUTH_REFRESH_TIMEOUT_MS": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env",
+        "string"
+      ],
+      "occurrences": 3,
+      "lines": [
+        27190,
+        61135,
+        874100
+      ]
+    },
+    "CLAUDE_CODE_HOST_CREDS_FILE": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property",
+        "string"
+      ],
+      "occurrences": 23,
+      "lines": [
+        27189,
+        61118,
+        61135,
+        61231,
+        167026,
+        167026,
+        191789,
+        191797,
+        191829,
+        191838,
+        191838,
+        231193,
+        511935,
+        511957,
+        556305,
+        603276,
+        603276,
+        603277,
+        604083,
+        604721,
+        711497,
+        711498,
+        711498
+      ]
+    },
+    "CLAUDE_CODE_HOST_HTTP_PROXY_PORT": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "string"
+      ],
+      "occurrences": 1,
+      "lines": [
+        154001
+      ]
+    },
+    "CLAUDE_CODE_HOST_PLATFORM": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env"
+      ],
+      "occurrences": 3,
+      "lines": [
+        33099,
+        33752,
+        580953
+      ]
+    },
+    "CLAUDE_CODE_HOST_SOCKS_PROXY_PORT": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "string"
+      ],
+      "occurrences": 1,
+      "lines": [
+        154002
+      ]
+    },
+    "CLAUDE_CODE_HTTP_PROXY": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "property"
+      ],
+      "occurrences": 1,
+      "lines": [
+        127448
+      ]
+    },
+    "CLAUDE_CODE_HTTPS_PROXY": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "property"
+      ],
+      "occurrences": 1,
+      "lines": [
+        127449
+      ]
+    },
+    "CLAUDE_CODE_IDE_HOST_OVERRIDE": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env"
+      ],
+      "occurrences": 3,
+      "lines": [
+        33751,
+        271954,
+        271954
+      ]
+    },
+    "CLAUDE_CODE_IDE_SKIP_AUTO_INSTALL": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env",
+        "string"
+      ],
+      "occurrences": 3,
+      "lines": [
+        33333,
+        61140,
+        271709
+      ]
+    },
+    "CLAUDE_CODE_IDE_SKIP_VALID_CHECK": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env"
+      ],
+      "occurrences": 2,
+      "lines": [
+        33332,
+        271436
+      ]
+    },
+    "CLAUDE_CODE_IDLE_THRESHOLD_MINUTES": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env"
+      ],
+      "occurrences": 2,
+      "lines": [
+        33750,
+        855240
+      ]
+    },
+    "CLAUDE_CODE_IDLE_TOKEN_THRESHOLD": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env"
+      ],
+      "occurrences": 2,
+      "lines": [
+        33749,
+        855238
+      ]
+    },
+    "CLAUDE_CODE_INCLUDE_PARTIAL_MESSAGES": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env"
+      ],
+      "occurrences": 2,
+      "lines": [
+        33331,
+        859871
+      ]
+    },
+    "CLAUDE_CODE_INVESTIGATE_FIRST": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env"
+      ],
+      "occurrences": 2,
+      "lines": [
+        33748,
+        497600
+      ]
+    },
+    "CLAUDE_CODE_INVOKED_SKILLS": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "string"
+      ],
+      "occurrences": 2,
+      "lines": [
+        322263,
+        322490
+      ]
+    },
+    "CLAUDE_CODE_IS_COWORK": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property"
+      ],
+      "occurrences": 12,
+      "lines": [
+        33747,
+        233975,
+        336307,
+        336312,
+        336776,
+        336801,
+        448247,
+        870078,
+        870284,
+        870894,
+        870925,
+        870970
+      ]
+    },
+    "CLAUDE_CODE_JSONL_TRANSCRIPT": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other"
+      ],
+      "occurrences": 1,
+      "lines": [
+        27276
+      ]
+    },
+    "CLAUDE_CODE_JUNIPER_SUNDIAL": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property"
+      ],
+      "occurrences": 2,
+      "lines": [
+        33330,
+        559856
+      ]
+    },
+    "CLAUDE_CODE_KB_COHESION_FIXES": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property"
+      ],
+      "occurrences": 2,
+      "lines": [
+        33329,
+        269810
+      ]
+    },
+    "CLAUDE_CODE_LANTERN_PRISM": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property"
+      ],
+      "occurrences": 2,
+      "lines": [
+        33328,
+        193288
+      ]
+    },
+    "CLAUDE_CODE_LARCH_CISTERN": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property"
+      ],
+      "occurrences": 2,
+      "lines": [
+        33327,
+        115012
+      ]
+    },
+    "CLAUDE_CODE_LOOP_KEEPALIVE": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env"
+      ],
+      "occurrences": 2,
+      "lines": [
+        33746,
+        195288
+      ]
+    },
+    "CLAUDE_CODE_LOOP_PERSISTENT": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property"
+      ],
+      "occurrences": 2,
+      "lines": [
+        33745,
+        195095
+      ]
+    },
+    "CLAUDE_CODE_MANAGED_SETTINGS_PATH": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other"
+      ],
+      "occurrences": 2,
+      "lines": [
+        33744,
+        639352
+      ]
+    },
+    "CLAUDE_CODE_MARL_CORMORANT": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property"
+      ],
+      "occurrences": 2,
+      "lines": [
+        33326,
+        114992
+      ]
+    },
+    "CLAUDE_CODE_MAX_CONCURRENT_SUBAGENTS": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property"
+      ],
+      "occurrences": 3,
+      "lines": [
+        33743,
+        196323,
+        513113
+      ]
+    },
+    "CLAUDE_CODE_MAX_CONTEXT_TOKENS": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property",
+        "string"
+      ],
+      "occurrences": 4,
+      "lines": [
+        33962,
+        61140,
+        579875,
+        579891
+      ]
+    },
+    "CLAUDE_CODE_MAX_OUTPUT_TOKENS": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env",
+        "string"
+      ],
+      "occurrences": 6,
+      "lines": [
+        33961,
+        61140,
+        500630,
+        501586,
+        501586,
+        634162
+      ]
+    },
+    "CLAUDE_CODE_MAX_RETRIES": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env",
+        "string"
+      ],
+      "occurrences": 5,
+      "lines": [
+        33960,
+        61140,
+        192294,
+        192295,
+        192298
+      ]
+    },
+    "CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property"
+      ],
+      "occurrences": 3,
+      "lines": [
+        33741,
+        195581,
+        513061
+      ]
+    },
+    "CLAUDE_CODE_MAX_SUBAGENTS_PER_SESSION": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property",
+        "string"
+      ],
+      "occurrences": 4,
+      "lines": [
+        33742,
+        61140,
+        196327,
+        513104
+      ]
+    },
+    "CLAUDE_CODE_MAX_TOOL_USE_CONCURRENCY": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env",
+        "string"
+      ],
+      "occurrences": 3,
+      "lines": [
+        33959,
+        61140,
+        458897
+      ]
+    },
+    "CLAUDE_CODE_MAX_TURNS": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env",
+        "string"
+      ],
+      "occurrences": 3,
+      "lines": [
+        16569,
+        16572,
+        33958
+      ]
+    },
+    "CLAUDE_CODE_MAX_WEB_SEARCHES_PER_SESSION": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property",
+        "string"
+      ],
+      "occurrences": 4,
+      "lines": [
+        33740,
+        61140,
+        196331,
+        516767
+      ]
+    },
+    "CLAUDE_CODE_MCP_ALLOWLIST_ENV": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env"
+      ],
+      "occurrences": 2,
+      "lines": [
+        33739,
+        127741
+      ]
+    },
+    "CLAUDE_CODE_MCP_AUTO_BACKGROUND_MS": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property",
+        "string"
+      ],
+      "occurrences": 3,
+      "lines": [
+        33738,
+        61140,
+        295327
+      ]
+    },
+    "CLAUDE_CODE_MCP_SERVER_NAME": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other"
+      ],
+      "occurrences": 1,
+      "lines": [
+        293604
+      ]
+    },
+    "CLAUDE_CODE_MCP_SERVER_URL": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other"
+      ],
+      "occurrences": 1,
+      "lines": [
+        293605
+      ]
+    },
+    "CLAUDE_CODE_MCP_TOOL_IDLE_TIMEOUT": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property",
+        "string"
+      ],
+      "occurrences": 6,
+      "lines": [
+        33737,
+        61140,
+        299534,
+        301846,
+        306533,
+        308703
+      ]
+    },
+    "CLAUDE_CODE_MEMORY_PUSH_DELETE_MODE": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property"
+      ],
+      "occurrences": 2,
+      "lines": [
+        33325,
+        359721
+      ]
+    },
+    "CLAUDE_CODE_METRICS_ENDPOINT": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other"
+      ],
+      "occurrences": 1,
+      "lines": [
+        27297
+      ]
+    },
+    "CLAUDE_CODE_MOCK_REMOTE_SETTINGS": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "string"
+      ],
+      "occurrences": 2,
+      "lines": [
+        33736,
+        61231
+      ]
+    },
+    "CLAUDE_CODE_MOCK_TRIAL": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other"
+      ],
+      "occurrences": 1,
+      "lines": [
+        33735
+      ]
+    },
+    "CLAUDE_CODE_NANKEEN_KESTREL": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property"
+      ],
+      "occurrences": 2,
+      "lines": [
+        33324,
+        166041
+      ]
+    },
+    "CLAUDE_CODE_NATIVE_CURSOR": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property",
+        "string"
+      ],
+      "occurrences": 3,
+      "lines": [
+        33323,
+        61140,
+        267560
+      ]
+    },
+    "CLAUDE_CODE_NEW_INIT": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env"
+      ],
+      "occurrences": 3,
+      "lines": [
+        33322,
+        398942,
+        399207
+      ]
+    },
+    "CLAUDE_CODE_NO_FLICKER": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property",
+        "string"
+      ],
+      "occurrences": 15,
+      "lines": [
+        33321,
+        61140,
+        62892,
+        125756,
+        125764,
+        125766,
+        125770,
+        125790,
+        125806,
+        125839,
+        125840,
+        472075,
+        472090,
+        472094,
+        762202
+      ]
+    },
+    "CLAUDE_CODE_NO_MODEL_FALLBACK": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property",
+        "string"
+      ],
+      "occurrences": 6,
+      "lines": [
+        33903,
+        108336,
+        108340,
+        351271,
+        351277,
+        366824
+      ]
+    },
+    "CLAUDE_CODE_OAUTH_401_WAIT_MS": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property"
+      ],
+      "occurrences": 2,
+      "lines": [
+        27188,
+        583671
+      ]
+    },
+    "CLAUDE_CODE_OAUTH_CLIENT_ID": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env"
+      ],
+      "occurrences": 3,
+      "lines": [
+        27187,
+        27429,
+        894306
+      ]
+    },
+    "CLAUDE_CODE_OAUTH_REFRESH_TOKEN": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env"
+      ],
+      "occurrences": 3,
+      "lines": [
+        27186,
+        894293,
+        894296
+      ]
+    },
+    "CLAUDE_CODE_OAUTH_SCOPES": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env",
+        "property",
+        "string"
+      ],
+      "occurrences": 5,
+      "lines": [
+        27185,
+        61138,
+        583624,
+        894295,
+        894296
+      ]
+    },
+    "CLAUDE_CODE_OAUTH_TOKEN": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env",
+        "property",
+        "string"
+      ],
+      "occurrences": 70,
+      "lines": [
+        27184,
+        61134,
+        119082,
+        127715,
+        127727,
+        127779,
+        192837,
+        192869,
+        192869,
+        193245,
+        230932,
+        448592,
+        452403,
+        452414,
+        523284,
+        523284,
+        523284,
+        523996,
+        582795,
+        582867,
+        582918,
+        582919,
+        583068,
+        583068,
+        583658,
+        583697,
+        583708,
+        583711,
+        583711,
+        583720,
+        583729,
+        584206,
+        584260,
+        584260,
+        584327,
+        584360,
+        584361,
+        584477,
+        584576,
+        584590,
+        584590,
+        584850,
+        584851,
+        584881,
+        587517,
+        587558,
+        587560,
+        595304,
+        600499,
+        602269,
+        603284,
+        618389,
+        618390,
+        618391,
+        633204,
+        708591,
+        708592,
+        721489,
+        721489,
+        729283,
+        729283,
+        730051,
+        730053,
+        802695,
+        802695,
+        868551,
+        869095,
+        869164,
+        869164,
+        898741
+      ]
+    },
+    "CLAUDE_CODE_OAUTH_TOKEN_FILE_DESCRIPTOR": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property",
+        "string"
+      ],
+      "occurrences": 16,
+      "lines": [
+        27183,
+        118629,
+        231193,
+        452403,
+        523283,
+        582923,
+        582924,
+        583068,
+        584206,
+        584260,
+        584365,
+        584366,
+        584477,
+        584576,
+        584590,
+        708592
+      ]
+    },
+    "CLAUDE_CODE_ORGANIZATION_UUID": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env",
+        "property",
+        "string"
+      ],
+      "occurrences": 8,
+      "lines": [
+        27182,
+        118707,
+        231195,
+        452408,
+        452408,
+        582340,
+        582353,
+        585206
+      ]
+    },
+    "CLAUDE_CODE_OTEL_CONTENT_MAX_LENGTH": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property"
+      ],
+      "occurrences": 2,
+      "lines": [
+        27275,
+        127973
+      ]
+    },
+    "CLAUDE_CODE_OTEL_DIAG_STDERR": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property",
+        "string"
+      ],
+      "occurrences": 4,
+      "lines": [
+        27274,
+        127719,
+        127735,
+        417325
+      ]
+    },
+    "CLAUDE_CODE_OTEL_FLUSH_TIMEOUT_MS": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property"
+      ],
+      "occurrences": 2,
+      "lines": [
+        27273,
+        448375
+      ]
+    },
+    "CLAUDE_CODE_OTEL_HEADERS_HELPER_DEBOUNCE_MS": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env"
+      ],
+      "occurrences": 2,
+      "lines": [
+        27272,
+        584138
+      ]
+    },
+    "CLAUDE_CODE_OTEL_SHUTDOWN_TIMEOUT_MS": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property"
+      ],
+      "occurrences": 4,
+      "lines": [
+        27271,
+        448262,
+        448334,
+        448348
+      ]
+    },
+    "CLAUDE_CODE_OVERRIDE_DATE": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other"
+      ],
+      "occurrences": 1,
+      "lines": [
+        33734
+      ]
+    },
+    "CLAUDE_CODE_PACKAGE_MANAGER_AUTO_UPDATE": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env"
+      ],
+      "occurrences": 2,
+      "lines": [
+        33320,
+        772008
+      ]
+    },
+    "CLAUDE_CODE_PARKED_PERMISSION_WAIT_MS": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property"
+      ],
+      "occurrences": 2,
+      "lines": [
+        33733,
+        879664
+      ]
+    },
+    "CLAUDE_CODE_PERFETTO_TRACE": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property"
+      ],
+      "occurrences": 2,
+      "lines": [
+        27270,
+        128496
+      ]
+    },
+    "CLAUDE_CODE_PERFETTO_WRITE_INTERVAL_S": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other"
+      ],
+      "occurrences": 1,
+      "lines": [
+        27269
+      ]
+    },
+    "CLAUDE_CODE_PERFORCE_MODE": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env",
+        "property"
+      ],
+      "occurrences": 3,
+      "lines": [
+        33732,
+        54871,
+        200322
+      ]
+    },
+    "CLAUDE_CODE_PEWTER_OWL": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property"
+      ],
+      "occurrences": 3,
+      "lines": [
+        33319,
+        349851,
+        349851
+      ]
+    },
+    "CLAUDE_CODE_PEWTER_OWL_TOOL": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property"
+      ],
+      "occurrences": 3,
+      "lines": [
+        33318,
+        349859,
+        349859
+      ]
+    },
+    "CLAUDE_CODE_PLAN_MODE_REQUIRED": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property",
+        "string"
+      ],
+      "occurrences": 3,
+      "lines": [
+        33317,
+        61140,
+        109232
+      ]
+    },
+    "CLAUDE_CODE_PLAN_V2_AGENT_COUNT": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property"
+      ],
+      "occurrences": 2,
+      "lines": [
+        33731,
+        540364
+      ]
+    },
+    "CLAUDE_CODE_PLAN_V2_EXPLORE_AGENT_COUNT": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property"
+      ],
+      "occurrences": 2,
+      "lines": [
+        33730,
+        540374
+      ]
+    },
+    "CLAUDE_CODE_PLUGIN_BINARY_ASSETS": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property"
+      ],
+      "occurrences": 2,
+      "lines": [
+        33316,
+        240875
+      ]
+    },
+    "CLAUDE_CODE_PLUGIN_CACHE_DIR": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env",
+        "property"
+      ],
+      "occurrences": 4,
+      "lines": [
+        33729,
+        176169,
+        234829,
+        794517
+      ]
+    },
+    "CLAUDE_CODE_PLUGIN_GIT_TIMEOUT_MS": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property"
+      ],
+      "occurrences": 4,
+      "lines": [
+        33728,
+        239144,
+        239220,
+        239328
+      ]
+    },
+    "CLAUDE_CODE_PLUGIN_KEEP_MARKETPLACE_ON_FAILURE": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property"
+      ],
+      "occurrences": 3,
+      "lines": [
+        33315,
+        239434,
+        239437
+      ]
+    },
+    "CLAUDE_CODE_PLUGIN_PREFER_HTTPS": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property"
+      ],
+      "occurrences": 2,
+      "lines": [
+        33314,
+        129655
+      ]
+    },
+    "CLAUDE_CODE_PLUGIN_SEED_DIR": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property"
+      ],
+      "occurrences": 2,
+      "lines": [
+        33727,
+        176175
+      ]
+    },
+    "CLAUDE_CODE_PLUGIN_USE_ZIP_CACHE": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property"
+      ],
+      "occurrences": 2,
+      "lines": [
+        33313,
+        234824
+      ]
+    },
+    "CLAUDE_CODE_POWERSHELL_RESPECT_EXECUTION_POLICY": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property"
+      ],
+      "occurrences": 2,
+      "lines": [
+        33312,
+        130536
+      ]
+    },
+    "CLAUDE_CODE_POWERUP_ONBOARDING": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property"
+      ],
+      "occurrences": 4,
+      "lines": [
+        33726,
+        716130,
+        862997,
+        862997
+      ]
+    },
+    "CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property"
+      ],
+      "occurrences": 3,
+      "lines": [
+        33957,
+        872067,
+        875906
+      ]
+    },
+    "CLAUDE_CODE_PROACTIVE": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env"
+      ],
+      "occurrences": 2,
+      "lines": [
+        33311,
+        855306
+      ]
+    },
+    "CLAUDE_CODE_PROCESS_WRAPPER": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "string"
+      ],
+      "occurrences": 13,
+      "lines": [
+        62737,
+        230899,
+        467489,
+        604256,
+        693860,
+        708327,
+        708330,
+        708960,
+        708974,
+        899814,
+        899814,
+        900189,
+        901256
+      ]
+    },
+    "CLAUDE_CODE_PROFILE_QUERY": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property"
+      ],
+      "occurrences": 3,
+      "lines": [
+        27268,
+        343575,
+        343666
+      ]
+    },
+    "CLAUDE_CODE_PROFILE_STARTUP": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property"
+      ],
+      "occurrences": 3,
+      "lines": [
+        27267,
+        34298,
+        342664
+      ]
+    },
+    "CLAUDE_CODE_PROPAGATE_TRACEPARENT": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env",
+        "property"
+      ],
+      "occurrences": 3,
+      "lines": [
+        33310,
+        98341,
+        498912
+      ]
+    },
+    "CLAUDE_CODE_PROVIDER_MANAGED_BY_HOST": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env",
+        "property",
+        "string"
+      ],
+      "occurrences": 35,
+      "lines": [
+        34012,
+        61110,
+        61114,
+        61135,
+        61139,
+        61231,
+        64785,
+        103906,
+        191829,
+        191955,
+        230943,
+        230970,
+        341008,
+        405311,
+        405382,
+        405398,
+        412650,
+        412708,
+        412724,
+        412882,
+        511957,
+        582699,
+        584502,
+        584614,
+        602265,
+        603273,
+        604682,
+        708586,
+        708589,
+        710560,
+        710567,
+        711350,
+        711497,
+        856594,
+        898736
+      ]
+    },
+    "CLAUDE_CODE_PROXY_AUTH_HELPER_TTL_MS": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property",
+        "string"
+      ],
+      "occurrences": 3,
+      "lines": [
+        27181,
+        61231,
+        88924
+      ]
+    },
+    "CLAUDE_CODE_PROXY_AUTHENTICATE": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other"
+      ],
+      "occurrences": 1,
+      "lines": [
+        88956
+      ]
+    },
+    "CLAUDE_CODE_PROXY_HOST": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other"
+      ],
+      "occurrences": 1,
+      "lines": [
+        88953
+      ]
+    },
+    "CLAUDE_CODE_PROXY_RESOLVES_HOSTS": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property",
+        "string"
+      ],
+      "occurrences": 3,
+      "lines": [
+        34011,
+        61231,
+        88893
+      ]
+    },
+    "CLAUDE_CODE_PROXY_URL": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other"
+      ],
+      "occurrences": 1,
+      "lines": [
+        88950
+      ]
+    },
+    "CLAUDE_CODE_PWSH_PARSE_TIMEOUT_MS": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property"
+      ],
+      "occurrences": 2,
+      "lines": [
+        33725,
+        129697
+      ]
+    },
+    "CLAUDE_CODE_QUESTION_PREVIEW_FORMAT": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env",
+        "property",
+        "string"
+      ],
+      "occurrences": 4,
+      "lines": [
+        33724,
+        600653,
+        602298,
+        864556
+      ]
+    },
+    "CLAUDE_CODE_RATE_LIMIT_TIER": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env",
+        "property"
+      ],
+      "occurrences": 6,
+      "lines": [
+        27180,
+        118618,
+        127715,
+        127730,
+        584856,
+        584865
+      ]
+    },
+    "CLAUDE_CODE_RC_PERMISSION_NUDGE": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "property"
+      ],
+      "occurrences": 1,
+      "lines": [
+        750025
+      ]
+    },
+    "CLAUDE_CODE_REFUSAL_FALLBACK_CATCH_ALL": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env"
+      ],
+      "occurrences": 3,
+      "lines": [
+        33309,
+        117362,
+        867126
+      ]
+    },
+    "CLAUDE_CODE_RELAUNCH_TERMINAL_SIZE": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property",
+        "string"
+      ],
+      "occurrences": 4,
+      "lines": [
+        33723,
+        467402,
+        467408,
+        602298
+      ]
+    },
+    "CLAUDE_CODE_REMOTE": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env",
+        "property",
+        "string"
+      ],
+      "occurrences": 71,
+      "lines": [
+        33722,
+        115192,
+        115192,
+        118526,
+        119082,
+        127709,
+        129655,
+        190985,
+        191901,
+        193069,
+        193509,
+        196366,
+        196375,
+        200313,
+        200461,
+        231195,
+        246787,
+        247125,
+        319888,
+        320233,
+        322703,
+        349747,
+        372518,
+        400512,
+        449464,
+        452403,
+        452408,
+        459244,
+        467096,
+        471011,
+        471011,
+        471210,
+        498726,
+        498899,
+        504159,
+        510039,
+        511957,
+        512579,
+        513194,
+        513194,
+        513981,
+        515174,
+        520834,
+        521335,
+        521594,
+        533586,
+        539373,
+        539420,
+        580963,
+        582695,
+        585605,
+        773168,
+        820715,
+        820737,
+        821274,
+        846446,
+        857878,
+        858535,
+        859044,
+        859873,
+        860265,
+        860622,
+        869124,
+        874663,
+        874807,
+        874962,
+        875021,
+        875483,
+        875534,
+        897716,
+        901437
+      ]
+    },
+    "CLAUDE_CODE_REMOTE_ENVIRONMENT_TYPE": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env",
+        "property"
+      ],
+      "occurrences": 7,
+      "lines": [
+        33721,
+        245167,
+        515174,
+        521335,
+        521466,
+        580966,
+        580967
+      ]
+    },
+    "CLAUDE_CODE_REMOTE_HERMETIC_MODE": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property"
+      ],
+      "occurrences": 2,
+      "lines": [
+        33720,
+        859044
+      ]
+    },
+    "CLAUDE_CODE_REMOTE_MEMORY_DIR": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env",
+        "string"
+      ],
+      "occurrences": 9,
+      "lines": [
+        33719,
+        122804,
+        122804,
+        122825,
+        122826,
+        511957,
+        585605,
+        585671,
+        585671
+      ]
+    },
+    "CLAUDE_CODE_REMOTE_RAW_EVENTS_FILE": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other"
+      ],
+      "occurrences": 1,
+      "lines": [
+        33718
+      ]
+    },
+    "CLAUDE_CODE_REMOTE_SEND_KEEPALIVES": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property"
+      ],
+      "occurrences": 3,
+      "lines": [
+        33717,
+        325975,
+        326005
+      ]
+    },
+    "CLAUDE_CODE_REMOTE_SESSION_ID": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env",
+        "property",
+        "string"
+      ],
+      "occurrences": 26,
+      "lines": [
+        1880,
+        33716,
+        34264,
+        127878,
+        127878,
+        127914,
+        362005,
+        449763,
+        471210,
+        491782,
+        523282,
+        557285,
+        579008,
+        580973,
+        580974,
+        583673,
+        583679,
+        587498,
+        587498,
+        857880,
+        857881,
+        859917,
+        872949,
+        872951,
+        874097,
+        898930
+      ]
+    },
+    "CLAUDE_CODE_REMOTE_SESSION_ORIGIN": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property",
+        "string"
+      ],
+      "occurrences": 3,
+      "lines": [
+        33715,
+        118517,
+        231195
+      ]
+    },
+    "CLAUDE_CODE_REMOTE_SETTINGS_PATH": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "string"
+      ],
+      "occurrences": 3,
+      "lines": [
+        33714,
+        61231,
+        413486
+      ]
+    },
+    "CLAUDE_CODE_REMOTE_SETTINGS_POLL_MS": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other"
+      ],
+      "occurrences": 1,
+      "lines": [
+        33713
+      ]
+    },
+    "CLAUDE_CODE_REPL": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env"
+      ],
+      "occurrences": 3,
+      "lines": [
+        33712,
+        123634,
+        123635
+      ]
+    },
+    "CLAUDE_CODE_REPO_CHECKOUTS": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env",
+        "string"
+      ],
+      "occurrences": 3,
+      "lines": [
+        33711,
+        123349,
+        898930
+      ]
+    },
+    "CLAUDE_CODE_REPORT_FINDINGS": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property"
+      ],
+      "occurrences": 2,
+      "lines": [
+        33308,
+        805067
+      ]
+    },
+    "CLAUDE_CODE_RESUME_FROM_SESSION": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env"
+      ],
+      "occurrences": 2,
+      "lines": [
+        33710,
+        878802
+      ]
+    },
+    "CLAUDE_CODE_RESUME_INTERRUPTED_TURN": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property",
+        "string"
+      ],
+      "occurrences": 12,
+      "lines": [
+        33709,
+        127776,
+        561792,
+        561805,
+        602298,
+        604219,
+        792895,
+        874297,
+        874480,
+        874748,
+        876250,
+        898930
+      ]
+    },
+    "CLAUDE_CODE_RESUME_INTERRUPTED_TURN_MAX_AGE_MS": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property",
+        "string"
+      ],
+      "occurrences": 6,
+      "lines": [
+        33708,
+        127776,
+        561739,
+        602298,
+        604220,
+        898930
+      ]
+    },
+    "CLAUDE_CODE_RESUME_PROMPT": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property",
+        "string"
+      ],
+      "occurrences": 6,
+      "lines": [
+        33707,
+        127776,
+        561735,
+        602298,
+        604220,
+        898930
+      ]
+    },
+    "CLAUDE_CODE_RESUME_SOURCE_ALIVE": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property",
+        "string"
+      ],
+      "occurrences": 8,
+      "lines": [
+        33706,
+        127776,
+        348614,
+        349384,
+        562053,
+        602298,
+        711517,
+        840017
+      ]
+    },
+    "CLAUDE_CODE_RESUME_THRESHOLD_MINUTES": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env"
+      ],
+      "occurrences": 2,
+      "lines": [
+        33705,
+        766430
+      ]
+    },
+    "CLAUDE_CODE_RESUME_TOKEN_THRESHOLD": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env"
+      ],
+      "occurrences": 2,
+      "lines": [
+        33704,
+        766431
+      ]
+    },
+    "CLAUDE_CODE_RETRY_WATCHDOG": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env"
+      ],
+      "occurrences": 2,
+      "lines": [
+        33956,
+        191893
+      ]
+    },
+    "CLAUDE_CODE_SAFE_MODE": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env",
+        "string"
+      ],
+      "occurrences": 6,
+      "lines": [
+        16586,
+        16590,
+        33703,
+        602298,
+        859773,
+        880001
+      ]
+    },
+    "CLAUDE_CODE_SANDBOXED": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property"
+      ],
+      "occurrences": 3,
+      "lines": [
+        33702,
+        330174,
+        586032
+      ]
+    },
+    "CLAUDE_CODE_SCRIPT_CAPS": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env"
+      ],
+      "occurrences": 2,
+      "lines": [
+        33701,
+        127648
+      ]
+    },
+    "CLAUDE_CODE_SCROLL_SPEED": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env",
+        "string"
+      ],
+      "occurrences": 5,
+      "lines": [
+        33700,
+        61140,
+        252007,
+        252035,
+        754727
+      ]
+    },
+    "CLAUDE_CODE_SDK_HAS_HOST_AUTH_REFRESH": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env",
+        "property",
+        "string"
+      ],
+      "occurrences": 4,
+      "lines": [
+        27179,
+        61135,
+        600652,
+        874099
+      ]
+    },
+    "CLAUDE_CODE_SDK_HAS_OAUTH_REFRESH": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env",
+        "property"
+      ],
+      "occurrences": 3,
+      "lines": [
+        27178,
+        600651,
+        874098
+      ]
+    },
+    "CLAUDE_CODE_SEND_FEEDBACK": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property"
+      ],
+      "occurrences": 2,
+      "lines": [
+        33307,
+        395387
+      ]
+    },
+    "CLAUDE_CODE_SESSION_ACCESS_TOKEN": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env",
+        "property",
+        "string"
+      ],
+      "occurrences": 12,
+      "lines": [
+        27177,
+        118695,
+        118717,
+        127915,
+        231193,
+        595309,
+        595399,
+        859916,
+        864551,
+        869095,
+        869163,
+        898930
+      ]
+    },
+    "CLAUDE_CODE_SESSION_ID": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env",
+        "property",
+        "string"
+      ],
+      "occurrences": 12,
+      "lines": [
+        33698,
+        129457,
+        231195,
+        302500,
+        309339,
+        322263,
+        375944,
+        392461,
+        392461,
+        602298,
+        708584,
+        898930
+      ]
+    },
+    "CLAUDE_CODE_SESSION_KIND": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env",
+        "property",
+        "string"
+      ],
+      "occurrences": 29,
+      "lines": [
+        33697,
+        109369,
+        125761,
+        125803,
+        127776,
+        196916,
+        231193,
+        262515,
+        266341,
+        316050,
+        342020,
+        342038,
+        342056,
+        342078,
+        342111,
+        348724,
+        497543,
+        497566,
+        556312,
+        603248,
+        685847,
+        858737,
+        858749,
+        860222,
+        860481,
+        860491,
+        860498,
+        860505,
+        898743
+      ]
+    },
+    "CLAUDE_CODE_SESSION_LOG": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property"
+      ],
+      "occurrences": 2,
+      "lines": [
+        27266,
+        109465
+      ]
+    },
+    "CLAUDE_CODE_SESSION_NAME": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property",
+        "string"
+      ],
+      "occurrences": 4,
+      "lines": [
+        33696,
+        109421,
+        127776,
+        603252
+      ]
+    },
+    "CLAUDE_CODE_SESSIONEND_HOOKS_TIMEOUT_MS": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property"
+      ],
+      "occurrences": 2,
+      "lines": [
+        33699,
+        546988
+      ]
+    },
+    "CLAUDE_CODE_SHELL": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env",
+        "property",
+        "string"
+      ],
+      "occurrences": 5,
+      "lines": [
+        33695,
+        322830,
+        322833,
+        363443,
+        363494
+      ]
+    },
+    "CLAUDE_CODE_SHELL_PREFIX": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env",
+        "property"
+      ],
+      "occurrences": 9,
+      "lines": [
+        33694,
+        302484,
+        302485,
+        309323,
+        309324,
+        322634,
+        322711,
+        547424,
+        547424
+      ]
+    },
+    "CLAUDE_CODE_SIMPLE": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env",
+        "property",
+        "string"
+      ],
+      "occurrences": 15,
+      "lines": [
+        16582,
+        33693,
+        196464,
+        196492,
+        319810,
+        365370,
+        497386,
+        497427,
+        538873,
+        559866,
+        585604,
+        602298,
+        859772,
+        880001,
+        901917
+      ]
+    },
+    "CLAUDE_CODE_SIMPLE_SYSTEM_PROMPT": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env"
+      ],
+      "occurrences": 3,
+      "lines": [
+        33692,
+        115044,
+        115045
+      ]
+    },
+    "CLAUDE_CODE_SIMULATE_PROXY_USAGE": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env"
+      ],
+      "occurrences": 2,
+      "lines": [
+        34010,
+        499555
+      ]
+    },
+    "CLAUDE_CODE_SKILL_NAME": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other"
+      ],
+      "occurrences": 1,
+      "lines": [
+        831302
+      ]
+    },
+    "CLAUDE_CODE_SKIP_ANTHROPIC_AWS_AUTH": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env",
+        "property",
+        "string"
+      ],
+      "occurrences": 7,
+      "lines": [
+        27176,
+        61134,
+        61140,
+        511957,
+        579168,
+        694020,
+        859723
+      ]
+    },
+    "CLAUDE_CODE_SKIP_ANTHROPIC_GOOGLE_CLOUD_AUTH": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property",
+        "string"
+      ],
+      "occurrences": 9,
+      "lines": [
+        27175,
+        61134,
+        61140,
+        191475,
+        191480,
+        511957,
+        579204,
+        694042,
+        859726
+      ]
+    },
+    "CLAUDE_CODE_SKIP_AWS_CRED_CACHE": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property"
+      ],
+      "occurrences": 10,
+      "lines": [
+        27174,
+        98015,
+        98050,
+        405564,
+        413049,
+        579114,
+        579196,
+        579271,
+        891451,
+        891502
+      ]
+    },
+    "CLAUDE_CODE_SKIP_BEDROCK_AUTH": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env",
+        "property",
+        "string"
+      ],
+      "occurrences": 10,
+      "lines": [
+        27173,
+        61134,
+        61140,
+        97986,
+        98021,
+        405527,
+        579087,
+        693972,
+        859722,
+        860444
+      ]
+    },
+    "CLAUDE_CODE_SKIP_FAST_MODE_NETWORK_ERRORS": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property"
+      ],
+      "occurrences": 2,
+      "lines": [
+        33902,
+        106383
+      ]
+    },
+    "CLAUDE_CODE_SKIP_FAST_MODE_ORG_CHECK": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property"
+      ],
+      "occurrences": 2,
+      "lines": [
+        33901,
+        106349
+      ]
+    },
+    "CLAUDE_CODE_SKIP_FOUNDRY_AUTH": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env",
+        "property",
+        "string"
+      ],
+      "occurrences": 5,
+      "lines": [
+        27172,
+        61134,
+        61140,
+        579134,
+        694003
+      ]
+    },
+    "CLAUDE_CODE_SKIP_HFI_VERSION_CHECK": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other"
+      ],
+      "occurrences": 1,
+      "lines": [
+        34009
+      ]
+    },
+    "CLAUDE_CODE_SKIP_MANTLE_AUTH": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env",
+        "property",
+        "string"
+      ],
+      "occurrences": 9,
+      "lines": [
+        27171,
+        61134,
+        61140,
+        413012,
+        511957,
+        579233,
+        694062,
+        859724,
+        860444
+      ]
+    },
+    "CLAUDE_CODE_SKIP_PLUGIN_MCP_SERVERS": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property"
+      ],
+      "occurrences": 4,
+      "lines": [
+        33306,
+        231297,
+        231299,
+        231302
+      ]
+    },
+    "CLAUDE_CODE_SKIP_PLUGIN_MCP_SERVERS_EXCEPT": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property"
+      ],
+      "occurrences": 3,
+      "lines": [
+        33305,
+        231287,
+        231302
+      ]
+    },
+    "CLAUDE_CODE_SKIP_PROJECT_BACKFILL": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other"
+      ],
+      "occurrences": 1,
+      "lines": [
+        33304
+      ]
+    },
+    "CLAUDE_CODE_SKIP_PROMPT_HISTORY": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env",
+        "property",
+        "string"
+      ],
+      "occurrences": 6,
+      "lines": [
+        33303,
+        399658,
+        550915,
+        602298,
+        639360,
+        779465
+      ]
+    },
+    "CLAUDE_CODE_SKIP_REPO_UPLOAD": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other"
+      ],
+      "occurrences": 1,
+      "lines": [
+        33302
+      ]
+    },
+    "CLAUDE_CODE_SKIP_VERTEX_AUTH": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env",
+        "property",
+        "string"
+      ],
+      "occurrences": 9,
+      "lines": [
+        27170,
+        61134,
+        61140,
+        191881,
+        412811,
+        579280,
+        693989,
+        859725,
+        860444
+      ]
+    },
+    "CLAUDE_CODE_SLOW_OPERATION_THRESHOLD_MS": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env"
+      ],
+      "occurrences": 2,
+      "lines": [
+        22107,
+        33955
+      ]
+    },
+    "CLAUDE_CODE_SPAWN_TIMESTAMP_MS": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env"
+      ],
+      "occurrences": 2,
+      "lines": [
+        33691,
+        34267
+      ]
+    },
+    "CLAUDE_CODE_SSE_PORT": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env",
+        "property",
+        "string"
+      ],
+      "occurrences": 4,
+      "lines": [
+        33690,
+        271234,
+        271426,
+        602298
+      ]
+    },
+    "CLAUDE_CODE_STALL_TIMEOUT_MS_FOR_TESTING": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property"
+      ],
+      "occurrences": 2,
+      "lines": [
+        33689,
+        590120
+      ]
+    },
+    "CLAUDE_CODE_STOP_HOOK_BLOCK_CAP": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env"
+      ],
+      "occurrences": 3,
+      "lines": [
+        33688,
+        352662,
+        352668
+      ]
+    },
+    "CLAUDE_CODE_SUBAGENT_CACHE_EVICT": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property"
+      ],
+      "occurrences": 2,
+      "lines": [
+        33301,
+        499020
+      ]
+    },
+    "CLAUDE_CODE_SUBAGENT_MODEL": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property",
+        "string"
+      ],
+      "occurrences": 8,
+      "lines": [
+        33900,
+        61134,
+        61140,
+        456825,
+        456859,
+        511957,
+        511976,
+        511994
+      ]
+    },
+    "CLAUDE_CODE_SUBPROCESS_ENV_SCRUB": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env",
+        "property",
+        "string"
+      ],
+      "occurrences": 12,
+      "lines": [
+        33687,
+        115159,
+        115161,
+        115161,
+        127557,
+        127563,
+        127596,
+        127596,
+        539262,
+        539262,
+        539278,
+        831213
+      ]
+    },
+    "CLAUDE_CODE_SUBSCRIPTION_TYPE": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env",
+        "property"
+      ],
+      "occurrences": 6,
+      "lines": [
+        27169,
+        118617,
+        127715,
+        127730,
+        584855,
+        584864
+      ]
+    },
+    "CLAUDE_CODE_SUPERVISED": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env"
+      ],
+      "occurrences": 4,
+      "lines": [
+        16656,
+        33686,
+        550136,
+        550191
+      ]
+    },
+    "CLAUDE_CODE_SUPPRESS_SESSION_ATTRIBUTION": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property"
+      ],
+      "occurrences": 2,
+      "lines": [
+        33300,
+        362002
+      ]
+    },
+    "CLAUDE_CODE_SYNC_PLUGIN_INSTALL": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property",
+        "string"
+      ],
+      "occurrences": 9,
+      "lines": [
+        33298,
+        244780,
+        616527,
+        858831,
+        867244,
+        875184,
+        875207,
+        875349,
+        879992
+      ]
+    },
+    "CLAUDE_CODE_SYNC_PLUGIN_INSTALL_TIMEOUT_MS": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env"
+      ],
+      "occurrences": 2,
+      "lines": [
+        33681,
+        875198
+      ]
+    },
+    "CLAUDE_CODE_SYNC_PLUGINS": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env",
+        "property",
+        "string"
+      ],
+      "occurrences": 4,
+      "lines": [
+        33299,
+        231192,
+        865806,
+        866025
+      ]
+    },
+    "CLAUDE_CODE_SYNC_PLUGINS_BUFFERED_DOWNLOAD": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property"
+      ],
+      "occurrences": 2,
+      "lines": [
+        33685,
+        502632
+      ]
+    },
+    "CLAUDE_CODE_SYNC_PLUGINS_DOWNLOAD_STALL_MS": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property"
+      ],
+      "occurrences": 2,
+      "lines": [
+        33684,
+        502558
+      ]
+    },
+    "CLAUDE_CODE_SYNC_PLUGINS_INSTALL_TIMEOUT_MS": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env"
+      ],
+      "occurrences": 2,
+      "lines": [
+        33683,
+        865810
+      ]
+    },
+    "CLAUDE_CODE_SYNC_PLUGINS_MCP_TIMEOUT_MS": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env"
+      ],
+      "occurrences": 2,
+      "lines": [
+        33682,
+        865815
+      ]
+    },
+    "CLAUDE_CODE_SYNC_SESSION_REFS": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property",
+        "string"
+      ],
+      "occurrences": 4,
+      "lines": [
+        33680,
+        231195,
+        375955,
+        898930
+      ]
+    },
+    "CLAUDE_CODE_SYNC_SKILLS": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env",
+        "property",
+        "string"
+      ],
+      "occurrences": 5,
+      "lines": [
+        33297,
+        231192,
+        466996,
+        521468,
+        865641
+      ]
+    },
+    "CLAUDE_CODE_SYNC_SKILLS_INSTALL_TIMEOUT_MS": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property"
+      ],
+      "occurrences": 2,
+      "lines": [
+        33679,
+        865466
+      ]
+    },
+    "CLAUDE_CODE_SYNC_SKILLS_WAIT_TIMEOUT_MS": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property"
+      ],
+      "occurrences": 2,
+      "lines": [
+        33678,
+        865461
+      ]
+    },
+    "CLAUDE_CODE_SYNTAX_HIGHLIGHT": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env",
+        "string"
+      ],
+      "occurrences": 6,
+      "lines": [
+        33677,
+        61140,
+        660413,
+        660513,
+        694813,
+        694813
+      ]
+    },
+    "CLAUDE_CODE_SYSTEM_PROMPT_GB_FEATURE": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env"
+      ],
+      "occurrences": 3,
+      "lines": [
+        33676,
+        867686,
+        875021
+      ]
+    },
+    "CLAUDE_CODE_TAG_ISMETA_MESSAGES": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other"
+      ],
+      "occurrences": 1,
+      "lines": [
+        33296
+      ]
+    },
+    "CLAUDE_CODE_TAGS": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env"
+      ],
+      "occurrences": 3,
+      "lines": [
+        33675,
+        580976,
+        580977
+      ]
+    },
+    "CLAUDE_CODE_TASK_LIST_ID": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property"
+      ],
+      "occurrences": 4,
+      "lines": [
+        33674,
+        343868,
+        343868,
+        839691
+      ]
+    },
+    "CLAUDE_CODE_TEAM_TEARDOWN_PARK_TIMEOUT_MS": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property"
+      ],
+      "occurrences": 2,
+      "lines": [
+        33673,
+        873848
+      ]
+    },
+    "CLAUDE_CODE_TEAMMATE_COMMAND": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "string"
+      ],
+      "occurrences": 1,
+      "lines": [
+        181892
+      ]
+    },
+    "CLAUDE_CODE_TEE_SDK_STDOUT": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env"
+      ],
+      "occurrences": 2,
+      "lines": [
+        27265,
+        869369
+      ]
+    },
+    "CLAUDE_CODE_TERMINAL_MCP_TOOLS": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env",
+        "property"
+      ],
+      "occurrences": 3,
+      "lines": [
+        33672,
+        343153,
+        348826
+      ]
+    },
+    "CLAUDE_CODE_TERMINAL_RECORDING": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other"
+      ],
+      "occurrences": 1,
+      "lines": [
+        27264
+      ]
+    },
+    "CLAUDE_CODE_TEST_FIXTURES_ROOT": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env"
+      ],
+      "occurrences": 3,
+      "lines": [
+        33671,
+        368573,
+        368598
+      ]
+    },
+    "CLAUDE_CODE_TEST_FORCE_DENY": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other"
+      ],
+      "occurrences": 1,
+      "lines": [
+        33670
+      ]
+    },
+    "CLAUDE_CODE_TEST_NO_GIT_BASH": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other"
+      ],
+      "occurrences": 1,
+      "lines": [
+        33669
+      ]
+    },
+    "CLAUDE_CODE_TEST_NO_PWSH": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other"
+      ],
+      "occurrences": 1,
+      "lines": [
+        33668
+      ]
+    },
+    "CLAUDE_CODE_THISTLE_GREBE": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property"
+      ],
+      "occurrences": 2,
+      "lines": [
+        33295,
+        123242
+      ]
+    },
+    "CLAUDE_CODE_THRIFTY_SONIC": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property"
+      ],
+      "occurrences": 2,
+      "lines": [
+        33294,
+        114978
+      ]
+    },
+    "CLAUDE_CODE_TMPDIR": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env",
+        "property",
+        "string"
+      ],
+      "occurrences": 14,
+      "lines": [
+        33667,
+        126893,
+        126895,
+        126896,
+        127359,
+        127367,
+        130594,
+        130617,
+        152907,
+        322263,
+        322732,
+        322896,
+        322896,
+        699368
+      ]
+    },
+    "CLAUDE_CODE_TMUX_PREFIX": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property",
+        "string"
+      ],
+      "occurrences": 7,
+      "lines": [
+        33666,
+        183852,
+        602298,
+        717727,
+        717727,
+        717727,
+        717727
+      ]
+    },
+    "CLAUDE_CODE_TMUX_PREFIX_CONFLICTS": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property",
+        "string"
+      ],
+      "occurrences": 4,
+      "lines": [
+        33665,
+        183853,
+        602298,
+        717727
+      ]
+    },
+    "CLAUDE_CODE_TMUX_SESSION": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property",
+        "string"
+      ],
+      "occurrences": 7,
+      "lines": [
+        33664,
+        183851,
+        602298,
+        616538,
+        694365,
+        717725,
+        717727
+      ]
+    },
+    "CLAUDE_CODE_TMUX_TRUECOLOR": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env"
+      ],
+      "occurrences": 2,
+      "lines": [
+        33663,
+        50174
+      ]
+    },
+    "CLAUDE_CODE_TODO_REMINDER_MODE": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property"
+      ],
+      "occurrences": 2,
+      "lines": [
+        33293,
+        559845
+      ]
+    },
+    "CLAUDE_CODE_TOTAL_TOKENS_REMINDER": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property",
+        "string"
+      ],
+      "occurrences": 3,
+      "lines": [
+        33292,
+        62906,
+        184041
+      ]
+    },
+    "CLAUDE_CODE_TOTAL_TOKENS_REMINDER_AFTER_USER_TURN": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property"
+      ],
+      "occurrences": 3,
+      "lines": [
+        33291,
+        62908,
+        184055
+      ]
+    },
+    "CLAUDE_CODE_TOTAL_TOKENS_REMINDER_BUDGET": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property"
+      ],
+      "occurrences": 3,
+      "lines": [
+        33290,
+        62907,
+        184048
+      ]
+    },
+    "CLAUDE_CODE_TRANSCRIPT_LOCAL_GC": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property"
+      ],
+      "occurrences": 2,
+      "lines": [
+        33289,
+        869107
+      ]
+    },
+    "CLAUDE_CODE_TRIGGER_ID": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property",
+        "string"
+      ],
+      "occurrences": 3,
+      "lines": [
+        33662,
+        616535,
+        898930
+      ]
+    },
+    "CLAUDE_CODE_TUI_JUST_SWITCHED": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env",
+        "property"
+      ],
+      "occurrences": 7,
+      "lines": [
+        33661,
+        467507,
+        715057,
+        715145,
+        717831,
+        762199,
+        762390
+      ]
+    },
+    "CLAUDE_CODE_TWO_STAGE_CLASSIFIER": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other"
+      ],
+      "occurrences": 1,
+      "lines": [
+        33288
+      ]
+    },
+    "CLAUDE_CODE_ULTRAREVIEW_PREFLIGHT_FIXTURE": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env"
+      ],
+      "occurrences": 2,
+      "lines": [
+        33660,
+        450133
+      ]
+    },
+    "CLAUDE_CODE_USE_ANTHROPIC_AWS": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env",
+        "property",
+        "string"
+      ],
+      "occurrences": 14,
+      "lines": [
+        27704,
+        34008,
+        61134,
+        61134,
+        61140,
+        98267,
+        98360,
+        192206,
+        511957,
+        582795,
+        626637,
+        631399,
+        721287,
+        859723
+      ]
+    },
+    "CLAUDE_CODE_USE_ANTHROPIC_GOOGLE_CLOUD": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env",
+        "property",
+        "string"
+      ],
+      "occurrences": 13,
+      "lines": [
+        27704,
+        34007,
+        61134,
+        61140,
+        98267,
+        98361,
+        192232,
+        511957,
+        582795,
+        626638,
+        631400,
+        721287,
+        859726
+      ]
+    },
+    "CLAUDE_CODE_USE_BEDROCK": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env",
+        "property",
+        "string"
+      ],
+      "occurrences": 18,
+      "lines": [
+        27704,
+        34006,
+        61134,
+        61134,
+        61140,
+        98267,
+        98358,
+        191491,
+        191592,
+        192206,
+        368906,
+        450105,
+        511957,
+        582795,
+        626634,
+        631397,
+        721287,
+        859722
+      ]
+    },
+    "CLAUDE_CODE_USE_COWORK_PLUGINS": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property"
+      ],
+      "occurrences": 3,
+      "lines": [
+        33287,
+        63742,
+        176164
+      ]
+    },
+    "CLAUDE_CODE_USE_FOUNDRY": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env",
+        "property",
+        "string"
+      ],
+      "occurrences": 11,
+      "lines": [
+        27704,
+        34005,
+        61134,
+        61140,
+        98267,
+        98359,
+        511957,
+        582795,
+        626636,
+        631398,
+        721287
+      ]
+    },
+    "CLAUDE_CODE_USE_GATEWAY": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env",
+        "property",
+        "string"
+      ],
+      "occurrences": 8,
+      "lines": [
+        34004,
+        61134,
+        61140,
+        192983,
+        579066,
+        582807,
+        582815,
+        582826
+      ]
+    },
+    "CLAUDE_CODE_USE_MANTLE": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env",
+        "property",
+        "string"
+      ],
+      "occurrences": 14,
+      "lines": [
+        27704,
+        34003,
+        61134,
+        61134,
+        61140,
+        98267,
+        98279,
+        98362,
+        192206,
+        511957,
+        582795,
+        631401,
+        721287,
+        859724
+      ]
+    },
+    "CLAUDE_CODE_USE_NATIVE_FILE_SEARCH": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other"
+      ],
+      "occurrences": 1,
+      "lines": [
+        33286
+      ]
+    },
+    "CLAUDE_CODE_USE_POWERSHELL_TOOL": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env",
+        "property",
+        "string"
+      ],
+      "occurrences": 8,
+      "lines": [
+        33285,
+        61140,
+        129629,
+        539370,
+        846219,
+        846221,
+        858549,
+        858551
+      ]
+    },
+    "CLAUDE_CODE_USE_VERTEX": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env",
+        "property",
+        "string"
+      ],
+      "occurrences": 16,
+      "lines": [
+        27704,
+        34002,
+        61134,
+        61140,
+        98267,
+        98363,
+        192232,
+        368905,
+        368906,
+        450117,
+        511957,
+        582795,
+        626635,
+        631396,
+        721287,
+        859725
+      ]
+    },
+    "CLAUDE_CODE_USER_DIALOG_TIMEOUT_MS": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property"
+      ],
+      "occurrences": 2,
+      "lines": [
+        33659,
+        117510
+      ]
+    },
+    "CLAUDE_CODE_USER_EMAIL": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env",
+        "string"
+      ],
+      "occurrences": 3,
+      "lines": [
+        27168,
+        231195,
+        582352
+      ]
+    },
+    "CLAUDE_CODE_VERSION": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other"
+      ],
+      "occurrences": 1,
+      "lines": [
+        64603
+      ]
+    },
+    "CLAUDE_CODE_VOICE_FORWARD_INTERIMS_TYPED": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env"
+      ],
+      "occurrences": 2,
+      "lines": [
+        33658,
+        449047
+      ]
+    },
+    "CLAUDE_CODE_WALNUT_SPIRE": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property"
+      ],
+      "occurrences": 2,
+      "lines": [
+        33284,
+        193292
+      ]
+    },
+    "CLAUDE_CODE_WEBFETCH_USE_CCR_PROXY": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property"
+      ],
+      "occurrences": 2,
+      "lines": [
+        33283,
+        376886
+      ]
+    },
+    "CLAUDE_CODE_WEBSEARCH_USE_CCR_PROXY": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property"
+      ],
+      "occurrences": 2,
+      "lines": [
+        33282,
+        516521
+      ]
+    },
+    "CLAUDE_CODE_WEBSOCKET_AUTH_FILE_DESCRIPTOR": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env",
+        "property",
+        "string"
+      ],
+      "occurrences": 5,
+      "lines": [
+        27167,
+        118663,
+        118670,
+        231193,
+        864551
+      ]
+    },
+    "CLAUDE_CODE_WORKER_EPOCH": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env",
+        "property",
+        "string"
+      ],
+      "occurrences": 7,
+      "lines": [
+        33657,
+        527292,
+        595310,
+        872307,
+        876384,
+        878278,
+        898930
+      ]
+    },
+    "CLAUDE_CODE_WORKFLOW_SIZE_WARNING_AGENTS": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property"
+      ],
+      "occurrences": 2,
+      "lines": [
+        33280,
+        777832
+      ]
+    },
+    "CLAUDE_CODE_WORKFLOW_SIZE_WARNING_TOKENS": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property"
+      ],
+      "occurrences": 2,
+      "lines": [
+        33279,
+        777834
+      ]
+    },
+    "CLAUDE_CODE_WORKFLOWS": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "process.env"
+      ],
+      "occurrences": 3,
+      "lines": [
+        33281,
+        115599,
+        115606
+      ]
+    },
+    "CLAUDE_CODE_WORKSPACE_HOST_PATHS": {
+      "prefix": "CLAUDE_CODE_",
+      "forms": [
+        "other",
+        "property"
+      ],
+      "occurrences": 2,
+      "lines": [
+        33656,
+        128079
+      ]
+    }
+  }
+}
