@@ -1,0 +1,165 @@
+# Stage 1 — per-subagent MCP patch + non-blocking auto-port
+
+## Goal
+
+Two coupled changes to `~/.agents/claude-patching`:
+
+1. **`mcp-per-subagent.mjs`** — a local patch giving each subagent its own MCP server process, fixing the dedup bug ([anthropics/claude-code#84638](https://github.com/anthropics/claude-code/issues/84638)), and stamping `CLAUDE_MCP_PER_AGENT=1` into every spawned stdio server's environment as a detectable canary.
+2. **Non-blocking auto-port** — a Claude Code update never launches stock again. The wrapper launches the newest *patched* binary immediately and reconciles the new version in the background: a headless Claude re-anchors any drifted patches, a smoke test gates the result, and only a passing candidate is promoted.
+
+Both sit behind the existing `check-and-apply.sh` → `apply-display-patches.sh` pipeline. This stage does not touch browser-swarm.
+
+## Current state (verified 2026-08-06)
+
+- `~/.local/bin/claude` → `versions/2.1.223`, **stock**: no `.orig`, no `.patched`. `2.1.222` is also stock (byte-identical to its `.orig`). Claude Code is running fully unpatched right now.
+- An orphan `2.1.220.patched` stamp sits in `versions/` with no `2.1.220` binary: **the updater prunes old versions.** Any fallback binary must be archived outside `versions/`.
+- The wrapper (`~/.agents/home/.zshrc`) runs `check-and-apply.sh`, then `_scrub_secrets claude` — `claude` resolves through `PATH` to the symlink, i.e. always the newest installed version. Launching anything else requires passing an explicit path.
+- Upstream coverage has collapsed (~13% of July releases got a patch set) while the patches themselves barely drift (0–2 re-anchors per release, often zero; 2.1.220 needed none). Self-porting is cheap; waiting is not.
+
+## Part A — the dedup patch
+
+### Mechanism
+
+MCP connections are memoized (lodash `memoize`) on the connect function, keyed by `` `${serverName}-${sha256(config)}` ``. The key normalizer strips `scope` but **hashes `env`**. Two subagents with byte-identical inline configs therefore hit one memo entry, await the same promise, and share one client.
+
+The subagent path is the only caller that materializes an inline config, at the frontmatter resolver. Injecting a per-invocation value into `env` there makes the memo key unique — that *is* the fix — and because the stdio spawn site ends its environment with `...config.env`, the same injection reaches the child process as the canary. One edit, both jobs.
+
+### Anchor
+
+```
+return{name:n,config:{...o,scope:"dynamic"},isNewlyCreated:!0}
+```
+
+Match structurally, capturing the minified names:
+
+```
+/return\{name:([$\w]+),config:\{\.\.\.([$\w]+),scope:"dynamic"\},isNewlyCreated:!0\}/
+```
+
+One occurrence in both 2.1.222 and 2.1.223. Only two literal tokens (`scope:"dynamic"`, `isNewlyCreated:!0`), zero minified identifiers — immune to identifier drift. It sits *upstream* of the two parallel MCP client trees Anthropic currently ships (v1 default, v2 behind `MCP_SDK_GENERATION` or a growthbook flag), so one edit covers both arms and survives the v1 removal. Patching inside either client module would silently miss the live arm.
+
+### Transformation
+
+```js
+return{name:$1,config:{...$2,scope:"dynamic",
+  ...($2.type==="stdio"||$2.type===void 0&&"command" in $2
+     ?{env:{...$2.env,
+            CLAUDE_MCP_PER_AGENT:"1",
+            CLAUDE_MCP_AGENT_SLOT:"s"+(globalThis.__ccMcpAgentSlot=(globalThis.__ccMcpAgentSlot||0)+1)}}
+     :{})},isNewlyCreated:!0}
+```
+
+The monotonic slot is deliberate: the real per-subagent id (`agentId`) is *not* in scope here, and threading it in would need a second, identifier-heavy anchor plus a signature change. The resolver runs exactly once per (subagent launch × declared server), so a counter separates connections just as well. Revisit only if the canary must be correlated to a specific subagent from outside the process.
+
+Scope the injection to stdio deliberately. Named (string) frontmatter specs resolve from disk config, are excluded from the subagent cleanup list, and must keep sharing the session connection — per-agent-izing them would leak processes. http/sse servers have no child process, never receive `env`, and re-keying them would fragment OAuth state.
+
+### Guards (house style, loud failure)
+
+Assert before patching; fail with the binary untouched:
+
+- The key normalizer still hashes `env` — its `let{scope:…,configErrorReason:…,...rest}` destructure is present exactly once, **and** no `delete <id>.env` appears in it. If `env` joins the strip list, the patch would still inject the canary while silently no longer separating connections; this guard is what makes that failure loud.
+- Both stdio spawn sites still spread `config.env` last — the `CLAUDE_CODE_SESSION_ID:…,CLAUDECODE:"1",...t.env}` shape must match exactly **2** times (v1 + v2). A count of 1 means a tree was removed or restructured; stop.
+- The anchor itself matches exactly once.
+
+### No teardown work
+
+Per-agent clients keep `isNewlyCreated` true, so the subagent runner's `finally` closes each one; the client's `onclose` evicts its own cache entries, and the process-exit killer still catches hard kills. No refcounting to add.
+
+### Adjacent bugs — do not fix here
+
+The same site holds two more defects, both to be added to #84638 as a follow-up: the shared client is registered in *both* subagents' cleanup lists (the first to finish kills the sibling's server), and stripping `scope` lets a subagent's inline server hash identically to a main-session server, so the subagent adopts and then closes it. This patch makes both unreachable for stdio inline servers by construction; do not attempt separate fixes.
+
+### Starting point
+
+A dry-run-verified draft exists at `/Users/akelly/.claude/jobs/87f26767/tmp/patchability/mcp-per-subagent.mjs` (applies cleanly and passes `node --check` on both 2.1.222 and 2.1.223). It lives in a job directory that may be reaped — treat it as a convenience, not the spec. This document is the spec.
+
+### Wiring
+
+- Add `mcp-per-subagent.mjs` to `apply-display-patches.sh` alongside the other local patches, and to its header comment block.
+- Add it to the stamp fingerprint `cat` lists in **both** `apply-display-patches.sh` and `check-and-apply.sh` — they must stay in sync or every launch repatches.
+
+## Part B — non-blocking auto-port
+
+### Launch rule
+
+One rule replaces synchronous patch-on-launch:
+
+> Launch the best available patched binary now. Reconcile in the background.
+
+Resolution order:
+
+1. Newest installed version has a valid `.patched` stamp → launch it (silent fast path, unchanged).
+2. Otherwise, an archived patched binary exists → launch the newest archived one and spawn the background port for the newest installed version.
+3. Otherwise (no patched binary anywhere, e.g. today) → launch stock with a message, and spawn the background port.
+
+This makes *all* patching asynchronous, including when a patch set already exists — one code path, and no launch ever blocked on a 272 MB unpack/repack.
+
+### Wrapper contract
+
+`check-and-apply.sh <target-file>` writes the absolute path of the binary to launch into `<target-file>`. Message and exit-code semantics are unchanged (exit 1 = printed something, wrapper holds for Enter on interactive launches).
+
+```zsh
+_claude_with_profile() {
+  local target="${TMPDIR:-/tmp}/claude-launch-target.$$" bin=claude
+  if ! "$HOME/.agents/claude-patching/check-and-apply.sh" "$target" && [[ -t 0 && -t 1 ]]; then
+    printf 'Press Enter to launch Claude Code... '
+    read -r
+  fi
+  [[ -s "$target" ]] && bin="$(<"$target")"
+  rm -f "$target"
+  CLAUDE_CONFIG_DIR="$1" _scrub_secrets "$bin" "${@:2}"
+}
+```
+
+A missing or empty target file falls back to `claude` on `PATH`, so a hard failure in the check degrades to today's behavior.
+
+### Archive
+
+Patched binaries are archived to `~/.local/share/claude/patched/<ver>`, outside the pruned `versions/`. Keep the **2 newest**, prune the rest — roughly 545 MB.
+
+**Verify before relying on it:** that a patched binary launches correctly from the archive path — version reporting, session start, and that the updater ignores it. If anything misbehaves, copy the archived binary back to `versions/<ver>` and launch from there instead (always write a new file and `mv` it into place; never overwrite in place, per the code-signature-per-inode caveat).
+
+Relink the app-bundle hardlink to whatever the terminal launches so desktop and daemon launches share it, and keep the existing `pkill -f -- '--bg-spare'` so the daemon reforks from the new binary.
+
+### Background port
+
+Spawned detached from `check-and-apply.sh`; never blocks the launch.
+
+- **Recursion guard**: invoke the version binary by absolute path (never the shell function) with `CLAUDE_PATCHING_AUTOPORT=1` in the environment; `check-and-apply.sh` exits immediately when that variable is set.
+- **Concurrency**: a lock directory under `patches-local/`, self-healing on a stale timeout, mirroring the existing `$BIN.lock` pattern.
+- **Retry policy**: on failure write `patches-local/<ver>.failed` with timestamp and reason; do not retry that version until the marker is older than 24 h or `repo` has pulled new commits. Without this, every launch respawns a failing agent.
+- **Agent**: headless Opus (`-p --model opus`), cwd `~/.agents/claude-patching`, unattended so it needs `--dangerously-skip-permissions`. Its blast radius is bounded by the promotion gate below, not by permissions.
+
+Its task: unpack the new version, apply the patch set we actually use (the `PATCH_IDS` list plus the local `.mjs` patches — not all 29 upstream patches), and re-anchor only those that fail, using the previous version's `index.json` plus phate45's `baseline-find/replace.txt` and `diff-*.json` as drift inputs. Re-anchored patches are written to **`patches-local/<ver>/`**, deliberately outside the upstream clone so `git pull` stays a fast-forward and never conflicts with a patch set phate45 ships later. `apply-display-patches.sh` resolves `repo/patches/<ver>` first, then `patches-local/<ver>`.
+
+### Promotion gate
+
+**The port agent never touches the live launch path.** It produces a candidate binary; promotion (archive, stamp, relink) happens only after the gate passes:
+
+1. `node --check` on the patched bundle.
+2. `<candidate> --version`, and a trivial `-p` prompt completes.
+3. Display-patch assertions through the pyte PTY harness (per the README's approach: send a prompt, push it off-screen with a local `!seq 1 300`, assert on rendered rows).
+4. **Dedup functional test**: two agent definitions with byte-identical inline `mcpServers`, spawned concurrently, must produce **two** server processes, and each child must see `CLAUDE_MCP_PER_AGENT=1`. The Experiment A harness (`logsrv.js` plus runner) is at `/Users/akelly/.claude/jobs/87f26767/tmp/expA/`; **copy it into `tests/` as a permanent fixture** before that job directory is reaped.
+
+Mandatory vs optional: `mcp-per-subagent` **must** apply and pass test 4 — if it fails, promote nothing. A drifted *display* patch may be dropped from the set, with promotion proceeding and the dropped patch named loudly, so one cosmetic anchor never pins the machine to an old version.
+
+### Notification
+
+The port finishes minutes after launch, mid-session. Notify on completion via `osascript -e 'display notification …'`, and leave a message file that the next launch prints (reusing the exit-1 hold-for-Enter path). Report the version promoted and any dropped patches.
+
+### Staleness ceiling
+
+If the launched binary is more than 3 releases or 7 days behind the newest installed version, print a loud warning at launch. Silent indefinite fallback is this design's main risk, and Anthropic occasionally hard-deprecates old versions.
+
+## Sequencing
+
+1. Part A: patch, guards, and fixture tests, verified by hand against 2.1.223 and 2.1.222.
+2. Part B: wrapper contract, archive, background port, promotion gate.
+3. Manual end-to-end: force an unpatched state, confirm the archived patched binary launches instantly, the background port runs, the gate passes, and the next launch is on the new version.
+
+Separate commits per part.
+
+## Out of scope
+
+- browser-swarm changes — the single-agent cutover, the `CLAUDE_MCP_PER_AGENT` consumer check, the Firefox shared daemon, and the TS port are stage 2, planned once this patch is proven.
+- Adopting upstream `prompt-slim` (≈6.3 k standing tokens) and `system-reminders` (~100–150 tokens per event), which the current set omits. `prompt-slim` rewrites instruction text as well as trimming it, so it is a behavioral decision, not a size one.
