@@ -5,7 +5,7 @@
 Two coupled changes to `~/.agents/claude-patching`:
 
 1. **`mcp-per-subagent.mjs`** — a local patch giving each subagent its own MCP server process, fixing the dedup bug ([anthropics/claude-code#84638](https://github.com/anthropics/claude-code/issues/84638)), and stamping `CLAUDE_MCP_PER_AGENT=1` into every spawned stdio server's environment as a detectable canary.
-2. **Non-blocking auto-port** — a Claude Code update never launches stock again. The wrapper launches the newest *patched* binary immediately and reconciles the new version in the background: a headless Claude re-anchors any drifted patches, a smoke test gates the result, and only a passing candidate is promoted.
+2. **Non-blocking auto-port** — a Claude Code update never launches stock again. The wrapper launches the newest *patched* binary immediately and reconciles the new version in the background: the patch set is re-applied mechanically, a Claude agent re-anchors drifted patches only when the mechanical pass fails, the functional suite gates the result, and only a passing candidate is promoted.
 
 Both sit behind the existing `check-and-apply.sh` → `apply-display-patches.sh` pipeline. This stage does not touch browser-swarm.
 
@@ -154,9 +154,13 @@ Spawned detached from `check-and-apply.sh`; never blocks the launch.
 - **Recursion guard**: invoke the version binary by absolute path (never the shell function) with `CLAUDE_PATCHING_AUTOPORT=1` in the environment; `check-and-apply.sh` exits immediately when that variable is set.
 - **Concurrency**: a lock directory under `patches-local/`, self-healing on a stale timeout, mirroring the existing `$BIN.lock` pattern.
 - **Retry policy**: on failure write `patches-local/<ver>.failed` with timestamp and reason; do not retry that version until the marker is older than 24 h or `repo` has pulled new commits. Without this, every launch respawns a failing agent.
-- **Agent**: headless Opus — `<versions-binary> -p --model opus`, invoked by absolute path per the recursion guard — cwd `~/.agents/claude-patching`, sandboxed in auto permission mode (the `--permission-mode` value per `claude --help`; never `--dangerously-skip-permissions`). The sandbox and the promotion gate below bound its blast radius.
+The port is mechanical-first, in two tiers:
 
-Its task: unpack the new version, apply the patch set we actually use (the `PATCH_IDS` list plus the local `.mjs` patches — not all 29 upstream patches), and re-anchor only those that fail, using the previous version's `index.json` plus phate45's `baseline-find/replace.txt` and `diff-*.json` as drift inputs. Re-anchored patches are written to **`patches-local/<ver>/`** — upstream ones as patch files there, local `.mjs` ones as `patches-local/<ver>/<name>.mjs` per the wiring rule — deliberately outside both the upstream clone (so `git pull` stays a fast-forward and never conflicts with a patch set phate45 ships later) and the canonical `$ROOT` copies (so a re-anchor for one version never rewrites the current-version patch). `apply-display-patches.sh` resolves `repo/patches/<ver>` first, then `patches-local/<ver>`, then `$ROOT` for local patches.
+**Tier 1 — mechanical, the common case.** The port script itself unpacks the new version and applies the patch set we actually use (the `PATCH_IDS` list plus the local `.mjs` patches — not all 29 upstream patches), resolving each patch per the wiring rule. Drift is rare (0–2 anchors per release, usually zero), so most ports finish here with no LLM involved: gate, then promote.
+
+**Tier 2 — agent, only when tier 1 fails.** If any patch fails to apply, escalate to a Claude agent to re-anchor exactly the failing patches, using the previous version's `index.json` plus phate45's `baseline-find/replace.txt` and `diff-*.json` as drift inputs. Re-anchored patches are written to **`patches-local/<ver>/`** — upstream ones as patch files there, local `.mjs` ones as `patches-local/<ver>/<name>.mjs` per the wiring rule — deliberately outside both the upstream clone (so `git pull` stays a fast-forward and never conflicts with a patch set phate45 ships later) and the canonical `$ROOT` copies (so a re-anchor for one version never rewrites the current-version patch). `apply-display-patches.sh` resolves `repo/patches/<ver>` first, then `patches-local/<ver>`, then `$ROOT` for local patches. After the agent finishes, tier 1 reruns with the new overlay.
+
+- **Agent invocation**: `<versions-binary> -p --model opus`, by absolute path per the recursion guard, cwd `~/.agents/claude-patching`, sandboxed in auto permission mode (the `--permission-mode` value per `claude --help`; never `--dangerously-skip-permissions`). Launch it in a visible Terminal window (`osascript -e 'tell app "Terminal" to do script "…"'`) so the port is watchable while it runs; completion still notifies and leaves the message file, since the window may go unobserved. The sandbox and the promotion gate bound its blast radius.
 
 ### Promotion gate
 
