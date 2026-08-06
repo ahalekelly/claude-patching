@@ -19,7 +19,7 @@ BIN="$(realpath "$HOME/.local/bin/claude")"
 VER="$(basename "$BIN")"
 # Keep the stamp expression in sync with apply-display-patches.sh
 STAMP="$(stat -f '%i %z %m' "$BIN"
-  cat "$ROOT/apply-display-patches.sh" "$ROOT/defer-tool-descriptions.mjs" "$ROOT/sticky-prompt-header.mjs" "$ROOT/task-reminder-conditional.mjs" "$ROOT/repo/patches/$VER/index.json" 2>/dev/null | shasum)"
+  cat "$ROOT/apply-display-patches.sh" "$ROOT/defer-tool-descriptions.mjs" "$ROOT/sticky-prompt-header.mjs" "$ROOT/task-reminder-conditional.mjs" "$ROOT/agents-view-shortcut.mjs" "$ROOT/repo/patches/$VER/index.json" 2>/dev/null | shasum)"
 [[ -f "$BIN.patched" && "$(<"$BIN.patched")" == "$STAMP" ]] && exit 0
 
 # Lock out concurrent launches; self-heal a stale lock from a crashed run

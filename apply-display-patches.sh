@@ -25,6 +25,9 @@
 #                            message (stock: grey on grey)
 #   task-reminder-conditional  the periodic task_reminder nag only fires when
 #                            the session's task list is non-empty
+#   agents-view-shortcut     meta+a (action app:openAgentsView, rebindable)
+#                            goes to the agents view from anywhere; stock only
+#                            offers left-arrow on an empty idle prompt
 # Deliberately NOT applied: thinking-visibility / thinking-no-fold — they pin
 # thinking blocks permanently inline; stock behavior (streams while thinking,
 # collapses to a pill after) is what we want, via showThinkingSummaries.
@@ -79,6 +82,9 @@ node "$ROOT/sticky-prompt-header.mjs" "$JS"
 echo "--- task-reminder-conditional (local)"
 node "$ROOT/task-reminder-conditional.mjs" "$JS"
 
+echo "--- agents-view-shortcut (local)"
+node "$ROOT/agents-view-shortcut.mjs" "$JS"
+
 "$TWEAKCC" repack "$JS" "$BIN"
 
 # Repack writes a fresh file, leaving the desktop app's hardlink on the old
@@ -90,7 +96,7 @@ APP="$HOME/.local/share/claude/ClaudeCode.app/Contents/MacOS/claude"
 # patched binary's identity plus a patch-set fingerprint, so a swapped binary
 # or an edited patch set invalidates the stamp and the next launch repatches.
 { stat -f '%i %z %m' "$BIN"
-  cat "$ROOT/apply-display-patches.sh" "$ROOT/defer-tool-descriptions.mjs" "$ROOT/sticky-prompt-header.mjs" "$ROOT/task-reminder-conditional.mjs" "$INDEX" 2>/dev/null | shasum
+  cat "$ROOT/apply-display-patches.sh" "$ROOT/defer-tool-descriptions.mjs" "$ROOT/sticky-prompt-header.mjs" "$ROOT/task-reminder-conditional.mjs" "$ROOT/agents-view-shortcut.mjs" "$INDEX" 2>/dev/null | shasum
 } > "$BIN.patched"
 
 # The daemon pre-forks warm spare processes that load the binary's JS at fork
