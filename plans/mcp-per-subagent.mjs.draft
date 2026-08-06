@@ -1,0 +1,79 @@
+#!/usr/bin/env node
+// mcp-per-subagent: give every concurrently-running subagent its own stdio MCP
+// server process for the servers its frontmatter declares inline.
+//
+// Stock behavior: connectToServer is a lodash memoize whose resolver is
+// `ip(name, config)` = `${name}-${sha256(normalizedConfig).slice(0,16)}`, and
+// the normalizer strips `scope` before hashing. Two subagents whose frontmatter
+// declares a byte-identical inline mcpServers block therefore compute the same
+// key, share one in-flight promise, and end up on one server process and one
+// MCP session. Worse, both are flagged isNewlyCreated, so whichever subagent
+// finishes first runs the shared client's cleanup and kills the process out
+// from under its sibling.
+//
+// Anchor: the inline-spec branch of the subagent frontmatter resolver, which is
+// the only place an agent-declared inline server config is materialized:
+//   return{name:n,config:{...o,scope:"dynamic"},isNewlyCreated:!0}
+// The patch appends two env vars to stdio configs there. Because the memoize
+// key hashes `env`, a per-invocation slot number makes each subagent's config
+// hash unique, which is the whole fix — the env vars are also spread into the
+// spawned process (the stdio branch of connectToServer ends its env with
+// `...t.env`), so CLAUDE_MCP_PER_AGENT doubles as a canary an MCP server can
+// read to detect an unpatched harness.
+//
+// Scoped to stdio deliberately: http/sse/claudeai-proxy inline servers have no
+// process to duplicate, and `env` never reaches them. Named (string) frontmatter
+// specs resolve to the session's own disk config and are left on the shared
+// connection, as they should be. The main session's servers never pass through
+// this function.
+//
+// Teardown needs no extra work: the per-agent client is isNewlyCreated, so the
+// subagent's finally block closes it, and the client's own onclose handler
+// deletes its `ip()` entry from the connect memo — the cache self-heals.
+import { readFileSync, writeFileSync } from "node:fs";
+
+const jsPath = process.argv[2];
+if (!jsPath) {
+  console.error("usage: mcp-per-subagent.mjs <unpacked-cli.js>");
+  process.exit(1);
+}
+let js = readFileSync(jsPath, "utf8");
+
+const regex =
+  /return\{name:([$\w]+),config:\{\.\.\.([$\w]+),scope:"dynamic"\},isNewlyCreated:!0\}/g;
+const matches = [...js.matchAll(regex)];
+if (matches.length !== 1) {
+  console.error(
+    `ERROR: mcp-per-subagent: ${matches.length} matches for the inline agent MCP spec, expected exactly 1 — bundle layout changed, refusing`,
+  );
+  process.exit(1);
+}
+
+// Guard that the memoize key still hashes env and that the stdio transport
+// still spreads config.env into the spawned process. Both generations of the
+// MCP client tree (v1 and v2 ship side by side) carry the stdio spread.
+const keyNormalizer =
+  /let\{scope:[$\w]+,pluginSource:[$\w]+,pluginPath:[$\w]+,configError:[$\w]+,configErrorReason:[$\w]+,\.\.\.([$\w]+)\}=([$\w]+)/g;
+if ([...js.matchAll(keyNormalizer)].length !== 1) {
+  console.error(
+    "ERROR: mcp-per-subagent: the connect-cache key normalizer moved — refusing (env may no longer be part of the cache key)",
+  );
+  process.exit(1);
+}
+const stdioSpawn = /CLAUDE_CODE_SESSION_ID:[$\w]+\(\),CLAUDECODE:"1",\.\.\.([$\w]+)\.env\}/g;
+const spawnMatches = [...js.matchAll(stdioSpawn)];
+if (spawnMatches.length !== 2) {
+  console.error(
+    `ERROR: mcp-per-subagent: ${spawnMatches.length} stdio spawn sites spreading config.env, expected 2 (v1 + v2 client trees) — refusing`,
+  );
+  process.exit(1);
+}
+
+js = js.replace(
+  regex,
+  'return{name:$1,config:{...$2,scope:"dynamic",...($2.type==="stdio"||$2.type===void 0&&"command" in $2?{env:{...$2.env,CLAUDE_MCP_PER_AGENT:"1",CLAUDE_MCP_AGENT_SLOT:"s"+(globalThis.__ccMcpAgentSlot=(globalThis.__ccMcpAgentSlot||0)+1)}}:{})},isNewlyCreated:!0}',
+);
+writeFileSync(jsPath, js);
+console.log(
+  "mcp-per-subagent: inline subagent stdio MCP servers now key per-invocation and carry CLAUDE_MCP_PER_AGENT=1",
+);
