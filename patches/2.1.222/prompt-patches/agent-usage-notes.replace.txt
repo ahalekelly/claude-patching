@@ -7,7 +7,8 @@ If the target is already known, use the direct tool: ${__READVAR__} for a known 
 A fork runs in the background and keeps its tool output out of your context. If you are the fork, execute directly \u2014 don't re-delegate.`:"",__CVAR__="For a single-fact lookup where you already know the file, symbol, or value, search directly. Once you've delegated a search, don't also run it yourself \u2014 wait for the result.";return`${__DVAR__}
 
 - The agent's final message is returned to you as the tool result; it is not shown to the user \u2014 relay what matters.
-- Use ${__SENDVAR__} with the agent's ID or name to continue a previously spawned agent with its context intact; a new ${__TOOLVAR__} call${__TEAMS__?" with a subagent_type":""} starts fresh.${__TEAMS__?"\n- Teammates (spawned with \`name\`/\`mode\`) are ongoing collaborators you message across turns \u2014 reach for one only when the work is genuinely continuous. For one-and-done handoffs (refactor a module to a design, review a folder for inconsistencies), spawn a plain subagent and use its returned result; omit \`name\`/\`mode\` so you don't pay the teammate coordination cost.":""}
+- Use ${__SENDVAR__} with the agent's ID or name to continue a previously spawned agent with its context intact; a new ${__TOOLVAR__} call${__TEAMS__?" with a subagent_type":""} starts fresh.
+- If you might want to reuse or resume this agent later, give it a \`name\`: ${__SENDVAR__} can then target it by name and it picks up with its full context. Omit \`name\` for one-and-done work.
 - \`isolation: "worktree"\` gives the agent its own git worktree (auto-cleaned if unchanged).${__BVAR__}${__EVAR__}${__AVAR__}`}return`${__DVAR__}
 ${__PVAR__}
 ## Usage notes
