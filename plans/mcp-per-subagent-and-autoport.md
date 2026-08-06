@@ -79,6 +79,31 @@ A dry-run-verified draft is committed at `plans/mcp-per-subagent.mjs.draft` (app
 - Local patches resolve per version: `patches-local/<ver>/<name>.mjs` if present, else `$ROOT/<name>.mjs`. The `$ROOT` copy is the canonical patch; a per-version copy exists only when Part B's port agent had to re-anchor it.
 - Replace the duplicated hardcoded stamp `cat` lists in `apply-display-patches.sh` and `check-and-apply.sh` with the same expression in both: `apply-display-patches.sh` itself, a sorted glob of `$ROOT/*.mjs` and `patches-local/$VER/*`, and `repo/patches/$VER/index.json`. Hashing that superset (not just the resolved files) keeps the two scripts trivially identical, ends the manual stay-in-sync requirement, and still invalidates the stamp whenever any input — including a re-anchored per-version copy — changes.
 
+## Functional test suite — every patch, end to end
+
+Anchor counts and `node --check` catch layout drift but not semantic drift: a patch can apply cleanly to a lookalike site, or to a site whose surrounding semantics changed, and misbehave with every mechanical signal green. So every patch we apply gets a behavioral test in `tests/` asserting the patched *behavior*, not the patch's application. Two harness patterns cover all eleven:
+
+- **Capture-proxy** — launch the candidate headless with `ANTHROPIC_BASE_URL` pointed at a local server that records every API request and replays canned responses. Assertions run on the outgoing payloads (system prompt, tool schemas, message stream): hermetic, deterministic, zero tokens. If the CLI refuses to run against the proxy for some patch (auth entanglement), fall back to a PTY assertion for that patch and note it loudly.
+- **pyte PTY** — drive the interactive TUI in a pseudo-terminal, assert on rendered rows (send a prompt, push it off-screen with a local `!seq 1 300`, assert). For patches whose point is what gets drawn. PTY tests should also point at the capture-proxy for responses so they stay hermetic too.
+
+Per-patch assertions:
+
+| patch | harness | asserts |
+|---|---|---|
+| no-collapse-reads | PTY | parallel Read/Grep/Glob calls render as individual lines, never "Read N files" |
+| toolsearch-visibility | PTY | a ToolSearch call renders a visible line |
+| quiet-notifications | proxy | a task notification for output already read via TaskOutput does not re-carry that output |
+| cron-visibility | PTY + proxy | a cron-fired prompt renders with the CronJob prefix, and the prefix reaches the outgoing user message |
+| tool-defer-whitelist | proxy | tools named in `CLAUDE_CODE_IMMEDIATE_TOOLS` ship full schemas in the first request instead of deferred stubs |
+| worktree-dedup | proxy | launched from a worktree, duplicated CLAUDE.md/rules content appears once in the system prompt |
+| trim-context-bloat | proxy | userEmail, currentDate, and the model-family paragraph are absent from the system prompt |
+| defer-tool-descriptions | proxy | Workflow/Artifact tool descriptions are the short skill-pointer stubs |
+| sticky-prompt-header | PTY | with the prompt scrolled off-screen, the header row renders, styled as a user message |
+| task-reminder-conditional | proxy | no task_reminder when the session task list is empty; present when non-empty |
+| mcp-per-subagent | live sessions | the `tests/mcp-per-subagent/` fixture finished per its README: two concurrent agents with byte-identical inline `mcpServers` produce two server PIDs, five calls each, `CLAUDE_MCP_PER_AGENT=1` in each child's env |
+
+A runner — `tests/run-all.sh <binary>` — runs the suite against a given binary and prints per-test pass/fail. The promotion gate and the negative control both go through it. The **negative control** is part of the suite's definition of done: run against a stock binary, every test must *fail*, proving each test discriminates rather than vacuously passing.
+
 ## Part B — non-blocking auto-port
 
 ### Launch rule
@@ -139,10 +164,9 @@ Its task: unpack the new version, apply the patch set we actually use (the `PATC
 
 1. `node --check` on the patched bundle.
 2. `<candidate> --version`, and a trivial `-p` prompt completes.
-3. Display-patch assertions through a pyte PTY harness (per the README's approach: send a prompt, push it off-screen with a local `!seq 1 300`, assert on rendered rows). This harness does not exist yet — building a minimal one is part of this stage.
-4. **Dedup functional test**: two agent definitions with byte-identical inline `mcpServers`, spawned concurrently, must produce **two** server processes, and each child must see `CLAUDE_MCP_PER_AGENT=1`. The reproduction fixture is committed at `tests/mcp-per-subagent/`; finish it into a runnable pass/fail test per its README (parameterize the binary and project dir, add the two-PIDs + canary assertions, keep the stock one-PID run as the negative control).
+3. The full functional suite via `tests/run-all.sh <candidate>` — every applied patch's behavioral test must pass.
 
-Mandatory vs optional: `mcp-per-subagent` **must** apply and pass test 4 — if it fails, promote nothing. A drifted *display* patch may be dropped from the set, with promotion proceeding and the dropped patch named loudly, so one cosmetic anchor never pins the machine to an old version.
+Mandatory vs optional: `mcp-per-subagent` **must** apply and pass its suite test — if it fails, promote nothing. A drifted *display* patch may be dropped from the set, with promotion proceeding, the dropped patch named loudly, and its suite test skipped — so one cosmetic anchor never pins the machine to an old version.
 
 Promotion itself takes the same `$BIN.lock` that `check-and-apply.sh` uses, so a concurrent launch never reads a half-promoted state (stamp written before the binary lands, archive mid-copy). Every promoted file is written new and `mv`'d into place, per the code-signature-per-inode caveat.
 
@@ -156,9 +180,10 @@ If the launched binary is more than 3 releases or 7 days behind the newest insta
 
 ## Sequencing
 
-1. Part A: patch, guards, and fixture tests, verified by hand against 2.1.223 and 2.1.222.
-2. Part B: wrapper contract, archive, background port, promotion gate.
-3. Manual end-to-end: force an unpatched state, confirm the archived patched binary launches instantly, the background port runs, the gate passes, and the next launch is on the new version.
+1. Part A: patch and guards, verified by hand against 2.1.223 and 2.1.222.
+2. The functional test suite: both harnesses, all eleven tests, proven green against a hand-patched candidate and red against stock (negative control).
+3. Part B: wrapper contract, archive, background port, promotion gate invoking the suite runner.
+4. Manual end-to-end: force an unpatched state, confirm the archived patched binary launches instantly, the background port runs, the gate passes, and the next launch is on the new version.
 
 Separate commits per part.
 
