@@ -15,11 +15,15 @@
 set -uo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
+REPO="$ROOT/repo"
+LOCAL="$ROOT/patches-local"
 BIN="$(realpath "$HOME/.local/bin/claude")"
 VER="$(basename "$BIN")"
-# Keep the stamp expression in sync with apply-display-patches.sh
+INDEX="$LOCAL/$VER/index.json"
+[[ -f "$INDEX" ]] || INDEX="$REPO/patches/$VER/index.json"
+# Keep the stamp expression identical in apply-display-patches.sh
 STAMP="$(stat -f '%i %z %m' "$BIN"
-  cat "$ROOT/apply-display-patches.sh" "$ROOT/defer-tool-descriptions.mjs" "$ROOT/sticky-prompt-header.mjs" "$ROOT/task-reminder-conditional.mjs" "$ROOT/repo/patches/$VER/index.json" 2>/dev/null | shasum)"
+  find "$ROOT/apply-display-patches.sh" "$ROOT"/*.mjs "$LOCAL" "$INDEX" -type f 2>/dev/null | sort | xargs cat /dev/null | shasum)"
 [[ -f "$BIN.patched" && "$(<"$BIN.patched")" == "$STAMP" ]] && exit 0
 
 # Lock out concurrent launches; self-heal a stale lock from a crashed run
