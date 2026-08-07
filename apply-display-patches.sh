@@ -1,5 +1,12 @@
 #!/usr/bin/env bash
-# Repatch the native Claude Code binary with phate45/claude-patching display patches.
+# Build a patched Claude Code binary from the stock one, applying the
+# phate45/claude-patching display patches plus this directory's local patches.
+#
+#   apply-display-patches.sh <version> <output-binary>
+#
+# Pure: reads versions/<version>.orig and writes the candidate to
+# <output-binary>. It never touches the live launch path — archiving, stamping
+# and relinking are background-port.sh's job, after the functional suite passes.
 #
 # Patches applied (see repo/README.md for details):
 #   no-collapse-reads      Read/Grep/Glob shown individually, not "Read 3 files"
@@ -32,9 +39,6 @@
 # thinking blocks permanently inline; stock behavior (streams while thinking,
 # collapses to a pill after) is what we want, via showThinkingSummaries.
 #
-# Run after every Claude Code update (updates replace the binary and drop the patches).
-# If the new version has no patch set yet: git -C repo pull, or wait for upstream.
-#
 # Restore stock binary — copy to a new file and rename, never write the live
 # binary in place. macOS caches a Mach-O's code signature per inode, so an
 # in-place overwrite leaves the kernel SIGKILLing every launch of that inode:
@@ -44,19 +48,20 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO="$ROOT/repo"
+LOCAL="$ROOT/patches-local"
 TWEAKCC="$ROOT/node_modules/.bin/tweakcc"
 PATCH_IDS="no-collapse-reads toolsearch-visibility quiet-notifications cron-visibility tool-defer-whitelist worktree-dedup trim-context-bloat"
 LOCAL_PATCH_IDS="defer-tool-descriptions sticky-prompt-header task-reminder-conditional mcp-per-subagent"
 
-BIN="$(realpath "$HOME/.local/bin/claude")"
-VER="$(basename "$BIN")"
+VER="${1:?usage: apply-display-patches.sh <version> <output-binary>}"
+OUT="${2:?usage: apply-display-patches.sh <version> <output-binary>}"
+STOCK="$HOME/.local/share/claude/versions/$VER"
 
 # patches-local/ is a local overlay of repo/patches/, written by the background
 # port for versions upstream has not covered: an index.json per version, and —
 # when a patch actually had to be re-anchored — a patch file at the same path it
 # has upstream, so its `require('../../lib/output')` still resolves (via the lib
 # symlink below, which mirrors the clone's own layout).
-LOCAL="$ROOT/patches-local"
 [[ -d "$LOCAL" ]] && ln -sfn ../repo/lib "$LOCAL/lib"
 INDEX="$LOCAL/$VER/index.json"
 [[ -f "$INDEX" ]] || INDEX="$REPO/patches/$VER/index.json"
@@ -81,16 +86,17 @@ resolve_patch() {
   [[ -f "$LOCAL/$file" ]] && echo "$LOCAL/$file" || echo "$REPO/patches/$file"
 }
 
-# The stock backup is the canonical patch source: back it up on first run,
-# always rebuild from it. Re-running on an already-patched binary is safe.
-if [[ ! -f "$BIN.orig" ]]; then
-  cp "$BIN" "$BIN.orig"
-  echo "Backed up stock binary to $BIN.orig"
+# The stock backup is the canonical patch source: back it up on first sight of a
+# version, always rebuild from it, so re-running over a patched install is safe.
+if [[ ! -f "$STOCK.orig" ]]; then
+  cp "$STOCK" "$STOCK.orig"
+  echo "Backed up stock binary to $STOCK.orig"
 fi
 
 WORK="$(mktemp -d "${TMPDIR:-/tmp}/claude-patching.XXXXXX")"
+trap 'rm -rf "$WORK"' EXIT
 JS="$WORK/cli-$VER.js"
-"$TWEAKCC" unpack "$JS" "$BIN.orig"
+"$TWEAKCC" unpack "$JS" "$STOCK.orig"
 
 for id in $PATCH_IDS $LOCAL_PATCH_IDS; do
   case " $DROPPED " in *" $id "*) echo "--- $id  DROPPED for $VER"; continue;; esac
@@ -100,25 +106,5 @@ for id in $PATCH_IDS $LOCAL_PATCH_IDS; do
 done
 
 node --check "$JS"
-"$TWEAKCC" repack "$JS" "$BIN"
-
-# Repack writes a fresh file, leaving the desktop app's hardlink on the old
-# binary. Relink so both launch paths share the patched inode.
-APP="$HOME/.local/share/claude/ClaudeCode.app/Contents/MacOS/claude"
-[[ -e "$APP" ]] && ln -f "$BIN" "$APP"
-
-# Stamp read by check-and-apply.sh (keep the expression identical there): the
-# patched binary's identity plus a fingerprint of every input that decides the
-# patched bytes, so a swapped binary or an edited patch set invalidates the
-# stamp and the next launch repatches.
-{ stat -f '%i %z %m' "$BIN"
-  find "$ROOT/apply-display-patches.sh" "$ROOT"/*.mjs "$LOCAL" "$INDEX" -type f 2>/dev/null | sort | xargs cat /dev/null | shasum
-} > "$BIN.patched"
-
-# The daemon pre-forks warm spare processes that load the binary's JS at fork
-# time; sessions claimed from a pre-repatch spare run stale code. Kill the
-# unclaimed spares (their cmdline carries --bg-spare) so the daemon reforks
-# from the freshly patched binary.
-pkill -f -- '--bg-spare' 2>/dev/null || true
-
-echo "Done. Restart Claude Code sessions to pick up the patches."
+"$TWEAKCC" repack "$JS" "$OUT"
+echo "Candidate written to $OUT"

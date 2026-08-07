@@ -15,11 +15,13 @@ shift
 DROPPED=" $* "
 
 PROXY_TESTS="trim-context-bloat tool-defer-whitelist worktree-dedup defer-tool-descriptions"
-PTY_TESTS="no-collapse-reads toolsearch-visibility sticky-prompt-header"
-# Patches whose behavior needs session choreography the harnesses cannot drive
-# yet: a background agent read back through TaskOutput, a cron-fired prompt, and
-# the reminder timer. Reported, never silently counted as passing.
-UNCOVERED="quiet-notifications cron-visibility task-reminder-conditional"
+PTY_TESTS="no-collapse-reads toolsearch-visibility"
+# Patches whose behavior the harnesses cannot drive yet: a background agent read
+# back through TaskOutput, a cron-fired prompt, the reminder timer, and the
+# sticky header, whose render depends on the transcript virtualizer's own
+# viewport model rather than on what the emulator has scrolled off screen.
+# Reported, never silently counted as passing.
+UNCOVERED="quiet-notifications cron-visibility task-reminder-conditional sticky-prompt-header"
 
 pass=0 fail=0 skip=0
 
