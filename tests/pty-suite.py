@@ -241,12 +241,61 @@ def agents_view_shortcut(binary):
     assert before != after, "meta+a left the screen untouched"
 
 
+def agent_model_display(binary):
+    """An agents-view job row shows the model from its --model respawn flag.
+
+    A completed job record seeded into the config dir renders as a Completed
+    row when `claude agents` mounts; patched, its age cell reads
+    "fable · <age>". Stock renders the age alone. The in-session task-menu
+    half of the patch has no hermetic test: its rows require a live subagent
+    spawn, which the capture proxy cannot script deterministically.
+    """
+    scratch = Scratch("agent-model")
+    now_ms = int(time.time() * 1000)
+    iso = lambda ms: time.strftime("%Y-%m-%dT%H:%M:%S.000Z", time.gmtime(ms / 1000))
+    jobdir = scratch.config / "jobs" / "zzmodel1"
+    jobdir.mkdir(parents=True)
+    (jobdir / "state.json").write_text(json.dumps({
+        "state": "done", "detail": "probe finished", "tempo": "idle",
+        "inFlight": {"tasks": 0, "queued": 0, "kinds": []},
+        "tokens": 1234, "output": {"result": "probe finished"},
+        "children": None, "template": "claude",
+        "respawnFlags": ["--agent", "claude", "--model", "claude-fable-5[1m]"],
+        "intent": "quokka model probe", "name": "quokka model probe",
+        "nameSource": "auto",
+        "sessionId": "zzmodel1-0000-4000-8000-000000000000",
+        "resumeSessionId": "zzmodel1-0000-4000-8000-000000000000",
+        "daemonShort": "zzmodel1", "cliVersion": "0.0.0",
+        "cwd": str(scratch.project), "originCwd": str(scratch.project),
+        "backend": "daemon",
+        "createdAt": iso(now_ms - 300_000), "updatedAt": iso(now_ms - 60_000),
+        "firstTerminalAt": iso(now_ms - 60_000),
+    }))
+    with CaptureProxy() as proxy:
+        env = scratch.env(proxy)
+        env.update({"TERM": "xterm-256color", "COLUMNS": str(COLS),
+                    "LINES": str(ROWS), "FORCE_COLOR": "0", "NO_COLOR": "1"})
+        term = Term([binary, "agents"], env, str(scratch.project))
+        if not term.wait_for("quokka model probe", timeout=90):
+            screen = term.text()
+            term.close()
+            scratch.cleanup()
+            raise AssertionError(f"the seeded job row never rendered:\n{screen}")
+        term.pump(2)
+        screen = term.text()
+        term.close()
+    scratch.cleanup()
+    row = next(r for r in screen.split("\n") if "quokka model probe" in r)
+    assert "fable ·" in row, f"the job row shows no model:\n{row!r}\n{screen}"
+
+
 TESTS = {
     "no-collapse-reads": no_collapse_reads,
     "toolsearch-visibility": toolsearch_visibility,
     "sticky-prompt-header": sticky_prompt_header,
     "cron-visibility": cron_visibility,
     "agents-view-shortcut": agents_view_shortcut,
+    "agent-model-display": agent_model_display,
 }
 
 if __name__ == "__main__":

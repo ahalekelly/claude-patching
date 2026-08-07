@@ -32,6 +32,9 @@
 #   mcp-per-subagent           each subagent gets its own process for the stdio
 #                              MCP servers its frontmatter declares inline, and
 #                              each such server sees CLAUDE_MCP_PER_AGENT=1
+#   agent-model-display        the in-session task menu shows each subagent's
+#                              resolved model, and agents-view job rows show
+#                              their --model flag in the age column
 #
 # Restore stock binary — copy to a new file and rename, never write the live
 # binary in place. macOS caches a Mach-O's code signature per inode, so an
@@ -47,7 +50,7 @@ TWEAKCC="$ROOT/node_modules/.bin/tweakcc"
 PATCH_IDS="no-collapse-reads toolsearch-visibility cron-visibility tool-defer-whitelist
            trim-context-bloat defer-workflow-description defer-artifact-description
            sticky-prompt-header task-reminder-conditional agents-view-shortcut
-           mcp-per-subagent"
+           mcp-per-subagent agent-model-display"
 
 VER="${1:?usage: apply-display-patches.sh <version> <output-binary>}"
 OUT="${2:?usage: apply-display-patches.sh <version> <output-binary>}"
