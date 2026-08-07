@@ -26,6 +26,17 @@ One patch per tool description: `defer-workflow-description` (Workflow → stub 
 
 Point `port-agent.sh`'s prompt at Piebald-AI/claude-code-system-prompts — per-release Claude Code system prompts, updated within minutes of each release — plus the previous version's unpacked bundle. A better drift input than per-version patch baselines ever were, especially for prompt-anchored patches: `trim-context-bloat` and content refreshes of the two defer patches.
 
+## Upstream watch
+
+Each new version's port also runs the suite against the stock `.orig`, recording every test's result **and failure-reason string**. A test that **passes on stock** is not a verdict, it is a lost-discrimination flag with three possible causes: Anthropic shipped the behavior natively (retire the patch), the assertion drifted vacuous (an unrelated change satisfied it — the test needs strengthening, and until then its pass on the candidate proves nothing, so the gate treats it as suspect), or a flake. The reason strings are the diagnostic for the mirror-image miss too: tests that assert patch artifacts (the mcp canary, the defer stub text) can never pass on stock even when Anthropic fixes the underlying behavior, but their stock failure reasons distinguish "behavior still broken" from "behavior possibly fixed, artifact absent".
+
+After promotion, the port spawns an advisory `claude -p` agent (same sandboxed auto mode and Terminal-window-or-headless launch as tier 2) that:
+
+1. Reviews phate45/claude-patching commits since the SHA recorded in `port-state/phate45-reviewed` (shallow fetch to a temp dir — the vendored clone no longer exists): new patches worth adopting as rewrites, improved anchors, retirements or advisories (the quiet-notifications retirement is the model case).
+2. Reads the stock run's per-test reasons plus the version's release notes: classifies any passed-on-stock test as fixed/vacuous/flake, and looks for artifact-asserting tests whose underlying behavior Anthropic has fixed.
+
+It writes recommendations into the port message (printed at the next launch) and the completion notification, updates the reviewed SHA, and never edits patches itself — recommendations only, promotion is already done by the time it runs.
+
 ## External-user readiness
 
 - No machine-specifics: audit scripts and tests for `/Users/akelly`, `.agents`, and other local assumptions; everything stays `$ROOT`-relative plus the standard native-install paths.
@@ -35,7 +46,7 @@ Point `port-agent.sh`'s prompt at Piebald-AI/claude-code-system-prompts — per-
 ## Phases
 
 1. `git subtree split` the `claude-patching/` directory out of agent-config, preserving its commit history (`repo/`, `node_modules/`, `patches-local/`, `port-state/` are gitignored, so the split is clean). This plan file rides along into the split repo's `plans/`.
-2. Restructure and rewrite in the split repo; force-push to `ahalekelly/claude-patching`, repurposing the fork (GitHub keeps the fork badge until detached via support or delete/recreate — cosmetic).
+2. Restructure and rewrite in the split repo; then merge that history into the fork's existing `master` (`git merge --allow-unrelated-histories`, resolved to the new tree, phate45's patch files removed from HEAD) and push normally. The repo stays a fork: phate45's history remains its base — natural attribution, no force-push. HEAD carries only our code plus the MIT license, which covers our original work.
 3. agent-config: remove the tracked directory, `git submodule add` the new repo at the same path, migrate machine state (`patches-local/`, `port-state/`), `npm ci` for tweakcc. Sequence the swap so `check-and-apply.sh` works at every moment (push first, move the old directory aside, trash it only after verification). Push both repos.
 
 ## Verification
@@ -49,4 +60,3 @@ Point `port-agent.sh`'s prompt at Piebald-AI/claude-code-system-prompts — per-
 
 - Fresh anchors on five rewritten patches — the behavioral suite is the gate; a patch that cannot be cleanly re-derived stays out, with the suite honest about the gap.
 - Live-machine swap mid-restructure — mitigated by push-then-swap and keeping the old directory until verified.
-- Fork badge on the repurposed repo — cosmetic, fixable later.
