@@ -1,9 +1,11 @@
 #!/usr/bin/env node
 // Minimal stdio MCP server exposing one `ping` tool, used by the functional
-// suite. Logs its PID and every CLAUDE_* variable it was spawned with, then one
-// line per tool call, to $LOGSRV_LOG. The startup PIDs are what distinguish one
-// shared server from one server per subagent, and CLAUDE_MCP_PER_AGENT in the
-// startup line is the mcp-per-subagent canary.
+// suite. Logs its PID and every CLAUDE_* variable it was spawned with, then its
+// initialize handshake, then one line per tool call, to $LOGSRV_LOG. The
+// startup PIDs and handshakes are what distinguish one shared server from one
+// server per subagent; which notes each PID served is what distinguishes one
+// server per subagent from one server per agent *name*; and
+// CLAUDE_MCP_PER_AGENT in the startup line is the mcp-per-subagent canary.
 const fs = require('fs');
 
 const LOG = process.env.LOGSRV_LOG;
@@ -39,6 +41,7 @@ function send(msg) {
 function handle(msg) {
   const { id, method, params } = msg;
   if (method === 'initialize') {
+    log({ ev: 'init' });
     send({ jsonrpc: '2.0', id, result: {
       protocolVersion: params?.protocolVersion || '2025-06-18',
       capabilities: { tools: {} },
@@ -67,4 +70,16 @@ process.stdin.on('data', (chunk) => {
     if (line) handle(JSON.parse(line));
   }
 });
-process.on('exit', () => log({ ev: 'exit' }));
+// Shutdown has to be observable however the client tears the server down: it
+// may close the pipe, signal, or both, and a default SIGTERM kill would not run
+// the 'exit' listener.
+let stopped = false;
+function note(how) {
+  if (stopped) return;
+  stopped = true;
+  log({ ev: 'exit', how });
+}
+process.stdin.on('end', () => { note('stdin-closed'); process.exit(0); });
+process.on('SIGTERM', () => { note('sigterm'); process.exit(0); });
+process.on('SIGINT', () => { note('sigint'); process.exit(0); });
+process.on('exit', () => note('exit'));

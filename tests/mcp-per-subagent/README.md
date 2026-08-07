@@ -1,13 +1,14 @@
 # mcp-per-subagent fixture
 
-Raw material for the promotion-gate test that proves each subagent gets its own MCP server process. Not yet a runnable test — it captures the reproduction, not the assertions.
+The one test in the suite that needs a live model: it proves each subagent invocation gets its own MCP server process, and that one invocation's shutdown does not take its sibling's connection down.
 
-- `logsrv.js` — minimal stdio MCP server exposing one `ping` tool. Logs its PID, cwd, and every `CLAUDE_*` variable at startup, then every JSON-RPC line it receives. The PID lines are what distinguish one shared server from one server per subagent.
-- `agents/expa.md`, `agents/expb.md` — two agent definitions, identical apart from `name`, both declaring the same inline stdio `mcpServers` entry. Byte-identical configs are the condition that triggers the dedup.
-- `run.sh` — drives a headless session that spawns both agents concurrently in a single message.
+- `run.py <binary>` — the gate test. Builds a scratch project from `agents/`, drives a headless session that launches `expa` twice concurrently, and asserts on the log.
+- `logsrv.js` — minimal stdio MCP server exposing one `ping` tool. Logs its PID, cwd and every `CLAUDE_*` variable at startup, its initialize handshake, and every tool call.
+- `agents/expa.md` — one agent definition declaring an inline stdio `mcpServers` entry. Two concurrent invocations therefore compute byte-identical configs, which is the condition that triggers stock's connection dedup. The prompt each invocation receives names its role: `waiter` pings, waits for the quick probe's server to shut down, then pings again; `quick` waits for the waiter's first ping before doing anything.
+- `wait-for-sibling.sh` — the rendezvous both roles wait on, over the log they share. It is what makes the overlap and the teardown ordering facts rather than guesses about timing.
 
-To turn this into the gate test:
+The assertions: two server processes overlapping in time, two initialize handshakes, `CLAUDE_MCP_PER_AGENT=1` in both startup lines, each server serving exactly one role's notes, and the waiter's late ping landing after its sibling is gone. A stock binary must fail that — one server serves both roles and dies under the waiter.
 
-- Parameterize the paths. `run.sh` hardcodes a project directory and the `claude` binary; both must become arguments so the test can run a *candidate* binary against a scratch project built from `agents/`. The scratch project needs the two definitions in its `.claude/agents/`.
-- Add the assertions. On a patched binary the log must show **two** startup PIDs, each serving five calls, and each startup line must carry `CLAUDE_MCP_PER_AGENT=1`. On a stock binary it shows one PID serving ten calls — worth keeping as the negative control.
-- Keep the environment scrub. `run.sh` unsets inherited `CLAUDE_*` variables (except `CLAUDE_CONFIG_DIR`, whose removal breaks authentication) so the nested session does not inherit the parent's session identity.
+Sequential launches would prove nothing: the first server is gone before the second connects, so even stock ends up with two processes. That is why the overlap is both forced by the rendezvous and asserted from the log.
+
+`run.py` scrubs inherited `CLAUDE_*` variables from the nested session (except `CLAUDE_CONFIG_DIR`, whose removal breaks authentication) so it does not inherit the parent's session identity.

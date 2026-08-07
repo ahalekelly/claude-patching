@@ -2,15 +2,31 @@
 # /// script
 # requires-python = ">=3.11"
 # ///
-"""mcp-per-subagent: two concurrent subagents must get two MCP server processes.
+"""mcp-per-subagent: two concurrent runs of one agent need two MCP servers.
 
     run.py <binary>
 
 Spawns a real headless session (this test needs a live model, unlike the rest of
-the suite) with two agent definitions whose frontmatter declares byte-identical
-inline stdio mcpServers. Patched, that must produce two server PIDs of five
-calls each, every one carrying CLAUDE_MCP_PER_AGENT=1. Stock, one PID serves all
-ten calls and the canary is absent — the negative control.
+the suite) that launches the same agent definition twice at once. Both
+invocations declare byte-identical inline stdio `mcpServers`, which is the
+condition that makes stock Claude Code hand them one shared server process and
+one session.
+
+Two invocations of *one* definition rather than two definitions on purpose: a
+connection cache keyed by agent name would still collapse these two, so this is
+the shape that pins per-invocation splitting.
+
+The roles rendezvous over the log to pin the timing the test depends on.
+`waiter` pings, waits for the quick probe's server to shut down, then pings
+again; `quick` waits for the waiter's first ping before doing anything, so the
+two are provably alive at once — sequential launches would prove nothing, since
+the first server is already gone before the second connects.
+
+Patched, the log shows two overlapping servers, each carrying the
+CLAUDE_MCP_PER_AGENT canary and serving exactly one role's notes, and the
+waiter's late ping lands after its sibling is gone. Stock, one server serves
+both roles and dies under the waiter when the quick probe finishes — the
+negative control.
 """
 import json
 import os
@@ -23,23 +39,26 @@ import tempfile
 HERE = pathlib.Path(__file__).resolve().parent
 NODE = shutil.which("node") or "/opt/homebrew/bin/node"
 PROMPT = (
-    "In ONE single message, make TWO Agent tool calls at the same time so they run "
-    "concurrently: one with subagent_type 'expa' and one with subagent_type 'expb'. "
-    "Give each the prompt 'Do your task now.' and set run_in_background to false so "
-    "you wait for both to finish. Do not use any other tool yourself. When both "
-    "subagents have returned, reply with their two final messages and nothing else."
+    "Make TWO Agent tool calls, both in the SAME assistant message, as two tool_use "
+    "blocks side by side, so the two subagents run at the same time. Launching them "
+    "one after the other is a failure. Both must use subagent_type 'expa'. Give one "
+    "the prompt 'Your role is quick.' and the other the prompt 'Your role is "
+    "waiter.' Set run_in_background to false on both so you wait for them. Do not "
+    "use any other tool yourself. When both subagents have returned, reply with "
+    "their two final messages and nothing else."
 )
+ROLES = {"quick": {"quick-1"}, "waiter": {"waiter-1", "waiter-2"}}
 
 
 def build_project(root, log):
     agents = root / ".claude" / "agents"
     agents.mkdir(parents=True)
-    for name in ("expa", "expb"):
-        template = (HERE / "agents" / f"{name}.md").read_text()
-        (agents / f"{name}.md").write_text(
-            template.replace("{NODE}", NODE)
-                    .replace("{LOGSRV}", str(HERE / "logsrv.js"))
-                    .replace("{LOG}", str(log)))
+    (agents / "expa.md").write_text(
+        (HERE / "agents" / "expa.md").read_text()
+        .replace("{NODE}", NODE)
+        .replace("{LOGSRV}", str(HERE / "logsrv.js"))
+        .replace("{WAITSH}", str(HERE / "wait-for-sibling.sh"))
+        .replace("{LOG}", str(log)))
 
 
 def main():
@@ -61,29 +80,42 @@ def main():
         cwd=str(root), env=env, capture_output=True, text=True, timeout=900)
 
     if not log.exists():
-        print(f"FAIL mcp-per-subagent: the probe server never started\n{run.stdout[-800:]}\n{run.stderr[-800:]}")
+        print(f"FAIL mcp-per-subagent: the probe server never started\n"
+              f"{run.stdout[-800:]}\n{run.stderr[-800:]}")
         return 1
 
     events = [json.loads(line) for line in log.read_text().splitlines() if line.strip()]
     starts = {e["pid"]: e for e in events if e["ev"] == "startup"}
-    calls = {}
+    handshakes = [e for e in events if e["ev"] == "init"]
+    kinds = [e["ev"] for e in events]
+    notes = {}
     for event in events:
         if event["ev"] == "call":
-            calls.setdefault(event["pid"], []).append(event["note"])
+            notes.setdefault(event["pid"], set()).add(event["note"])
     shutil.rmtree(root, ignore_errors=True)
 
     problems = []
+    served = {pid: sorted(n) for pid, n in notes.items()}
     if len(starts) != 2:
-        problems.append(f"{len(starts)} server process(es), expected 2 "
-                        f"(calls per pid: { {p: len(c) for p, c in calls.items()} })")
-    for pid, count in ((p, len(c)) for p, c in calls.items()):
-        if count != 5:
-            problems.append(f"pid {pid} served {count} calls, expected 5")
+        problems.append(f"{len(starts)} server process(es), expected 2 (served: {served})")
+    if len(handshakes) != 2:
+        problems.append(f"{len(handshakes)} initialize handshake(s), expected 2")
     for pid, start in starts.items():
         if start["claudeEnv"].get("CLAUDE_MCP_PER_AGENT") != "1":
             problems.append(f"pid {pid} did not see CLAUDE_MCP_PER_AGENT=1")
-    if sum(len(c) for c in calls.values()) != 10:
-        problems.append(f"{sum(len(c) for c in calls.values())} calls in total, expected 10")
+    # Both servers up before either goes down. Two processes that never coexist
+    # prove nothing: they are what one shared connection looks like once the
+    # first probe's teardown forces the second to reconnect.
+    ups = [i for i, kind in enumerate(kinds) if kind == "startup"]
+    downs = [i for i, kind in enumerate(kinds) if kind == "exit"]
+    if len(ups) < 2 or (downs and ups[1] > downs[0]):
+        problems.append("the two servers were never up at the same time — the probes "
+                        f"shared one connection, or never overlapped (log: {kinds})")
+    if sorted(notes.values(), key=len) != sorted(ROLES.values(), key=len):
+        problems.append(f"the two roles did not get one server each (served: {served})")
+    if not any("waiter-2" in n for n in notes.values()):
+        problems.append("the waiter's late ping never reached a server "
+                        "— its sibling's shutdown took the connection down")
 
     if problems:
         print("FAIL mcp-per-subagent: " + "; ".join(problems))
