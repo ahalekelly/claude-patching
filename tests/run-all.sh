@@ -15,9 +15,9 @@ shift
 DROPPED=" $* "
 
 PROXY_TESTS="trim-context-bloat tool-defer-whitelist worktree-dedup defer-tool-descriptions
-             task-reminder-conditional quiet-notifications"
+             task-reminder-conditional"
 PTY_TESTS="no-collapse-reads toolsearch-visibility sticky-prompt-header cron-visibility
-           agents-view-shortcut"
+           agents-view-shortcut quiet-notifications"
 
 pass=0 fail=0 skip=0
 

@@ -236,19 +236,108 @@ def agents_view_shortcut(binary):
     assert before != after, "meta+a left the screen untouched"
 
 
+def background_read_probe(binary, scratch, tags, trailing, settle):
+    """Read one of several finished background tasks, and record every request.
+
+    One background shell per tag. Each finishes while the proxy holds the
+    session mid-turn, so every notification is queued before the session acts;
+    the session then reads the shell tagged `read` with TaskOutput, does
+    `trailing` turns of busywork, and sits idle for `settle` seconds so a late
+    delivery has somewhere to land. Returns the shells' task ids, the message
+    stream of every request, and the index of the one carrying TaskOutput's
+    result.
+    """
+    note = scratch.project / "note.txt"
+    note.write_text("probe\n")
+    ids = {}
+
+    def launch(_body):
+        return [{"tool": "Bash", "id": f"toolu_{tag}", "input": {
+            "command": "sleep 1; echo probe output", "description": f"probe {tag}",
+            "run_in_background": True}} for tag in tags]
+
+    def read_one(body):
+        for message in body.get("messages", []):
+            content = message.get("content")
+            for block in content if isinstance(content, list) else []:
+                if block.get("type") != "tool_result":
+                    continue
+                found = re.search(r"running in background with ID: (\S+?)\.",
+                                  str(block.get("content")))
+                if found:
+                    ids[block["tool_use_id"]] = found.group(1)
+        # Holding the answer keeps the session mid-turn long enough for every
+        # shell to finish and queue its notification before it reads one.
+        time.sleep(5)
+        return [{"tool": "TaskOutput", "id": "toolu_out", "input": {
+            "task_id": ids.get("toolu_read", "unknown"), "block": True, "timeout": 20000}}]
+
+    script = [launch, read_one]
+    script += [[{"tool": "Read", "id": f"toolu_busy{i}", "input": {"file_path": str(note)}}]
+               for i in range(trailing)]
+    script.append([{"text": "all done"}])
+    with CaptureProxy(script) as proxy:
+        term = start(binary, scratch, proxy)
+        term.submit("launch the background jobs, then read one")
+        answered = term.wait_for("all done", timeout=120)
+        term.pump(settle)
+        bodies = [json.dumps(r["body"].get("messages")) for r in proxy.requests]
+        term.close()
+    assert answered, "the session never finished its turn"
+    assert len(ids) == len(tags), f"the background shells did not all start: {ids}"
+    carried = [i for i, body in enumerate(bodies) if '"toolu_out"' in body]
+    assert carried, "the session never called TaskOutput"
+    return ids, bodies, carried[0]
+
+
+def quiet_notifications(binary):
+    """A task whose output was read via TaskOutput never carries a notification.
+
+    Two runs, because the queue disposes of a suppressed notification
+    differently in each. With an unread notification riding along, the drain's
+    caller removes the whole batch, so the request right after the read settles
+    it — and the unread half is the positive control that notifications reach
+    the model at all. Alone, nothing forces that removal: the suppressed item
+    stays queued, and only a read flag that outlives its first use keeps it out
+    of every later turn.
+    """
+    def notification(task_id):
+        return f"<task-id>{task_id}</task-id>"
+
+    scratch = Scratch("quiet-pair")
+    ids, bodies, read_at = background_read_probe(
+        binary, scratch, ("read", "unread"), trailing=0, settle=6)
+    scratch.cleanup()
+    assert notification(ids["toolu_unread"]) in bodies[read_at], \
+        "the unread task's notification never arrived — the run never reached the assertion"
+    assert notification(ids["toolu_read"]) not in bodies[read_at], \
+        "the read task's notification was re-delivered after TaskOutput returned its output"
+
+    scratch = Scratch("quiet-lone")
+    ids, bodies, read_at = background_read_probe(
+        binary, scratch, ("read",), trailing=3, settle=12)
+    scratch.cleanup()
+    later = bodies[read_at:]
+    assert len(later) >= 3, f"only {len(later)} turns followed the read, too few to tell"
+    seen = [i for i, body in enumerate(later) if notification(ids["toolu_read"]) in body]
+    assert not seen, \
+        f"the lone read task's notification came back on {len(seen)} turn(s) after the read"
+
+
 TESTS = {
     "no-collapse-reads": no_collapse_reads,
     "toolsearch-visibility": toolsearch_visibility,
     "sticky-prompt-header": sticky_prompt_header,
     "cron-visibility": cron_visibility,
     "agents-view-shortcut": agents_view_shortcut,
+    "quiet-notifications": quiet_notifications,
 }
 
 if __name__ == "__main__":
     binary, test_id = sys.argv[1], sys.argv[2]
     signal.signal(signal.SIGALRM,
                   lambda *_: (_ for _ in ()).throw(AssertionError("test timed out")))
-    signal.alarm(300)
+    signal.alarm(600)
     try:
         TESTS[test_id](binary)
     except AssertionError as exc:

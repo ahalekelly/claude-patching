@@ -11,10 +11,8 @@ the recorded request. Exit 0 = pass. Every test must fail on a stock binary.
 """
 import json
 import pathlib
-import re
 import signal
 import sys
-import time
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 from capture_proxy import CaptureProxy, system_text  # noqa: E402
@@ -128,60 +126,12 @@ def task_reminder_conditional(binary):
     assert not reminded(False), "the reminder fired with an empty task list"
 
 
-def quiet_notifications(binary):
-    """A task whose output was read via TaskOutput carries no notification.
-
-    Two background shells finish while the session is mid-turn, so both
-    notifications are queued before the session acts. The session then reads
-    exactly one of them with TaskOutput. The following request must carry the
-    unread task's notification and not the read one — the unread half is the
-    positive control that the notifications reached the request at all.
-    """
-    scratch = Scratch("quiet-notif")
-    ids = {}
-
-    def launch(_body):
-        return [{"tool": "Bash", "id": f"toolu_{tag}", "input": {
-            "command": "sleep 1; echo probe output", "description": f"probe {tag}",
-            "run_in_background": True}} for tag in ("read", "unread")]
-
-    def read_one(body):
-        for message in body.get("messages", []):
-            content = message.get("content")
-            for block in content if isinstance(content, list) else []:
-                if block.get("type") != "tool_result":
-                    continue
-                found = re.search(r"running in background with ID: (\S+?)\.",
-                                  str(block.get("content")))
-                if found:
-                    ids[block["tool_use_id"]] = found.group(1)
-        # Holding the answer keeps the session mid-turn long enough for both
-        # shells to finish and queue their notifications before it reads one.
-        time.sleep(5)
-        return [{"tool": "TaskOutput", "id": "toolu_out", "input": {
-            "task_id": ids.get("toolu_read", "unknown"), "block": True, "timeout": 20000}}]
-
-    with CaptureProxy([launch, read_one, [{"text": "all done"}]]) as proxy:
-        scratch.run(binary, proxy, "launch two background jobs, then read the first")
-        bodies = [json.dumps(r["body"].get("messages")) for r in proxy.requests]
-    scratch.cleanup()
-    after_read = next((b for b in bodies if '"toolu_out"' in b), "")
-    assert len(ids) == 2, f"the two background shells never both started: {ids}"
-    unread = f"<task-id>{ids['toolu_unread']}</task-id>"
-    read = f"<task-id>{ids['toolu_read']}</task-id>"
-    assert unread in after_read, \
-        "the unread task's notification never arrived — the run never reached the assertion"
-    assert read not in after_read, \
-        "the read task's notification was re-delivered after TaskOutput returned its output"
-
-
 TESTS = {
     "trim-context-bloat": trim_context_bloat,
     "defer-tool-descriptions": defer_tool_descriptions,
     "tool-defer-whitelist": tool_defer_whitelist,
     "worktree-dedup": worktree_dedup,
     "task-reminder-conditional": task_reminder_conditional,
-    "quiet-notifications": quiet_notifications,
 }
 
 if __name__ == "__main__":
