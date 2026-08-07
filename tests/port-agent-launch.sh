@@ -18,8 +18,12 @@ EOF
 chmod +x "$W/osascript"
 echo "pretend apply failure" > "$W/apply.log"
 
+# Clear the files this run is meant to produce: a real port leaves its own
+# behind, and reading those would turn a script that died early into a pass.
+rm -f "$ROOT/port-state/port-agent-$VER."{done,command,prompt}
+
 PATH="$W:$PATH" "$ROOT/port-agent.sh" "$VER" "$W/apply.log" >"$W/out" 2>&1
-[[ $? -eq 0 ]] || { echo "FAIL: port-agent.sh exited nonzero"; fails=$((fails + 1)); }
+[[ $? -eq 0 ]] || { echo "FAIL: port-agent.sh exited nonzero"; fails=$((fails + 1)); cat "$W/out"; }
 
 script="$(cat "$W/applescript" 2>/dev/null)"
 run="$ROOT/port-state/port-agent-$VER.command"

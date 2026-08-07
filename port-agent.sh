@@ -18,8 +18,9 @@ mkdir -p "$STATE"
 PROMPT="$STATE/port-agent-$VER.prompt"
 
 # The newest stock bundle still on disk from before this version: diffing it
-# against the new one is the most direct evidence of what moved.
-PREV="$(ls "$VERSIONS" 2>/dev/null | grep '\.orig$' | sed 's/\.orig$//' | grep -v "^$VER$" | sort -V | tail -1)"
+# against the new one is the most direct evidence of what moved. Often there is
+# none — versions/ is pruned — so the pipeline's empty exit must not end the run.
+PREV="$(ls "$VERSIONS" 2>/dev/null | grep '\.orig$' | sed 's/\.orig$//' | grep -v "^$VER$" | sort -V | tail -1 || true)"
 if [[ -n "$PREV" ]]; then
   PREV_NOTE="The previous stock bundle is still on disk at $VERSIONS/$PREV.orig — unpack it
 the same way and diff the two around each failing anchor."
