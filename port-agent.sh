@@ -1,20 +1,30 @@
 #!/usr/bin/env bash
-# Escalation path for background-port.sh: ask a headless Opus session to
-# re-anchor the patches that no longer apply to <version>.
+# Tier 2 of the port: ask a Claude agent to re-anchor the patches that no longer
+# apply to <version>. Only background-port.sh calls this, and only when the
+# mechanical pass has failed.
 #
 #   port-agent.sh <version> <apply-log>
 #
-# It runs in this directory, sandboxed in auto permission mode, and by design
-# can only write to patches-local/<version>/ — the promotion gate, not the
-# agent, decides whether anything it produces reaches the launch path.
+# The agent runs in a visible Terminal window so the port is watchable while it
+# happens, sandboxed in auto permission mode, and this script blocks until that
+# window's run finishes so the caller can retry the mechanical pass against the
+# overlay it wrote. Its only intended output is patches-local/<version>/; the
+# promotion gate, not the agent, decides whether anything it produces reaches
+# the launch path.
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+STATE="$ROOT/port-state"
 VER="${1:?usage: port-agent.sh <version> <apply-log>}"
 LOG="${2:?usage: port-agent.sh <version> <apply-log>}"
 # The newest version upstream covers, which is the closest thing to a baseline.
 PREV="$(ls "$ROOT/repo/patches" | grep -v "^$VER$" | sort -V | tail -1)"
+mkdir -p "$STATE"
+PROMPT="$STATE/port-agent-$VER.prompt"
+DONE="$STATE/port-agent-$VER.done"
+RUN="$STATE/port-agent-$VER.command"
+rm -f "$DONE"
 
-read -r -d '' PROMPT <<EOF || true
+cat > "$PROMPT" <<EOF
 Port this repository's Claude Code patch set to version $VER.
 
 \`./apply-display-patches.sh $VER /tmp/candidate\` just failed. Its output:
@@ -47,5 +57,24 @@ patches in this directory. Stop when \`./apply-display-patches.sh $VER
 /tmp/candidate\` succeeds, and report what you re-anchored and what you dropped.
 EOF
 
-exec "$HOME/.local/share/claude/versions/$VER" -p --model opus \
-  --permission-mode auto --add-dir "$ROOT" "$PROMPT"
+cat > "$RUN" <<EOF
+#!/bin/bash
+cd "$ROOT"
+export CLAUDE_PATCHING_AUTOPORT=1
+"\$HOME/.local/share/claude/versions/$VER" -p --model opus --permission-mode auto \\
+  "\$(cat '$PROMPT')" 2>&1 | tee '$STATE/port-agent-$VER.log'
+echo "\${PIPESTATUS[0]}" > '$DONE'
+EOF
+chmod +x "$RUN"
+
+osascript -e "tell application \"Terminal\" to do script \"$RUN\"" >/dev/null
+echo "port agent for $VER running in a Terminal window; log: $STATE/port-agent-$VER.log"
+
+# Block until that window's run finishes, so the caller can retry the mechanical
+# pass against whatever overlay the agent wrote.
+for _ in $(seq 1 540); do
+  [[ -f "$DONE" ]] && exit "$(<"$DONE")"
+  sleep 5
+done
+echo "port agent for $VER did not finish within 45 minutes" >&2
+exit 1
