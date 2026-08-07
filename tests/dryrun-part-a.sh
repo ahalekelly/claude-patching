@@ -6,7 +6,7 @@
 #   dryrun-part-a.sh <unpacked-cli.js> [...]
 set -uo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-PATCH="$ROOT/mcp-per-subagent.mjs"
+PATCH="$ROOT/patches/mcp-per-subagent.mjs"
 W="$(mktemp -d "${TMPDIR:-/tmp}/dryrun-part-a.XXXXXX")"
 trap 'rm -rf "$W"' EXIT
 fails=0

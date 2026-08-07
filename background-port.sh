@@ -11,7 +11,6 @@
 # the next launch take the silent fast path.
 set -uo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO="$ROOT/repo"
 LOCAL="$ROOT/patches-local"
 STATE="$ROOT/port-state"
 VERSIONS="$HOME/.local/share/claude/versions"
@@ -22,6 +21,12 @@ export CLAUDE_PATCHING_AUTOPORT=1
 VER="${1:-$(basename "$(realpath "$HOME/.local/bin/claude")")}"
 BIN="$VERSIONS/$VER"
 mkdir -p "$LOCAL" "$STATE"
+
+# Every input that decides the patched bytes. Keep identical in check-and-apply.sh.
+fingerprint() {
+  find "$ROOT/apply-display-patches.sh" "$ROOT/patches" "$ROOT/patches-local" \
+    -type f 2>/dev/null | sort | xargs cat /dev/null | shasum
+}
 
 # One port per version at a time; self-heal a lock left by a crashed run.
 LOCK="$STATE/port-$VER.lock"
@@ -41,7 +46,7 @@ finish() { # <headline> — notify now, and leave a note for the next launch
 }
 
 fail() { # <reason>
-  { git -C "$REPO" rev-parse HEAD 2>/dev/null || echo none
+  { fingerprint
     date '+%F %T'
     echo "$1"; } > "$STATE/$VER.failed"
   finish "port of $VER failed: $1"
@@ -49,7 +54,6 @@ fail() { # <reason>
 }
 
 say "porting $VER"
-git -C "$REPO" pull --quiet 2>/dev/null || true
 
 CAND="$WORK/claude-$VER"
 if ! "$ROOT/apply-display-patches.sh" "$VER" "$CAND" > "$WORK/apply.log" 2>&1; then
@@ -81,12 +85,7 @@ cp "$CAND" "$BIN.new" && mv "$BIN.new" "$BIN"
 cp "$CAND" "$ARCHIVE/$VER.new" && mv "$ARCHIVE/$VER.new" "$ARCHIVE/$VER"
 ls "$ARCHIVE" | sort -Vr | tail -n +3 | while read -r old; do rm -f "$ARCHIVE/$old"; done
 
-INDEX="$LOCAL/$VER/index.json"
-[[ -f "$INDEX" ]] || INDEX="$REPO/patches/$VER/index.json"
-# Keep the stamp expression identical in check-and-apply.sh
-{ stat -f '%i %z %m' "$BIN"
-  find "$ROOT/apply-display-patches.sh" "$ROOT"/*.mjs "$LOCAL" "$INDEX" -type f 2>/dev/null | sort | xargs cat /dev/null | shasum
-} > "$BIN.patched"
+{ stat -f '%i %z %m' "$BIN"; fingerprint; } > "$BIN.patched"
 
 # Relink the app bundle so desktop and daemon launches share what the terminal
 # launches, and drop the daemon's warm spares, which load the binary's JS at
@@ -100,3 +99,4 @@ rmdir "$BIN.lock" 2>/dev/null
 rm -f "$STATE/$VER.failed"
 
 finish "$VER promoted${DROPPED:+ (dropped:$DROPPED)} — restart sessions to pick it up"
+

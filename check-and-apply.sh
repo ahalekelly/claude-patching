@@ -17,8 +17,6 @@
 # edited patch set fails the check and gets reconciled.
 set -uo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO="$ROOT/repo"
-LOCAL="$ROOT/patches-local"
 STATE="$ROOT/port-state"
 ARCHIVE="$HOME/.local/share/claude/patched"
 TARGET="${1:?usage: check-and-apply.sh <target-file>}"
@@ -29,11 +27,11 @@ TARGET="${1:?usage: check-and-apply.sh <target-file>}"
 
 BIN="$(realpath "$HOME/.local/bin/claude")"
 VER="$(basename "$BIN")"
-INDEX="$LOCAL/$VER/index.json"
-[[ -f "$INDEX" ]] || INDEX="$REPO/patches/$VER/index.json"
-# Keep the stamp expression identical in apply-display-patches.sh
+# Every input that decides the patched bytes. Keep identical in background-port.sh.
+FINGERPRINT="$(find "$ROOT/apply-display-patches.sh" "$ROOT/patches" "$ROOT/patches-local" \
+  -type f 2>/dev/null | sort | xargs cat /dev/null | shasum)"
 STAMP="$(stat -f '%i %z %m' "$BIN"
-  find "$ROOT/apply-display-patches.sh" "$ROOT"/*.mjs "$LOCAL" "$INDEX" -type f 2>/dev/null | sort | xargs cat /dev/null | shasum)"
+  echo "$FINGERPRINT")"
 
 launch() { echo "$1" > "$TARGET"; }
 
@@ -72,10 +70,11 @@ fi
 [[ -n "$note" ]] && echo "$note"
 
 # Reconcile in the background. Never blocks the launch; the retry damper keeps a
-# failing version from respawning an agent on every launch.
+# failing version from respawning an agent on every launch, until a day passes
+# or the patch set itself changes.
 if [[ -f "$STATE/$VER.failed" ]] &&
    [[ -z "$(find "$STATE/$VER.failed" -maxdepth 0 -mmin +1440 2>/dev/null)" ]] &&
-   [[ "$(head -1 "$STATE/$VER.failed")" == "$(git -C "$REPO" rev-parse HEAD 2>/dev/null)" ]]; then
+   [[ "$(head -1 "$STATE/$VER.failed")" == "$FINGERPRINT" ]]; then
   echo "claude-patching: the port of $VER failed recently — not retrying. See $STATE/port-$VER.log; delete $STATE/$VER.failed to force a retry."
 else
   mkdir -p "$STATE"
