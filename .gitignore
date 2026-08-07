@@ -3,3 +3,4 @@ repo
 package.json
 package-lock.json
 patches-local
+__pycache__/

@@ -1,12 +1,14 @@
 ---
 name: expa
-description: Experiment agent A. Calls the ping probe tool five times.
+description: Probe agent A. Calls the ping probe tool five times.
 model: sonnet
 mcpServers:
   - logserver:
       type: stdio
-      command: /opt/homebrew/bin/node
-      args: ["/Users/akelly/.claude/jobs/87f26767/tmp/expA/logsrv.js"]
+      command: {NODE}
+      args: ["{LOGSRV}"]
+      env:
+        LOGSRV_LOG: "{LOG}"
 ---
 
 You are a probe agent. Your agent name is expa.
