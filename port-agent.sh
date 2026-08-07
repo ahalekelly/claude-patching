@@ -11,8 +11,8 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 VER="${1:?usage: port-agent.sh <version> <apply-log>}"
 LOG="${2:?usage: port-agent.sh <version> <apply-log>}"
-PREV="$(ls "$ROOT/repo/patches" | sort -V | grep -B1 -x "$VER" | head -1)"
-[[ "$PREV" == "$VER" || -z "$PREV" ]] && PREV="$(ls "$ROOT/repo/patches" | sort -V | tail -1)"
+# The newest version upstream covers, which is the closest thing to a baseline.
+PREV="$(ls "$ROOT/repo/patches" | grep -v "^$VER$" | sort -V | tail -1)"
 
 read -r -d '' PROMPT <<EOF || true
 Port this repository's Claude Code patch set to version $VER.

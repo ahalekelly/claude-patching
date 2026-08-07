@@ -106,5 +106,9 @@ for id in $PATCH_IDS $LOCAL_PATCH_IDS; do
 done
 
 node --check "$JS"
+# tweakcc repacks into an existing Claude Code binary, so the candidate starts
+# as a copy of the stock one. A fresh file every time, never an overwrite of a
+# live binary, per the code-signature-per-inode caveat above.
+cp "$STOCK.orig" "$OUT"
 "$TWEAKCC" repack "$JS" "$OUT"
 echo "Candidate written to $OUT"

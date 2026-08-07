@@ -33,10 +33,10 @@ report() { # <status> <id> <detail>
   esac
 }
 
-run() { # <runner...> <id>
-  local id="${*: -1}" out
+run() { # <runner> <id>
+  local runner="$1" id="$2" out
   case "$DROPPED" in *" $id "*) report skip "$id" "patch dropped for this build"; return;; esac
-  if out="$("$@" "$BIN" "$id" 2>&1)"; then report pass "$id"
+  if out="$("$runner" "$BIN" "$id" 2>&1)"; then report pass "$id"
   else report fail "$id" "$(printf '%s' "$out" | tail -1)"; fi
 }
 
