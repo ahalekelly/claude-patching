@@ -42,7 +42,7 @@ const TARGETS = [
   {
     label: "Workflow description",
     skill: "workflow-tool",
-    hash: "54a255eba06f67ac",
+    hash: "3427b9fba88d9302",
     min: 3000, // the real description is ~20k chars
     max: 60000,
     anchor:
@@ -56,7 +56,7 @@ REQUIRED before writing or editing any workflow script: invoke the Skill tool wi
   {
     label: "Artifact intro chunk",
     skill: "artifact-tool",
-    hash: "6d161738624d6976",
+    hash: "e5af971e17318b68",
     min: 800, // UI labels reusing this phrase are <300 chars; the chunk is ~1.5k
     max: 5000,
     anchor: "Render an HTML or Markdown file to an Artifact",
@@ -71,7 +71,7 @@ Hard rules that always apply: pages must be fully self-contained — a strict CS
   {
     label: "Artifact rules chunk",
     skill: "artifact-tool",
-    hash: "662e12606a519911",
+    hash: "f73d519cfd381bc2",
     anchor:
       "**To update**: Edit the file, then call Artifact again with the same file path",
     blankUse: true,
@@ -79,7 +79,7 @@ Hard rules that always apply: pages must be fully self-contained — a strict CS
   {
     label: "Artifact capabilities chunk",
     skill: "artifact-tool",
-    hash: "b96d2fa287c9dc8b",
+    hash: "9b98ebf921a530f2",
     anchor: "**Runtime capabilities** (optional): depending on what is enabled",
     blankUse: true,
   },
