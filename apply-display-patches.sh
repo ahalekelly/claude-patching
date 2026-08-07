@@ -65,14 +65,15 @@ STOCK="$HOME/.local/share/claude/versions/$VER"
 # when a patch actually had to be re-anchored — a patch file at the same path it
 # has upstream, so its `require('../../lib/output')` still resolves (via the lib
 # symlink below, which mirrors the clone's own layout).
-[[ -d "$LOCAL" ]] && ln -sfn ../repo/lib "$LOCAL/lib"
+if [[ -d "$LOCAL" ]]; then ln -sfn ../repo/lib "$LOCAL/lib"; fi
 INDEX="$LOCAL/$VER/index.json"
 [[ -f "$INDEX" ]] || INDEX="$REPO/patches/$VER/index.json"
 
 # A display patch whose anchors drifted beyond re-anchoring can be listed in
 # patches-local/<ver>/dropped so one cosmetic patch never pins the machine to an
 # old version. mcp-per-subagent is behavioral and never droppable.
-DROPPED="$(cat "$LOCAL/$VER/dropped" 2>/dev/null | tr '\n' ' ')"
+DROPPED=""
+if [[ -f "$LOCAL/$VER/dropped" ]]; then DROPPED="$(tr '\n' ' ' < "$LOCAL/$VER/dropped")"; fi
 case " $DROPPED " in
   *" mcp-per-subagent "*) echo "ERROR: mcp-per-subagent is mandatory and cannot be dropped" >&2; exit 1;;
 esac

@@ -57,8 +57,13 @@ patches in this directory. Stop when \`./apply-display-patches.sh $VER
 /tmp/candidate\` succeeds, and report what you re-anchored and what you dropped.
 EOF
 
+rm -rf "$STATE/port-agent-$VER.lock"
+
 cat > "$RUN" <<EOF
 #!/bin/bash
+# First executor wins: the Terminal window and the headless fallback can race
+# when osascript's reply times out but Terminal runs the script anyway.
+mkdir '$STATE/port-agent-$VER.lock' 2>/dev/null || exit 0
 cd "$ROOT"
 export CLAUDE_PATCHING_AUTOPORT=1
 "\$HOME/.local/share/claude/versions/$VER" -p --model opus --permission-mode auto \\
@@ -67,8 +72,17 @@ echo "\${PIPESTATUS[0]}" > '$DONE'
 EOF
 chmod +x "$RUN"
 
-osascript -e "tell application \"Terminal\" to do script \"$RUN\"" >/dev/null
-echo "port agent for $VER running in a Terminal window; log: $STATE/port-agent-$VER.log"
+# A visible Terminal window when a GUI session exists; headless otherwise. The
+# AppleScript-level timeout keeps a GUI-less context (daemon, background job)
+# from hanging on the AppleEvent instead of falling back.
+if osascript -e "with timeout of 15 seconds
+tell application \"Terminal\" to do script \"$RUN\"
+end timeout" >/dev/null 2>&1; then
+  echo "port agent for $VER running in a Terminal window; log: $STATE/port-agent-$VER.log"
+else
+  echo "no GUI session for a Terminal window — running the port agent headless; log: $STATE/port-agent-$VER.log"
+  "$RUN" >/dev/null 2>&1 &
+fi
 
 # Block until that window's run finishes, so the caller can retry the mechanical
 # pass against whatever overlay the agent wrote.
