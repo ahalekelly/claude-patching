@@ -16,7 +16,7 @@ import subprocess
 import sys
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
-from capture_proxy import CaptureProxy, system_text  # noqa: E402
+from capture_proxy import CaptureProxy  # noqa: E402
 from session import Scratch  # noqa: E402
 
 
@@ -28,15 +28,22 @@ def tool(body, name):
 
 
 def trim_context_bloat(binary):
-    """The system prompt carries no userEmail, currentDate or model-family blurb."""
+    """No userEmail, currentDate or model-family blurb anywhere in the request.
+
+    The three blocks do not travel together: the model-family paragraph sits in
+    the system prompt, while userEmail and currentDate arrive as user context in
+    the first message. Asserting over the whole payload is what keeps the latter
+    two from being vacuous — and userEmail only appears at all when an account
+    is logged in, so this test's discrimination rests on the other two.
+    """
     scratch = Scratch("trim")
     with CaptureProxy() as proxy:
         scratch.run(binary, proxy, "say hi")
-        system = system_text(proxy.main_request())
+        payload = json.dumps(proxy.main_request())
     scratch.cleanup()
     present = [n for n in ("The user's email address is", "Today's date is",
-                           "The most recent Claude models are") if n in system]
-    assert not present, f"system prompt still carries: {present}"
+                           "The most recent Claude models are") if n in payload]
+    assert not present, f"the request still carries: {present}"
 
 
 def defer_workflow_description(binary):
