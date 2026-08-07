@@ -1,4 +1,7 @@
-node_modules/
-repo/
+node_modules
+repo
 package.json
 package-lock.json
+patches-local
+__pycache__/
+port-state

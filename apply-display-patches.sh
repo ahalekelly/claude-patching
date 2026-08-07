@@ -1,5 +1,12 @@
 #!/usr/bin/env bash
-# Repatch the native Claude Code binary with phate45/claude-patching display patches.
+# Build a patched Claude Code binary from the stock one, applying the
+# phate45/claude-patching display patches plus this directory's local patches.
+#
+#   apply-display-patches.sh <version> <output-binary>
+#
+# Pure: reads versions/<version>.orig and writes the candidate to
+# <output-binary>. It never touches the live launch path — archiving, stamping
+# and relinking are background-port.sh's job, after the functional suite passes.
 #
 # Patches applied (see repo/README.md for details):
 #   no-collapse-reads      Read/Grep/Glob shown individually, not "Read 3 files"
@@ -28,12 +35,12 @@
 #   agents-view-shortcut     meta+a (action app:openAgentsView, rebindable)
 #                            goes to the agents view from anywhere; stock only
 #                            offers left-arrow on an empty idle prompt
+#   mcp-per-subagent         each subagent gets its own process for the stdio
+#                            MCP servers its frontmatter declares inline, and
+#                            each such server sees CLAUDE_MCP_PER_AGENT=1
 # Deliberately NOT applied: thinking-visibility / thinking-no-fold — they pin
 # thinking blocks permanently inline; stock behavior (streams while thinking,
 # collapses to a pill after) is what we want, via showThinkingSummaries.
-#
-# Run after every Claude Code update (updates replace the binary and drop the patches).
-# If the new version has no patch set yet: git -C repo pull, or wait for upstream.
 #
 # Restore stock binary — copy to a new file and rename, never write the live
 # binary in place. macOS caches a Mach-O's code signature per inode, so an
@@ -44,65 +51,67 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO="$ROOT/repo"
+LOCAL="$ROOT/patches-local"
 TWEAKCC="$ROOT/node_modules/.bin/tweakcc"
 PATCH_IDS="no-collapse-reads toolsearch-visibility quiet-notifications cron-visibility tool-defer-whitelist worktree-dedup trim-context-bloat"
+LOCAL_PATCH_IDS="defer-tool-descriptions sticky-prompt-header task-reminder-conditional agents-view-shortcut mcp-per-subagent"
 
-BIN="$(realpath "$HOME/.local/bin/claude")"
-VER="$(basename "$BIN")"
-INDEX="$REPO/patches/$VER/index.json"
-if [[ ! -f "$INDEX" ]]; then
-  echo "ERROR: no patch set for Claude Code $VER — try: git -C $REPO pull" >&2
-  exit 1
+VER="${1:?usage: apply-display-patches.sh <version> <output-binary>}"
+OUT="${2:?usage: apply-display-patches.sh <version> <output-binary>}"
+STOCK="$HOME/.local/share/claude/versions/$VER"
+
+# patches-local/ is a local overlay of repo/patches/, written by the background
+# port for versions upstream has not covered: an index.json per version, and —
+# when a patch actually had to be re-anchored — a patch file at the same path it
+# has upstream, so its `require('../../lib/output')` still resolves (via the lib
+# symlink below, which mirrors the clone's own layout).
+[[ -d "$LOCAL" ]] && ln -sfn ../repo/lib "$LOCAL/lib"
+INDEX="$LOCAL/$VER/index.json"
+[[ -f "$INDEX" ]] || INDEX="$REPO/patches/$VER/index.json"
+
+# A display patch whose anchors drifted beyond re-anchoring can be listed in
+# patches-local/<ver>/dropped so one cosmetic patch never pins the machine to an
+# old version. mcp-per-subagent is behavioral and never droppable.
+DROPPED="$(cat "$LOCAL/$VER/dropped" 2>/dev/null | tr '\n' ' ')"
+case " $DROPPED " in
+  *" mcp-per-subagent "*) echo "ERROR: mcp-per-subagent is mandatory and cannot be dropped" >&2; exit 1;;
+esac
+
+resolve_patch() {
+  local id="$1" file
+  case " $LOCAL_PATCH_IDS " in
+    *" $id "*)
+      [[ -f "$LOCAL/$VER/$id.mjs" ]] && echo "$LOCAL/$VER/$id.mjs" || echo "$ROOT/$id.mjs"
+      return;;
+  esac
+  file="$(jq -re --arg id "$id" '.patches[] | select(.id==$id) | .file' "$INDEX" 2>/dev/null)" ||
+    { echo "ERROR: no patch for $id on $VER — not in $INDEX" >&2; return 1; }
+  [[ -f "$LOCAL/$file" ]] && echo "$LOCAL/$file" || echo "$REPO/patches/$file"
+}
+
+# The stock backup is the canonical patch source: back it up on first sight of a
+# version, always rebuild from it, so re-running over a patched install is safe.
+if [[ ! -f "$STOCK.orig" ]]; then
+  cp "$STOCK" "$STOCK.orig"
+  echo "Backed up stock binary to $STOCK.orig"
 fi
 
-# The stock backup is the canonical patch source: back it up on first run,
-# always rebuild from it. Re-running on an already-patched binary is safe.
-if [[ ! -f "$BIN.orig" ]]; then
-  cp "$BIN" "$BIN.orig"
-  echo "Backed up stock binary to $BIN.orig"
-fi
-
-WORK="$(mktemp -d)"
+WORK="$(mktemp -d "${TMPDIR:-/tmp}/claude-patching.XXXXXX")"
+trap 'rm -rf "$WORK"' EXIT
 JS="$WORK/cli-$VER.js"
-"$TWEAKCC" unpack "$JS" "$BIN.orig"
+"$TWEAKCC" unpack "$JS" "$STOCK.orig"
 
-for id in $PATCH_IDS; do
-  file="$(jq -re --arg id "$id" '.patches[] | select(.id==$id) | .file' "$INDEX")" ||
-    { echo "ERROR: patch $id missing from $INDEX" >&2; exit 1; }
-  echo "--- $id"
-  node "$REPO/patches/$file" "$JS"
+for id in $PATCH_IDS $LOCAL_PATCH_IDS; do
+  case " $DROPPED " in *" $id "*) echo "--- $id  DROPPED for $VER"; continue;; esac
+  patch="$(resolve_patch "$id")"
+  echo "--- $id  ($patch)"
+  node "$patch" "$JS"
 done
 
-echo "--- defer-tool-descriptions (local)"
-node "$ROOT/defer-tool-descriptions.mjs" "$JS"
-
-echo "--- sticky-prompt-header (local)"
-node "$ROOT/sticky-prompt-header.mjs" "$JS"
-
-echo "--- task-reminder-conditional (local)"
-node "$ROOT/task-reminder-conditional.mjs" "$JS"
-
-echo "--- agents-view-shortcut (local)"
-node "$ROOT/agents-view-shortcut.mjs" "$JS"
-
-"$TWEAKCC" repack "$JS" "$BIN"
-
-# Repack writes a fresh file, leaving the desktop app's hardlink on the old
-# binary. Relink so both launch paths share the patched inode.
-APP="$HOME/.local/share/claude/ClaudeCode.app/Contents/MacOS/claude"
-[[ -e "$APP" ]] && ln -f "$BIN" "$APP"
-
-# Stamp read by check-and-apply.sh (keep the expression in sync there): the
-# patched binary's identity plus a patch-set fingerprint, so a swapped binary
-# or an edited patch set invalidates the stamp and the next launch repatches.
-{ stat -f '%i %z %m' "$BIN"
-  cat "$ROOT/apply-display-patches.sh" "$ROOT/defer-tool-descriptions.mjs" "$ROOT/sticky-prompt-header.mjs" "$ROOT/task-reminder-conditional.mjs" "$ROOT/agents-view-shortcut.mjs" "$INDEX" 2>/dev/null | shasum
-} > "$BIN.patched"
-
-# The daemon pre-forks warm spare processes that load the binary's JS at fork
-# time; sessions claimed from a pre-repatch spare run stale code. Kill the
-# unclaimed spares (their cmdline carries --bg-spare) so the daemon reforks
-# from the freshly patched binary.
-pkill -f -- '--bg-spare' 2>/dev/null || true
-
-echo "Done. Restart Claude Code sessions to pick up the patches."
+node --check "$JS"
+# tweakcc repacks into an existing Claude Code binary, so the candidate starts
+# as a copy of the stock one. A fresh file every time, never an overwrite of a
+# live binary, per the code-signature-per-inode caveat above.
+cp "$STOCK.orig" "$OUT"
+"$TWEAKCC" repack "$JS" "$OUT"
+echo "Candidate written to $OUT"
