@@ -60,8 +60,11 @@ def stream_for(blocks):
 class CaptureProxy:
     """Records requests; answers each /v1/messages call from `script`.
 
-    `script` is a list of turns (each a list of blocks); once exhausted every
-    further call answers with a plain "done" so the session always terminates.
+    `script` is a list of turns; once exhausted every further call answers with
+    a plain "done" so the session always terminates. A turn is either a list of
+    blocks or a callable taking the request body and returning one, for turns
+    that have to read what the session just sent — a tool result's id, say — or
+    to hold the answer back while the session does something in the background.
     """
 
     def __init__(self, script=None):
@@ -95,7 +98,8 @@ class CaptureProxy:
                               if session_turn and proxy.script else [{"text": "done"}])
                 if "count_tokens" in self.path:
                     return self._json({"input_tokens": 100})
-                payload = stream_for(blocks)
+                # Outside the lock: a callable turn may block on purpose.
+                payload = stream_for(blocks(body) if callable(blocks) else blocks)
                 self.send_response(200)
                 self.send_header("content-type", "text/event-stream")
                 self.send_header("content-length", str(len(payload)))

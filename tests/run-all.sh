@@ -14,14 +14,10 @@ BIN="${1:?usage: run-all.sh <binary> [dropped-patch-id ...]}"
 shift
 DROPPED=" $* "
 
-PROXY_TESTS="trim-context-bloat tool-defer-whitelist worktree-dedup defer-tool-descriptions"
-PTY_TESTS="no-collapse-reads toolsearch-visibility"
-# Patches whose behavior the harnesses cannot drive yet: a background agent read
-# back through TaskOutput, a cron-fired prompt, the reminder timer, and the
-# sticky header, whose render depends on the transcript virtualizer's own
-# viewport model rather than on what the emulator has scrolled off screen.
-# Reported, never silently counted as passing.
-UNCOVERED="quiet-notifications cron-visibility task-reminder-conditional sticky-prompt-header"
+PROXY_TESTS="trim-context-bloat tool-defer-whitelist worktree-dedup defer-tool-descriptions
+             task-reminder-conditional quiet-notifications"
+PTY_TESTS="no-collapse-reads toolsearch-visibility sticky-prompt-header cron-visibility
+           agents-view-shortcut"
 
 pass=0 fail=0 skip=0
 
@@ -33,22 +29,26 @@ report() { # <status> <id> <detail>
   esac
 }
 
+# The reason a test gives, not the last line of its output: several tests dump a
+# rendered screen or a message stream after the reason, to make a failure
+# diagnosable.
+reason() { printf '%s\n' "$1" | grep -m1 '^FAIL' || printf '%s\n' "$1" | tail -1; }
+
 run() { # <runner> <id>
   local runner="$1" id="$2" out
   case "$DROPPED" in *" $id "*) report skip "$id" "patch dropped for this build"; return;; esac
   if out="$("$runner" "$BIN" "$id" 2>&1)"; then report pass "$id"
-  else report fail "$id" "$(printf '%s' "$out" | tail -1)"; fi
+  else report fail "$id" "$(reason "$out")"; fi
 }
 
 for id in $PROXY_TESTS; do run "$TESTS/proxy-suite.py" "$id"; done
 for id in $PTY_TESTS; do run "$TESTS/pty-suite.py" "$id"; done
-for id in $UNCOVERED; do report skip "$id" "no behavioral test yet"; done
 
 id=mcp-per-subagent
 case "$DROPPED" in
   *" $id "*) report skip "$id" "mandatory patch — cannot be dropped";;
   *) if out="$("$TESTS/mcp-per-subagent/run.py" "$BIN" 2>&1)"; then report pass "$id"
-     else report fail "$id" "$(printf '%s' "$out" | tail -1)"; fi;;
+     else report fail "$id" "$(reason "$out")"; fi;;
 esac
 
 printf '\n%d passed, %d failed, %d skipped\n' "$pass" "$fail" "$skip"

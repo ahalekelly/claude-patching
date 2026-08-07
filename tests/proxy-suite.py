@@ -9,9 +9,12 @@
 Each test drives one headless session against the capture proxy and asserts on
 the recorded request. Exit 0 = pass. Every test must fail on a stock binary.
 """
+import json
 import pathlib
+import re
 import signal
 import sys
+import time
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 from capture_proxy import CaptureProxy, system_text  # noqa: E402
@@ -91,18 +94,101 @@ def worktree_dedup(binary):
     assert count == 1, f"duplicated CLAUDE.md content appears {count} times, expected 1"
 
 
+def task_reminder_conditional(binary):
+    """The periodic task_reminder fires only when the session's task list is non-empty.
+
+    The reminder is turn-counted, not timed: it needs ten assistant turns since
+    the last task-management call, which a scripted run of trivial Reads reaches
+    in seconds. Both halves matter — the empty-list half is what the patch
+    changes, the non-empty half proves the run really does reach the reminder,
+    so an empty-list pass cannot come from the reminder never firing at all.
+    """
+    nag = "The task tools haven't been used recently"
+
+    def reminded(with_task):
+        scratch = Scratch("task-reminder")
+        note = scratch.project / "note.txt"
+        note.write_text("probe\n")
+        script = []
+        if with_task:
+            script.append([{"tool": "TaskCreate", "id": "toolu_tc", "input": {
+                "subject": "probe task", "description": "keeps the task list non-empty",
+                "activeForm": "probing"}}])
+        script += [[{"tool": "Read", "id": f"toolu_r{i}",
+                     "input": {"file_path": str(note)}}] for i in range(14)]
+        script.append([{"text": "loop finished"}])
+        with CaptureProxy(script) as proxy:
+            scratch.run(binary, proxy, "run the loop",
+                        {"CLAUDE_CODE_TODO_REMINDER_MODE": "baseline"})
+            seen = nag in json.dumps(proxy.requests)
+        scratch.cleanup()
+        return seen
+
+    assert reminded(True), "the reminder never fired even with a task on the list"
+    assert not reminded(False), "the reminder fired with an empty task list"
+
+
+def quiet_notifications(binary):
+    """A task whose output was read via TaskOutput carries no notification.
+
+    Two background shells finish while the session is mid-turn, so both
+    notifications are queued before the session acts. The session then reads
+    exactly one of them with TaskOutput. The following request must carry the
+    unread task's notification and not the read one — the unread half is the
+    positive control that the notifications reached the request at all.
+    """
+    scratch = Scratch("quiet-notif")
+    ids = {}
+
+    def launch(_body):
+        return [{"tool": "Bash", "id": f"toolu_{tag}", "input": {
+            "command": "sleep 1; echo probe output", "description": f"probe {tag}",
+            "run_in_background": True}} for tag in ("read", "unread")]
+
+    def read_one(body):
+        for message in body.get("messages", []):
+            content = message.get("content")
+            for block in content if isinstance(content, list) else []:
+                if block.get("type") != "tool_result":
+                    continue
+                found = re.search(r"running in background with ID: (\S+?)\.",
+                                  str(block.get("content")))
+                if found:
+                    ids[block["tool_use_id"]] = found.group(1)
+        # Holding the answer keeps the session mid-turn long enough for both
+        # shells to finish and queue their notifications before it reads one.
+        time.sleep(5)
+        return [{"tool": "TaskOutput", "id": "toolu_out", "input": {
+            "task_id": ids.get("toolu_read", "unknown"), "block": True, "timeout": 20000}}]
+
+    with CaptureProxy([launch, read_one, [{"text": "all done"}]]) as proxy:
+        scratch.run(binary, proxy, "launch two background jobs, then read the first")
+        bodies = [json.dumps(r["body"].get("messages")) for r in proxy.requests]
+    scratch.cleanup()
+    after_read = next((b for b in bodies if '"toolu_out"' in b), "")
+    assert len(ids) == 2, f"the two background shells never both started: {ids}"
+    unread = f"<task-id>{ids['toolu_unread']}</task-id>"
+    read = f"<task-id>{ids['toolu_read']}</task-id>"
+    assert unread in after_read, \
+        "the unread task's notification never arrived — the run never reached the assertion"
+    assert read not in after_read, \
+        "the read task's notification was re-delivered after TaskOutput returned its output"
+
+
 TESTS = {
     "trim-context-bloat": trim_context_bloat,
     "defer-tool-descriptions": defer_tool_descriptions,
     "tool-defer-whitelist": tool_defer_whitelist,
     "worktree-dedup": worktree_dedup,
+    "task-reminder-conditional": task_reminder_conditional,
+    "quiet-notifications": quiet_notifications,
 }
 
 if __name__ == "__main__":
     binary, test_id = sys.argv[1], sys.argv[2]
     signal.signal(signal.SIGALRM,
                   lambda *_: (_ for _ in ()).throw(AssertionError("test timed out")))
-    signal.alarm(300)
+    signal.alarm(600)
     try:
         TESTS[test_id](binary)
     except AssertionError as exc:
