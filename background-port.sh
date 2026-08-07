@@ -90,7 +90,10 @@ INDEX="$LOCAL/$VER/index.json"
 
 # Relink the app bundle so desktop and daemon launches share what the terminal
 # launches, and drop the daemon's warm spares, which load the binary's JS at
-# fork time and would otherwise keep serving pre-promotion code.
+# fork time and would otherwise keep serving pre-promotion code. This match is
+# deliberately broad: sessions claimed from a spare keep --bg-spare in their
+# argv, so live daemon-attached sessions die here too — accepted, because the
+# daemon auto-resumes each one in seconds on the freshly promoted binary.
 [[ -e "$APP" ]] && ln -f "$BIN" "$APP"
 pkill -f -- '--bg-spare' 2>/dev/null || true
 rmdir "$BIN.lock" 2>/dev/null
