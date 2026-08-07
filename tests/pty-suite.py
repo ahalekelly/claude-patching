@@ -208,10 +208,15 @@ def cron_visibility(binary):
     scratch.cleanup()
     assert fired, f"the scheduled task never fired:\n{screen}"
     assert payload in requests, "the fired prompt never reached the model"
+    # Rendering is asserted before the prefix on purpose: it is the assertion a
+    # stock binary fails on its own behavior rather than on a string this patch
+    # invented, so it is what a stock failure reason should name.
+    assert payload in screen, \
+        f"the cron-fired prompt was not rendered in the transcript:\n{screen}"
+    assert f"CronJob: {payload}" in screen, \
+        f"the rendered prompt carries no CronJob prefix:\n{screen}"
     assert f"CronJob: {payload}" in requests, \
         "the prompt reached the model without the CronJob prefix"
-    assert "CronJob" in screen and payload in screen, \
-        f"the cron-fired prompt was not rendered in the transcript:\n{screen}"
 
 
 def agents_view_shortcut(binary):
