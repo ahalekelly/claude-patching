@@ -8,7 +8,8 @@
 # when a patch no longer applies — puts it through the functional suite, and
 # promotes it only if that passes. A promoted binary lands in versions/, is
 # archived outside the pruned versions/ directory, and gets the stamp that makes
-# the next launch take the silent fast path.
+# the next launch take the silent fast path. After promotion an advisory agent
+# reviews what the port learned; it recommends, it never edits.
 set -uo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 LOCAL="$ROOT/patches-local"
@@ -72,6 +73,19 @@ DROPPED="$(cat "$LOCAL/$VER/dropped" 2>/dev/null | tr '\n' ' ')"
   fail "the candidate cannot complete a prompt"
 "$ROOT/tests/run-all.sh" "$CAND" $DROPPED || fail "the functional suite did not pass"
 
+# The same suite against the stock binary. Every test is meant to fail here — a
+# test that passes has lost its discrimination, which means one of: Anthropic
+# shipped the behavior natively, the assertion drifted vacuous and its pass on
+# the candidate proves nothing, or a flake. The per-test reasons are kept
+# because they carry the mirror case too: a test asserting a patch artifact (the
+# MCP canary, a defer stub's text) can never pass on stock even once Anthropic
+# fixes the underlying behavior, and only its failure reason says which. The
+# advisory agent classifies; the port just records.
+STOCK_LOG="$STATE/stock-suite-$VER.log"
+"$ROOT/tests/run-all.sh" "$VERSIONS/$VER.orig" $DROPPED > "$STOCK_LOG" 2>&1
+SUSPECT="$(awk '$1=="pass"{printf "%s ", $2}' "$STOCK_LOG")"
+[[ -n "$SUSPECT" ]] && say "suspect — these tests also pass on stock $VER: $SUSPECT"
+
 # Promotion. Under the same lock check-and-apply.sh takes, so no launch ever
 # reads a half-promoted state, and every file is written new then moved into
 # place — macOS caches a Mach-O's code signature per inode, so overwriting a
@@ -98,5 +112,18 @@ pkill -f -- '--bg-spare' 2>/dev/null || true
 rmdir "$BIN.lock" 2>/dev/null
 rm -f "$STATE/$VER.failed"
 
-finish "$VER promoted${DROPPED:+ (dropped:$DROPPED)} — restart sessions to pick it up"
+finish "$VER promoted${DROPPED:+ (dropped:$DROPPED)}${SUSPECT:+ (suspect:$SUSPECT)} — restart sessions to pick it up"
 
+# Advisory pass. Promotion is already done, so a slow or failed review costs
+# nothing; its recommendations join the note the next launch prints.
+ADVICE="$STATE/advisory-$VER.md"
+rm -f "$ADVICE"
+if "$ROOT/advisory-agent.sh" "$VER" "$STOCK_LOG" "$ADVICE" && [[ -s "$ADVICE" ]]; then
+  headline="$(head -1 "$ADVICE")"
+  printf 'claude-patching: upstream watch for %s: %s\n  full review: %s\n' "$VER" "$headline" "$ADVICE" \
+    >> "$STATE/port-message"
+  osascript -e "display notification \"$headline\" with title \"claude-patching: upstream watch\"" 2>/dev/null || true
+  say "advisory: $headline"
+else
+  say "the advisory agent produced nothing — see $STATE/advisory-$VER.log"
+fi
