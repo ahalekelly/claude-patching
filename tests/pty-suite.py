@@ -15,6 +15,7 @@ import fcntl
 import os
 import pathlib
 import pty
+import re
 import select
 import signal
 import struct
@@ -125,12 +126,12 @@ def no_collapse_reads(binary):
         paths.append(path)
     with CaptureProxy([read_blocks(paths), [{"text": "all read"}]]) as proxy:
         term = start(binary, scratch, proxy)
-        term.submit("read the three files")
+        term.submit("read them")
         term.wait_for("all read", timeout=90)
         screen = term.text()
         term.close()
     scratch.cleanup()
-    assert "files" not in screen.split("alpha.txt")[0][-200:], \
+    assert not re.search(r"Read \d+ files", screen), \
         f"reads were collapsed into a roll-up:\n{screen}"
     named = sum(1 for name in ("alpha.txt", "beta.txt", "gamma.txt") if name in screen)
     assert named == 3, f"only {named}/3 reads rendered individually:\n{screen}"
