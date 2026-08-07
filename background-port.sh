@@ -13,6 +13,7 @@ set -uo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO="$ROOT/repo"
 LOCAL="$ROOT/patches-local"
+STATE="$ROOT/port-state"
 VERSIONS="$HOME/.local/share/claude/versions"
 ARCHIVE="$HOME/.local/share/claude/patched"
 APP="$HOME/.local/share/claude/ClaudeCode.app/Contents/MacOS/claude"
@@ -20,10 +21,10 @@ export CLAUDE_PATCHING_AUTOPORT=1
 
 VER="${1:-$(basename "$(realpath "$HOME/.local/bin/claude")")}"
 BIN="$VERSIONS/$VER"
-mkdir -p "$LOCAL"
+mkdir -p "$LOCAL" "$STATE"
 
 # One port per version at a time; self-heal a lock left by a crashed run.
-LOCK="$LOCAL/port-$VER.lock"
+LOCK="$STATE/port-$VER.lock"
 if ! mkdir "$LOCK" 2>/dev/null; then
   [[ -n "$(find "$LOCK" -maxdepth 0 -mmin +60 2>/dev/null)" ]] && rmdir "$LOCK" 2>/dev/null
   mkdir "$LOCK" 2>/dev/null || { echo "port of $VER already running"; exit 0; }
@@ -35,14 +36,14 @@ say() { echo "[$(date '+%F %T')] $*"; }
 
 finish() { # <headline> — notify now, and leave a note for the next launch
   say "$1"
-  printf 'claude-patching: %s\n' "$1" > "$LOCAL/port-message"
+  printf 'claude-patching: %s\n' "$1" > "$STATE/port-message"
   osascript -e "display notification \"$1\" with title \"claude-patching\"" 2>/dev/null || true
 }
 
 fail() { # <reason>
   { git -C "$REPO" rev-parse HEAD 2>/dev/null || echo none
     date '+%F %T'
-    echo "$1"; } > "$LOCAL/$VER.failed"
+    echo "$1"; } > "$STATE/$VER.failed"
   finish "port of $VER failed: $1"
   exit 1
 }
@@ -78,7 +79,7 @@ fi
 mkdir -p "$ARCHIVE"
 cp "$CAND" "$BIN.new" && mv "$BIN.new" "$BIN"
 cp "$CAND" "$ARCHIVE/$VER.new" && mv "$ARCHIVE/$VER.new" "$ARCHIVE/$VER"
-ls "$ARCHIVE" | sort -V | head -n -2 | while read -r old; do rm -f "$ARCHIVE/$old"; done
+ls "$ARCHIVE" | sort -Vr | tail -n +3 | while read -r old; do rm -f "$ARCHIVE/$old"; done
 
 INDEX="$LOCAL/$VER/index.json"
 [[ -f "$INDEX" ]] || INDEX="$REPO/patches/$VER/index.json"
@@ -93,6 +94,6 @@ INDEX="$LOCAL/$VER/index.json"
 [[ -e "$APP" ]] && ln -f "$BIN" "$APP"
 pkill -f -- '--bg-spare' 2>/dev/null || true
 rmdir "$BIN.lock" 2>/dev/null
-rm -f "$LOCAL/$VER.failed"
+rm -f "$STATE/$VER.failed"
 
 finish "$VER promoted${DROPPED:+ (dropped:$DROPPED)} — restart sessions to pick it up"

@@ -19,6 +19,7 @@ set -uo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO="$ROOT/repo"
 LOCAL="$ROOT/patches-local"
+STATE="$ROOT/port-state"
 ARCHIVE="$HOME/.local/share/claude/patched"
 TARGET="${1:?usage: check-and-apply.sh <target-file>}"
 
@@ -37,7 +38,7 @@ STAMP="$(stat -f '%i %z %m' "$BIN"
 launch() { echo "$1" > "$TARGET"; }
 
 # A finished port leaves a message for the next launch to print.
-NOTE="$LOCAL/port-message"
+NOTE="$STATE/port-message"
 note=""
 if [[ -f "$NOTE" ]]; then
   note="$(<"$NOTE")"
@@ -62,7 +63,7 @@ if [[ -n "$FALLBACK" ]]; then
   behind=$(( ${VER##*.} - ${FALLBACK##*.} ))
   days=$(( ( $(stat -f %m "$BIN") - $(stat -f %m "$ARCHIVE/$FALLBACK") ) / 86400 ))
   if [[ "${VER%.*}" != "${FALLBACK%.*}" || $behind -gt 3 || $days -gt 7 ]]; then
-    echo "claude-patching: WARNING — that is $behind release(s) and $days day(s) behind $VER. Check $LOCAL/port-$VER.log."
+    echo "claude-patching: WARNING — that is $behind release(s) and $days day(s) behind $VER. Check $STATE/port-$VER.log."
   fi
 else
   launch "$BIN"
@@ -72,13 +73,13 @@ fi
 
 # Reconcile in the background. Never blocks the launch; the retry damper keeps a
 # failing version from respawning an agent on every launch.
-if [[ -f "$LOCAL/$VER.failed" ]] &&
-   [[ -z "$(find "$LOCAL/$VER.failed" -maxdepth 0 -mmin +1440 2>/dev/null)" ]] &&
-   [[ "$(head -1 "$LOCAL/$VER.failed")" == "$(git -C "$REPO" rev-parse HEAD 2>/dev/null)" ]]; then
-  echo "claude-patching: the port of $VER failed recently — not retrying. See $LOCAL/$VER.log; delete $LOCAL/$VER.failed to force a retry."
+if [[ -f "$STATE/$VER.failed" ]] &&
+   [[ -z "$(find "$STATE/$VER.failed" -maxdepth 0 -mmin +1440 2>/dev/null)" ]] &&
+   [[ "$(head -1 "$STATE/$VER.failed")" == "$(git -C "$REPO" rev-parse HEAD 2>/dev/null)" ]]; then
+  echo "claude-patching: the port of $VER failed recently — not retrying. See $STATE/port-$VER.log; delete $STATE/$VER.failed to force a retry."
 else
-  mkdir -p "$LOCAL"
-  CLAUDE_PATCHING_AUTOPORT=1 nohup "$ROOT/background-port.sh" "$VER" >>"$LOCAL/port-$VER.log" 2>&1 &
+  mkdir -p "$STATE"
+  CLAUDE_PATCHING_AUTOPORT=1 nohup "$ROOT/background-port.sh" "$VER" >>"$STATE/port-$VER.log" 2>&1 &
   echo "claude-patching: porting the patch set to $VER in the background — this session keeps running whatever launched above."
 fi
 exit 1
