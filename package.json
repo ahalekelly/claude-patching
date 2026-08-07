@@ -1,0 +1,15 @@
+{
+  "name": "claude-patching",
+  "version": "1.0.0",
+  "description": "Behavior-tested patches for the native Claude Code binary, with a non-blocking auto-port on updates",
+  "license": "MIT",
+  "author": "Adrian Kelly",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ahalekelly/claude-patching.git"
+  },
+  "private": true,
+  "dependencies": {
+    "tweakcc": "^4.3.2"
+  }
+}

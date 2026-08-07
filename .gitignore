@@ -1,7 +1,5 @@
 node_modules
-repo
-package.json
-package-lock.json
 patches-local
-__pycache__/
 port-state
+__pycache__/
+.DS_Store
