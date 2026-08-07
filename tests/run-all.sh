@@ -14,10 +14,10 @@ BIN="${1:?usage: run-all.sh <binary> [dropped-patch-id ...]}"
 shift
 DROPPED=" $* "
 
-PROXY_TESTS="trim-context-bloat tool-defer-whitelist worktree-dedup defer-tool-descriptions
+PROXY_TESTS="trim-context-bloat tool-defer-whitelist defer-tool-descriptions
              task-reminder-conditional"
 PTY_TESTS="no-collapse-reads toolsearch-visibility sticky-prompt-header cron-visibility
-           agents-view-shortcut quiet-notifications"
+           agents-view-shortcut"
 
 pass=0 fail=0 skip=0
 

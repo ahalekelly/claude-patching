@@ -11,14 +11,10 @@
 # Patches applied (see repo/README.md for details):
 #   no-collapse-reads      Read/Grep/Glob shown individually, not "Read 3 files"
 #   toolsearch-visibility  ToolSearch calls visible
-#   quiet-notifications    task notifications don't re-carry output the session
-#                          already read via TaskOutput
 #   cron-visibility        cron/loop-fired prompts visible with a CronJob prefix,
 #                          which also reaches the model
 #   tool-defer-whitelist   tools in CLAUDE_CODE_IMMEDIATE_TOOLS (settings.json
 #                          env) skip ToolSearch deferral
-#   worktree-dedup         duplicate CLAUDE.md/.claude/rules content injected
-#                          once, nearest copy wins
 #   trim-context-bloat     drops userEmail, currentDate, and the model-family
 #                          paragraph from the system prompt (a UserPromptSubmit
 #                          hook in settings.json supplies live date/time instead)
@@ -53,7 +49,7 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO="$ROOT/repo"
 LOCAL="$ROOT/patches-local"
 TWEAKCC="$ROOT/node_modules/.bin/tweakcc"
-PATCH_IDS="no-collapse-reads toolsearch-visibility quiet-notifications cron-visibility tool-defer-whitelist worktree-dedup trim-context-bloat"
+PATCH_IDS="no-collapse-reads toolsearch-visibility cron-visibility tool-defer-whitelist trim-context-bloat"
 LOCAL_PATCH_IDS="defer-tool-descriptions sticky-prompt-header task-reminder-conditional agents-view-shortcut mcp-per-subagent"
 
 VER="${1:?usage: apply-display-patches.sh <version> <output-binary>}"

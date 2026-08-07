@@ -18,8 +18,6 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 from capture_proxy import CaptureProxy, system_text  # noqa: E402
 from session import Scratch  # noqa: E402
 
-MARKER = "zqx-dedup-marker-7714"
-
 
 def tool(body, name):
     for t in body.get("tools", []):
@@ -73,25 +71,6 @@ def tool_defer_whitelist(binary):
     assert "Logging probe" in ping["description"], "the tool shipped without its real schema"
 
 
-def worktree_dedup(binary):
-    """Identical rule content mirrored at two ancestor levels is injected once."""
-    scratch = Scratch("dedup")
-    body_text = f"# House rules\n\n{MARKER}\n"
-    nested = scratch.project / "nested"
-    for directory in (scratch.project, nested):
-        rules = directory / ".claude" / "rules"
-        rules.mkdir(parents=True)
-        (rules / "house.md").write_text(body_text)
-    scratch.use_subdir("nested")
-    with CaptureProxy() as proxy:
-        scratch.run(binary, proxy, "say hi")
-        request = proxy.main_request()
-    scratch.cleanup()
-    blob = system_text(request) + "\n" + str(request.get("messages", ""))
-    count = blob.count(MARKER)
-    assert count == 1, f"duplicated CLAUDE.md content appears {count} times, expected 1"
-
-
 def task_reminder_conditional(binary):
     """The periodic task_reminder fires only when the session's task list is non-empty.
 
@@ -130,7 +109,6 @@ TESTS = {
     "trim-context-bloat": trim_context_bloat,
     "defer-tool-descriptions": defer_tool_descriptions,
     "tool-defer-whitelist": tool_defer_whitelist,
-    "worktree-dedup": worktree_dedup,
     "task-reminder-conditional": task_reminder_conditional,
 }
 
