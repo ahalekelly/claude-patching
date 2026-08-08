@@ -220,25 +220,25 @@ def cron_visibility(binary):
 
 
 def agents_view_shortcut(binary):
-    """meta+a opens the agents view from a normal idle session.
+    """ctrl+a opens the agents view from a normal idle session.
 
-    ESC-prefixed 'a' is how a terminal sends meta+a. Stock binds nothing to it,
-    so the screen must be unchanged there; patched backgrounds the conversation
-    and switches to the agents view.
+    \\x01 is how a terminal sends ctrl+a. Stock only moves the input cursor
+    home, so the screen must be unchanged there; patched backgrounds the
+    conversation and switches to the agents view.
     """
     scratch = Scratch("agents-view")
     with CaptureProxy() as proxy:
         term = start(binary, scratch, proxy)
         term.pump(2)
         before = term.text()
-        term.send("\x1ba")
+        term.send("\x01")
         term.pump(6)
         after = term.text()
         term.close()
     scratch.cleanup()
     assert "moved to the background" in after and "Needs input" in after, \
-        f"meta+a did not open the agents view:\n{after}"
-    assert before != after, "meta+a left the screen untouched"
+        f"ctrl+a did not open the agents view:\n{after}"
+    assert before != after, "ctrl+a left the screen untouched"
 
 
 def agent_model_display(binary):

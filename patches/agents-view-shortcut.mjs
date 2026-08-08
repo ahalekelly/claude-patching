@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // agents-view-shortcut: an always-active keyboard shortcut to the agents view
-// (FleetView), default meta+a, exposed as the keybinding action
+// (FleetView), default ctrl+a, exposed as the keybinding action
 // "app:openAgentsView" so keybindings.json can rebind it.
 //
 // Stock Claude Code's only in-session route to the agents view is the
@@ -56,12 +56,12 @@ replaceOne(
   '["app:openAgentsView","app:interrupt","app:exit","app:toggleTodos"',
 );
 
-// Default Global bindings table. meta+a is unbound in stock and matches the
-// meta+<letter> family (meta+p model picker, meta+t thinking, ...).
+// Default Global bindings table. ctrl+a is unbound in stock (it is the GNU
+// screen prefix and readline home, a conscious trade for a one-hand chord).
 replaceOne(
   "default binding",
   /bindings:\{"ctrl\+c":"app:interrupt"/g,
-  'bindings:{"meta+a":"app:openAgentsView","ctrl+c":"app:interrupt"',
+  'bindings:{"ctrl+a":"app:openAgentsView","ctrl+c":"app:interrupt"',
 );
 
 // The REPL component's left-arrow decision memo — captures the identifiers
