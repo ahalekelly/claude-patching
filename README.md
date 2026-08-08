@@ -129,7 +129,7 @@ The service runs once at login and on directory changes, has no start timeout, a
 - `setup-signing.sh` — macOS-only, run by hand once: creates the local certificate the port signs patched binaries with.
 - `patches/` — the committed patch set.
 - `patches-local/` — machine-local overlay written by the port: `<version>/<id>.mjs` re-anchors, `<version>/dropped`.
-- `port-state/` — locks, logs, failure markers, and the note the next launch prints.
+- `port-state/` — locks, logs, failure markers, the note the next launch prints, and `reanchor-history`: a line per version a patch was carried by a local re-anchor, which the port turns into a "re-anchor debt" line naming each committed patch that has gone stale.
 
 ## Tests
 

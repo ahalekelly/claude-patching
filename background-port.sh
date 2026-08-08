@@ -136,6 +136,21 @@ rm -f "$STATE/$VER.failed"
 
 finish "$VER promoted${DROPPED:+ (dropped:$DROPPED)}${SUSPECT:+ (suspect:$SUSPECT)} — restart sessions to pick it up"
 
+# Re-anchor debt. A re-anchor in patches-local/ wins for one version only, so a
+# committed patch that stopped fitting costs the port agent another repair every
+# release while patches/ stays stale. Count the releases each one has been
+# carried for, so that toil shows up in the note instead of being paid silently.
+for id in $EFFECTIVE; do
+  case " $DROPPED " in *" $id "*) continue;; esac
+  [[ -f "$LOCAL/$VER/$id.mjs" ]] || continue
+  grep -qxF "$VER $id" "$STATE/reanchor-history" 2>/dev/null || echo "$VER $id" >> "$STATE/reanchor-history"
+  releases="$(grep -c " $id\$" "$STATE/reanchor-history")"
+  first="$(grep " $id\$" "$STATE/reanchor-history" | head -1 | cut -d' ' -f1)"
+  debt="re-anchor debt: $id has run on a local re-anchor for $releases release(s) (since $first) — patches/$id.mjs is stale"
+  say "$debt"
+  printf 'claude-patching: %s\n' "$debt" >> "$STATE/port-message"
+done
+
 # Advisory pass. Promotion is already done, so a slow or failed review costs
 # nothing; its recommendations join the note the next launch prints.
 ADVICE="$STATE/advisory-$VER.md"
