@@ -2,11 +2,14 @@
 // agent-model-display: show which model each agent runs, in the two agent
 // lists that omit it.
 //
-// 1. In-session task menu (the bottom list over the transcript): local_agent
-//    rows gain a dim " · <model>" between the description and the status. The
-//    task registry stores the resolved model at spawn (an omitted model:
-//    parameter resolves to the caller's main-loop model before registration),
-//    so the row shows the effective model even for silently-inherited spawns.
+// 1. In-session agent list (the ⏺/◯ rows under the prompt): each subagent
+//    row's right-hand status gains a "<model> · " prefix, so "11m 50s ·
+//    ↓ 92.8k tokens" becomes "fable · 11m 50s · ↓ 92.8k tokens". The task
+//    registry stores the resolved model at spawn (an omitted model: parameter
+//    resolves to the caller's main-loop model before registration), so the
+//    row shows the effective model even for silently-inherited spawns. Rows
+//    whose record has no model (the main session, shells, resumed agents)
+//    are unchanged.
 // 2. Agents view (FleetView): each job row's age column gains a "<model> · "
 //    prefix ("fable · 3m"), read from the job record's --model respawn flag.
 //    The column width math is widened to match. Jobs with no --model flag
@@ -77,38 +80,24 @@ replaceOne(
   'age:(__akJobModel($2.state)?__akJobModel($2.state)+" \\xB7 ":"")+$1($2,$3.has($2.id)?$4.get($2.state.sessionId)?.nextAt:void 0)',
 );
 
-// In-session task menu, local_agent row, stock (memo slots elided):
-//   case"local_agent":{let fT;...fT=Ua(vl.description,qF,!0)...
-//     let AC;if(DE[29]!==fT||DE[30]!==fA)AC=Jm.jsxs(y,{children:[fT," ",fA]})...return AC}
-// The identical assembly shape also ends the monitor_mcp case, so the case
-// label anchors the search: bind the local names from the case opener, then
-// rewrite the first assembly after it (asserted to sit inside this case).
-// The memo deps stay untouched: vl.model is fixed at registration and the
-// component instance is keyed by task id, so the cached element never goes
-// stale.
-{
-  const label = "task menu local_agent row";
-  const openerRe =
-    /case"local_agent":\{let ([$\w]+);if\(([$\w]+)\[\d+\]!==([$\w]+)\|\|\2\[\d+\]!==([$\w]+)\.description\)\1=[$\w]+\(\4\.description,\3,!0\)/g;
-  const openers = [...js.matchAll(openerRe)];
-  if (openers.length !== 1) fail(label, `${openers.length} case openers, expected exactly 1`);
-  const opener = openers[0];
-  const [, fT, , , vl] = opener;
-  const esc = (s) => s.replace(/\$/g, "\\$");
-  const asmRe = new RegExp(
-    `([$\\w]+)=([$\\w]+)\\.jsxs\\(([$\\w]+),\\{children:\\[${esc(fT)}," ",([$\\w]+)\\]\\}\\)`,
-  );
-  const caseEnd = js.indexOf('case"', opener.index + 20);
-  const region = js.slice(opener.index, caseEnd);
-  const asm = region.match(asmRe);
-  if (!asm) fail(label, "row assembly not found inside the case");
-  const [whole, AC, jsxr, text, fA] = asm;
-  const patched =
-    `${AC}=${jsxr}.jsxs(${text},{children:[${fT},` +
-    `__akModelShort(${vl}.model)?${jsxr}.jsx(${text},{dimColor:!0,children:" \\xB7 "+__akModelShort(${vl}.model)}):null,` +
-    `" ",${fA}]})`;
-  js = js.slice(0, opener.index) + region.replace(whole, () => patched) + js.slice(caseEnd);
-  console.log(`agent-model-display: ${label} patched`);
+// In-session agent list: every row's right-hand status is built by one
+// function from the task-registry record, stock:
+//   function KZT(e,t,r,n){let o=e.type==="in_process_teammate"?
+//     e.pendingUserMessages.length:e.pendingMessages.length,...}
+//   → {elapsed, tokenText, queuedText, queuedCount}
+// Wrap it: prefix the record's model onto elapsed. The strip's status-column
+// width is measured from the same return value, so alignment follows for
+// free. Records without a model (main session, shells, resumed agents) pass
+// through untouched.
+for (const name of ["__akStatusInner"]) {
+  if (js.includes(name)) fail("helper injection", `identifier ${name} already present`);
 }
+replaceOne(
+  "session agent list model prefix",
+  /function ([$\w]+)\(([$\w]+),([$\w]+),([$\w]+),([$\w]+)\)\{let ([$\w]+)=\2\.type==="in_process_teammate"\?\2\.pendingUserMessages\.length:\2\.pendingMessages\.length,/g,
+  'function $1($2,$3,$4,$5){let q=__akStatusInner($2,$3,$4,$5),m=__akModelShort($2.model);' +
+    'if(m)q.elapsed=q.elapsed?m+" \\xB7 "+q.elapsed:m;return q}' +
+    'function __akStatusInner($2,$3,$4,$5){let $6=$2.type==="in_process_teammate"?$2.pendingUserMessages.length:$2.pendingMessages.length,',
+);
 
 writeFileSync(jsPath, js);

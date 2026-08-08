@@ -32,7 +32,7 @@
 #   mcp-per-subagent           each subagent gets its own process for the stdio
 #                              MCP servers its frontmatter declares inline, and
 #                              each such server sees CLAUDE_MCP_PER_AGENT=1
-#   agent-model-display        the in-session task menu shows each subagent's
+#   agent-model-display        the in-session agent list shows each subagent's
 #                              resolved model, and agents-view job rows show
 #                              their --model flag in the age column
 #   task-notification-provenance

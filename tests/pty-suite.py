@@ -246,7 +246,7 @@ def agent_model_display(binary):
 
     A completed job record seeded into the config dir renders as a Completed
     row when `claude agents` mounts; patched, its age cell reads
-    "fable · <age>". Stock renders the age alone. The in-session task-menu
+    "fable · <age>". Stock renders the age alone. The in-session agent-list
     half of the patch has no hermetic test: its rows require a live subagent
     spawn, which the capture proxy cannot script deterministically.
     """
