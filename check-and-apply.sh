@@ -27,7 +27,8 @@ TARGET="${1:?usage: check-and-apply.sh <target-file>}"
 
 BIN="$(realpath "$HOME/.local/bin/claude")"
 VER="$(basename "$BIN")"
-# Every input that decides the patched bytes. Keep identical in background-port.sh.
+# Every input that decides the patched bytes. Keep identical in
+# background-port.sh and autoport-trigger.sh.
 FINGERPRINT="$(find "$ROOT/apply-display-patches.sh" "$ROOT/patches" "$ROOT/patches-local" \
   -type f 2>/dev/null | sort | xargs cat /dev/null | shasum)"
 STAMP="$(stat -f '%i %z %m' "$BIN"
@@ -69,16 +70,9 @@ else
 fi
 [[ -n "$note" ]] && echo "$note"
 
-# Reconcile in the background. Never blocks the launch; the retry damper keeps a
-# failing version from respawning an agent on every launch, until a day passes
-# or the patch set itself changes.
-if [[ -f "$STATE/$VER.failed" ]] &&
-   [[ -z "$(find "$STATE/$VER.failed" -maxdepth 0 -mmin +1440 2>/dev/null)" ]] &&
-   [[ "$(head -1 "$STATE/$VER.failed")" == "$FINGERPRINT" ]]; then
-  echo "claude-patching: the port of $VER failed recently — not retrying. See $STATE/port-$VER.log; delete $STATE/$VER.failed to force a retry."
-else
-  mkdir -p "$STATE"
-  CLAUDE_PATCHING_AUTOPORT=1 nohup "$ROOT/background-port.sh" "$VER" >>"$STATE/port-$VER.log" 2>&1 &
-  echo "claude-patching: porting the patch set to $VER in the background — this session keeps running whatever launched above."
-fi
+# Reconcile in the background. Never blocks the launch, and self-damps if the
+# port of this version already failed recently.
+mkdir -p "$STATE"
+CLAUDE_PATCHING_AUTOPORT=1 nohup "$ROOT/background-port.sh" "$VER" >>"$STATE/port-$VER.log" 2>&1 &
+echo "claude-patching: reconciling $VER in the background — see $STATE/port-$VER.log."
 exit 1

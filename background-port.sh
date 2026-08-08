@@ -23,11 +23,27 @@ VER="${1:-$(basename "$(realpath "$HOME/.local/bin/claude")")}"
 BIN="$VERSIONS/$VER"
 mkdir -p "$LOCAL" "$STATE"
 
-# Every input that decides the patched bytes. Keep identical in check-and-apply.sh.
+# Every input that decides the patched bytes. Keep identical in
+# check-and-apply.sh and autoport-trigger.sh.
 fingerprint() {
   find "$ROOT/apply-display-patches.sh" "$ROOT/patches" "$ROOT/patches-local" \
     -type f 2>/dev/null | sort | xargs cat /dev/null | shasum
 }
+
+say() { echo "[$(date '+%F %T')] $*"; }
+
+# Retry damper. Both the launch check and the versions watcher fire this script,
+# and the watcher can fire repeatedly, so a version whose port failed must not
+# respawn an agent every time. A day, or any change to the patch set, clears it.
+# No desktop notification here for the same reason.
+if [[ -f "$STATE/$VER.failed" ]] &&
+   [[ -z "$(find "$STATE/$VER.failed" -maxdepth 0 -mmin +1440 2>/dev/null)" ]] &&
+   [[ "$(head -1 "$STATE/$VER.failed")" == "$(fingerprint)" ]]; then
+  say "the port of $VER failed recently — not retrying; delete $STATE/$VER.failed to force a retry"
+  printf 'claude-patching: the port of %s failed recently — not retrying. See %s; delete %s to force a retry.\n' \
+    "$VER" "$STATE/port-$VER.log" "$STATE/$VER.failed" > "$STATE/port-message"
+  exit 0
+fi
 
 # One port per version at a time; self-heal a lock left by a crashed run.
 LOCK="$STATE/port-$VER.lock"
@@ -37,8 +53,6 @@ if ! mkdir "$LOCK" 2>/dev/null; then
 fi
 WORK="$(mktemp -d "${TMPDIR:-/tmp}/claude-port.XXXXXX")"
 trap 'rmdir "$LOCK" 2>/dev/null; rm -rf "$WORK"' EXIT
-
-say() { echo "[$(date '+%F %T')] $*"; }
 
 finish() { # <headline> — notify now, and leave a note for the next launch
   say "$1"
