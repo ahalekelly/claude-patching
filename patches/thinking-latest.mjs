@@ -97,7 +97,7 @@ const injected =
   `let zzArr=zzM.type==="assistant"?[zzM]:zzM.type==="grouped_tool_use"?zzM.messages:[];` +
   `for(let zzN of zzArr){let zzC=zzN.message.content[0];` +
   `if(zzC?.type==="thinking"&&zzC.thinking)zzLast=zzN}}` +
-  `return zzLast?${jsx}.jsx(${box},{marginTop:1,children:` +
+  `return zzLast?${jsx}.jsx(${box},{children:` +
   `${jsx}.jsx(${thinkingBlock},{param:zzLast.message.content[0],addMargin:!1,isTranscriptMode:!0,verbose:!0})},zzLast.uuid):null})(),`;
 js =
   js.slice(0, site.index) +
