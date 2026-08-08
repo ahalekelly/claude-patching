@@ -51,5 +51,12 @@ case "$DROPPED" in
      else report fail "$id" "$(reason "$out")"; fi;;
 esac
 
+id=task-notification-provenance
+case "$DROPPED" in
+  *" $id "*) report skip "$id" "patch dropped for this build";;
+  *) if out="$("$TESTS/task-notification-provenance/run.py" "$BIN" 2>&1)"; then report pass "$id"
+     else report fail "$id" "$(reason "$out")"; fi;;
+esac
+
 printf '\n%d passed, %d failed, %d skipped\n' "$pass" "$fail" "$skip"
 exit $((fail > 0))

@@ -6,8 +6,8 @@
 
     run.py <binary>
 
-Spawns a real headless session (this test needs a live model, unlike the rest of
-the suite) that launches the same agent definition twice at once. Both
+Spawns a real headless session (one of the suite's live-model
+tests) that launches the same agent definition twice at once. Both
 invocations declare byte-identical inline stdio `mcpServers`, which is the
 condition that makes stock Claude Code hand them one shared server process and
 one session.

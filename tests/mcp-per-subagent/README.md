@@ -1,6 +1,6 @@
 # mcp-per-subagent fixture
 
-The one test in the suite that needs a live model: it proves each subagent invocation gets its own MCP server process, and that one invocation's shutdown does not take its sibling's connection down.
+A test that needs a live model: it proves each subagent invocation gets its own MCP server process, and that one invocation's shutdown does not take its sibling's connection down.
 
 - `run.py <binary>` — the gate test. Builds a scratch project from `agents/`, drives a headless session that launches `expa` twice concurrently, and asserts on the log.
 - `logsrv.js` — minimal stdio MCP server exposing one `ping` tool. Logs its PID, cwd and every `CLAUDE_*` variable at startup, its initialize handshake, and every tool call.
