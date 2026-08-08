@@ -69,6 +69,28 @@ fail() { # <reason>
 
 say "porting $VER"
 
+# Drop state for versions Claude Code no longer has installed. Before the
+# candidate is built rather than after: patches-local/ counts toward the patch
+# set's fingerprint, so pruning it later would leave the stamp we just wrote
+# describing inputs that no longer exist.
+pruned=""
+for dir in "$LOCAL"/*/; do
+  v="$(basename "$dir")"
+  [[ -d "$dir" && ! -f "$VERSIONS/$v" ]] && { rm -rf "$dir"; pruned="$pruned patches-local/$v"; }
+done
+for entry in "$STATE"/*; do
+  v="$(basename "$entry" | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)"
+  [[ -e "$entry" && -n "$v" && ! -f "$VERSIONS/$v" ]] &&
+    { rm -rf "$entry"; pruned="$pruned $(basename "$entry")"; }
+done
+# Our own leftovers in the versions directory, 270 MB apiece, once the version
+# they belong to is gone. Nothing else in there is ours to delete.
+for sibling in "$VERSIONS"/*.orig "$VERSIONS"/*.patched; do
+  v="$(basename "$sibling")"
+  [[ -e "$sibling" && ! -f "$VERSIONS/${v%.*}" ]] && { rm -rf "$sibling"; pruned="$pruned $v"; }
+done
+[[ -n "$pruned" ]] && say "pruned state for uninstalled versions:$pruned"
+
 CAND="$WORK/claude-$VER"
 if ! "$ROOT/apply-display-patches.sh" "$VER" "$CAND" > "$WORK/apply.log" 2>&1; then
   tail -20 "$WORK/apply.log"

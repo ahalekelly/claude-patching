@@ -118,7 +118,7 @@ The service runs once at login and on directory changes, has no start timeout, a
 ### Files
 
 - `check-and-apply.sh <target-file>` — pre-launch check: stamp fast path, archive fallback, staleness warning, background port. Exit 0 = silent, exit 1 = printed something the wrapper should hold for. Exits immediately when `CLAUDE_PATCHING_AUTOPORT` is set, so the port's own sessions never recurse.
-- `background-port.sh [version]` — the reconciler: retry damper, lock, mechanical apply, agent escalation, gate, stock-suite run, promotion, notification, advisory pass.
+- `background-port.sh [version]` — the reconciler: retry damper, lock, prune of state for uninstalled versions, mechanical apply, agent escalation, gate, stock-suite run, promotion, notification, advisory pass.
 - `lib.sh` — shared platform seams and patch-set fingerprint.
 - `autoport-trigger.sh` — fired by launchd or systemd on any change to the versions directory: settle wait, stamp fast path, else `exec` the port so the service manager tracks it as the job.
 - `com.akelly.claude-patching.autoport.plist` — the launchd agent. Absolute paths, `RunAtLoad` so an install during a logout is caught, `ThrottleInterval` so a burst of writes fires it once.
