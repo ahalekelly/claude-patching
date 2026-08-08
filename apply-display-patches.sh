@@ -53,10 +53,30 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PATCHES="$ROOT/patches"
 LOCAL="$ROOT/patches-local"
 TWEAKCC="$ROOT/node_modules/.bin/tweakcc"
-PATCH_IDS="no-collapse-reads toolsearch-visibility cron-visibility tool-defer-whitelist
+DEFAULT_PATCH_IDS="no-collapse-reads toolsearch-visibility cron-visibility tool-defer-whitelist
            trim-context-bloat defer-workflow-description defer-artifact-description
            sticky-prompt-header task-reminder-conditional agents-view-shortcut
            mcp-per-subagent agent-list-models agents-view-models task-notification-provenance"
+
+# Machine-local patch selection, id per line, both files optional and living
+# in gitignored patches-local/ (so they count toward the promotion stamp's
+# fingerprint like any other patch input): patches-local/enable turns on
+# patches that ship default-off, patches-local/disable turns default ones off.
+ENABLE="$([[ -f "$ROOT/patches-local/enable" ]] && tr '\n' ' ' < "$ROOT/patches-local/enable" || true)"
+DISABLE="$([[ -f "$ROOT/patches-local/disable" ]] && tr '\n' ' ' < "$ROOT/patches-local/disable" || true)"
+case " $DISABLE " in
+  *" mcp-per-subagent "*) echo "ERROR: mcp-per-subagent is mandatory and cannot be disabled" >&2; exit 1;;
+esac
+PATCH_IDS=""
+for id in $DEFAULT_PATCH_IDS $ENABLE; do
+  case " $PATCH_IDS " in *" $id "*) continue;; esac
+  case " $DISABLE " in *" $id "*) continue;; esac
+  PATCH_IDS="$PATCH_IDS $id"
+done
+
+# --print-ids: the effective id list, for the port to derive which suite
+# tests to skip. Per-version drops are separate (the port already knows them).
+if [[ "${1:-}" == "--print-ids" ]]; then echo $PATCH_IDS; exit 0; fi
 
 VER="${1:?usage: apply-display-patches.sh <version> <output-binary>}"
 OUT="${2:?usage: apply-display-patches.sh <version> <output-binary>}"

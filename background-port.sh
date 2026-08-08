@@ -68,6 +68,13 @@ cat "$WORK/apply.log"
 chmod +x "$CAND"
 
 DROPPED="$(cat "$LOCAL/$VER/dropped" 2>/dev/null | tr '\n' ' ')"
+# Patches not in this machine's effective set (default-off ones never enabled,
+# or locally disabled) get their suite tests skipped the same way dropped
+# per-version patches do.
+EFFECTIVE="$("$ROOT/apply-display-patches.sh" --print-ids)"
+for id in $(basename -s .mjs "$ROOT/patches/"*.mjs); do
+  case " $EFFECTIVE " in *" $id "*) ;; *) DROPPED="$DROPPED $id";; esac
+done
 "$CAND" --version >/dev/null 2>&1 || fail "the candidate does not report a version"
 "$CAND" -p --model sonnet "reply with the single word ok" >/dev/null 2>&1 ||
   fail "the candidate cannot complete a prompt"

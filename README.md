@@ -18,15 +18,15 @@ Two properties make that safe enough to run every day:
 | `cron-visibility` | a cron-fired prompt renders in the transcript, and reaches the model prefixed `CronJob:` instead of arriving as an anonymous user turn |
 | `tool-defer-whitelist` | tools named in `CLAUDE_CODE_IMMEDIATE_TOOLS` ship their full schema up front instead of being deferred behind ToolSearch |
 | `trim-context-bloat` | drops `userEmail`, `currentDate` and the model-family paragraph from the system prompt |
-| `defer-workflow-description` | the Workflow tool's ~20k-char description becomes a stub pointing at a `workflow-tool` skill that holds the full text |
-| `defer-artifact-description` | the same for the Artifact tool and an `artifact-tool` skill |
+| `defer-workflow-description` | the Workflow tool's ~5k-token description becomes a stub pointing at a `workflow-tool` skill that holds the full text |
+| `defer-artifact-description` | the same for the Artifact tool's ~1.5k tokens and an `artifact-tool` skill |
 | `sticky-prompt-header` | the previous-prompt header above the transcript shows whenever the prompt has scrolled off the top, not only while scrolled up, and in readable contrast |
 | `task-reminder-conditional` | the periodic "task tools haven't been used recently" reminder fires only when the session's task list is non-empty |
 | `agents-view-shortcut` | a rebindable keybinding action opens the agents view from anywhere; stock offers only left-arrow on an empty idle prompt |
 | `mcp-per-subagent` | each subagent gets its own process for the stdio MCP servers its frontmatter declares inline ([#84638](https://github.com/anthropics/claude-code/issues/84638)) |
-| `agent-list-models` | the in-session agent list shows each row's model — subagents as "11m 50s · fable · ↓ 92.8k tokens" (the resolved model, so silently-inherited spawns are visible), the main row as a right-aligned "fable · ↓ 12k tokens" |
+| `agent-list-models` | the in-session agent list shows each row's model — subagents as "11m 50s · fable · ↓ 92.8k tokens", the main row as a right-aligned "fable · ↓ 12k tokens" |
 | `agents-view-models` | agents-view job rows show their `--model` flag in the age column ("fable · 3m") |
-| `task-notification-provenance` | agent task-notifications carry a `<trigger>` element naming what started the run — original launch, a user message sent to the agent, a SendMessage, or an auto-resume — so an owner can tell a user-initiated continuation from a rogue one |
+| `task-notification-provenance` | agent task-notifications carry a `<trigger>` element naming what started the run — original launch, a user message sent to the agent, a SendMessage, or an auto-resume — so an owner can tell a user-initiated continuation from a rogue one ([#84957](https://github.com/anthropics/claude-code/issues/84957)) |
 
 Each patch is one self-contained script under `patches/`, run as `node patches/<id>.mjs <unpacked-cli.js>`, with a header comment explaining the stock behavior, the anchor, and why the anchor is safe.
 
@@ -71,7 +71,7 @@ claude() {
 }
 ```
 
-To pick a subset, delete the ids you do not want from `PATCH_IDS` at the top of `apply-display-patches.sh`. Any patch whose id is absent is simply never applied, and `tests/run-all.sh` names it as skipped rather than counting it as passing.
+To pick a subset, list ids in two optional machine-local files under gitignored `patches-local/`: `disable` (one id per line) turns off patches from the default set, and `enable` turns on patches that ship default-off. Both count toward the promotion stamp's fingerprint, so editing them triggers a rebuild on the next launch, and the port's gate skips the suite tests of whatever is not applied. `mcp-per-subagent` is mandatory and cannot be disabled.
 
 ## Launching and porting
 

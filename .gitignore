@@ -3,3 +3,4 @@ patches-local
 port-state
 __pycache__/
 .DS_Store
+plans/
