@@ -68,7 +68,6 @@ fi
 
 # Reconcile in the background. Never blocks the launch, and self-damps if the
 # port of this version already failed recently.
-mkdir -p "$STATE"
-CLAUDE_PATCHING_AUTOPORT=1 nohup "$ROOT/background-port.sh" "$VER" >>"$STATE/port-$VER.log" 2>&1 &
+CLAUDE_PATCHING_AUTOPORT=1 nohup "$ROOT/background-port.sh" "$VER" >/dev/null 2>&1 &
 echo "claude-patching: reconciling $VER in the background — see $STATE/port-$VER.log."
 exit 1

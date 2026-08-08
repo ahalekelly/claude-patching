@@ -24,6 +24,11 @@ VER="${1:-$(basename "$(realpath "$HOME/.local/bin/claude")")}"
 BIN="$VERSIONS/$VER"
 mkdir -p "$LOCAL" "$STATE"
 
+# The port owns its log, so a run started by hand leaves the same trace as one
+# spawned by a launch, launchd, or systemd — every caller sends our output to
+# /dev/null.
+exec > >(tee -a "$STATE/port-$VER.log") 2>&1
+
 say() { echo "[$(date '+%F %T')] $*"; }
 
 # Retry damper. Both the launch check and the versions watcher fire this script,

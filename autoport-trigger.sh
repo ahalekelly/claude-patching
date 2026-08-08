@@ -7,7 +7,6 @@
 set -uo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$ROOT/lib.sh"
-STATE="$ROOT/port-state"
 VERSIONS="$HOME/.local/share/claude/versions"
 
 # Version entries only — the .orig/.patched/.new/.lock siblings share the directory.
@@ -36,5 +35,4 @@ STAMP="$(file_id "$BIN"; fingerprint)"
 # becomes is the job it tracks. launchd's ThrottleInterval and systemd's refusal
 # to retrigger an active service coalesce bursts of watch events. The port's own
 # damper handles a version whose port already failed.
-mkdir -p "$STATE"
-exec "$ROOT/background-port.sh" "$VER" >> "$STATE/port-$VER.log" 2>&1
+exec "$ROOT/background-port.sh" "$VER" >/dev/null 2>&1
