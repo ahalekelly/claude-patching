@@ -42,6 +42,11 @@
 #                              element naming what started the run: original
 #                              launch, user message, SendMessage, or auto-resume
 #
+# Default-off, enable via patches-local/enable (both together — they are a pair):
+#   thinking-visibility        thinking blocks render inline in the normal view
+#   thinking-no-fold           thinking stays its own transcript entry instead
+#                              of folding into the "Thought for Ns" pill
+#
 # Restore stock binary — copy to a new file and rename, never write the live
 # binary in place. macOS caches a Mach-O's code signature per inode, so an
 # in-place overwrite leaves the kernel SIGKILLing every launch of that inode:
