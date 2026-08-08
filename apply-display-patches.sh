@@ -11,7 +11,6 @@
 # header comment explaining what it changes and why:
 #
 #   no-collapse-reads          Read/Grep/Glob shown individually, not "Read 3 files"
-#   toolsearch-visibility      ToolSearch calls render with their query
 #   cron-visibility            cron-fired prompts render, and reach the model
 #                              with a CronJob prefix
 #   tool-defer-whitelist       tools named in CLAUDE_CODE_IMMEDIATE_TOOLS skip
@@ -42,8 +41,10 @@
 #                              element naming what started the run: original
 #                              launch, user message, SendMessage, or auto-resume
 #
-# Default-off, enable via patches-local/enable (both together — they are a pair):
+# Default-off, enable via patches-local/enable:
+#   toolsearch-visibility      ToolSearch calls render with their query
 #   thinking-visibility        thinking blocks render inline in the normal view
+#                              (enable the two thinking patches together — pair)
 #   thinking-no-fold           thinking stays its own transcript entry instead
 #                              of folding into the "Thought for Ns" pill
 #
@@ -58,7 +59,7 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PATCHES="$ROOT/patches"
 LOCAL="$ROOT/patches-local"
 TWEAKCC="$ROOT/node_modules/.bin/tweakcc"
-DEFAULT_PATCH_IDS="no-collapse-reads toolsearch-visibility cron-visibility tool-defer-whitelist
+DEFAULT_PATCH_IDS="no-collapse-reads cron-visibility tool-defer-whitelist
            trim-context-bloat defer-workflow-description defer-artifact-description
            sticky-prompt-header task-reminder-conditional agents-view-shortcut
            mcp-per-subagent agent-list-models agents-view-models task-notification-provenance"

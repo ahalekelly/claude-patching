@@ -1,6 +1,6 @@
 # claude-patching
 
-Sixteen patches for the **native Claude Code binary** on macOS and Linux — fourteen applied by default, two opt-in — plus a port that keeps them applied across updates without ever making you wait for it.
+Sixteen patches for the **native Claude Code binary** on macOS and Linux — thirteen applied by default, three opt-in — plus a port that keeps them applied across updates without ever making you wait for it.
 
 Claude Code ships as a single-file executable with its JavaScript bundled inside. Several things it does — collapsing tool calls, hiding ToolSearch and cron fires, spending thousands of standing prompt tokens on tool descriptions you rarely use, sharing one MCP server process between concurrent subagents — have no setting. So the bundle is unpacked, patched, and repacked.
 
@@ -14,7 +14,6 @@ Two properties make that safe enough to run every day:
 | id | what changes |
 | --- | --- |
 | `no-collapse-reads` | Read/Grep/Glob calls render individually instead of collapsing into "Read 3 files" |
-| `toolsearch-visibility` | ToolSearch calls render with their query instead of being absorbed silently |
 | `cron-visibility` | a cron-fired prompt renders in the transcript, and reaches the model prefixed `CronJob:` instead of arriving as an anonymous user turn |
 | `tool-defer-whitelist` | tools named in `CLAUDE_CODE_IMMEDIATE_TOOLS` ship their full schema up front instead of being deferred behind ToolSearch |
 | `trim-context-bloat` | drops `userEmail`, `currentDate` and the model-family paragraph from the system prompt |
@@ -27,12 +26,15 @@ Two properties make that safe enough to run every day:
 | `agent-list-models` | the in-session agent list shows each row's model — subagents as "11m 50s · fable · ↓ 92.8k tokens", the main row as a right-aligned "fable · ↓ 12k tokens" |
 | `agents-view-models` | agents-view job rows show their `--model` flag in the age column ("fable · 3m") |
 | `task-notification-provenance` | agent task-notifications carry a `<trigger>` element naming what started the run — original launch, a user message sent to the agent, a SendMessage, or an auto-resume — so an owner can tell a user-initiated continuation from a rogue one ([#84957](https://github.com/anthropics/claude-code/issues/84957)) |
+| `toolsearch-visibility` *(default-off)* | ToolSearch calls render with their query instead of being absorbed silently |
 | `thinking-visibility` *(default-off)* | thinking blocks render inline in the normal chat view, expanded; stock shows them only in transcript mode (ctrl+o) or under `--verbose` |
 | `thinking-no-fold` *(default-off)* | a thinking block stays its own transcript entry instead of folding into the adjacent collapsed read/search group's "Thought for Ns" pill |
 
 Each patch is one self-contained script under `patches/`, run as `node patches/<id>.mjs <unpacked-cli.js>`, with a header comment explaining the stock behavior, the anchor, and why the anchor is safe.
 
 `mcp-per-subagent` is behavioral rather than cosmetic and is marked mandatory: it can never be dropped to get a build through.
+
+`toolsearch-visibility` ships default-off: ToolSearch fires constantly in tool-heavy sessions, and the rows are noise once you trust that deferred tools load. Enable it via `patches-local/enable` when debugging tool discovery.
 
 The two thinking patches ship default-off (stock's stream-then-collapse behavior is a reasonable preference) and are designed as a pair — enable both via `patches-local/enable` or neither. Alone, `thinking-no-fold` unfolds thinking into a render path that stock draws as nothing, and `thinking-visibility` barely matters because nearly every thinking block gets folded before it reaches that path.
 
