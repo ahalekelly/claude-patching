@@ -152,49 +152,12 @@ def task_reminder_conditional(binary):
     assert not reminded(False), "the reminder fired with an empty task list"
 
 
-def prompt_of(binary, name):
-    """The system prompt one plain headless session sends.
-
-    The suite runs `--model sonnet`, which sits outside the model families the
-    prompt's internal sections are gated to, so a section present here is one
-    the patch put there.
-    """
-    scratch = Scratch(name)
-    with CaptureProxy() as proxy:
-        scratch.run(binary, proxy, "say hi")
-        prompt = system_text(proxy.main_request())
-    scratch.cleanup()
-    return prompt
-
-
-def communicating_with_user(binary):
-    """The prompt carries the full section, and not the clipped variant.
-
-    Both halves matter: the phrase proves the full text arrived, and the absent
-    heading proves it replaced the reduced variant rather than joining it.
-    """
-    prompt = prompt_of(binary, "communicating")
-    assert "a teammate who stepped away and is catching up" in prompt, \
-        "the full Communicating with the user section is missing"
-    assert "# Text output (does not apply to tool calls)" not in prompt, \
-        "the reduced variant is still in the prompt"
-
-
-def ant_faithful_outcomes(binary):
-    """The prompt carries the faithful outcome-reporting rules."""
-    prompt = prompt_of(binary, "faithful")
-    assert "Report outcomes faithfully: if tests fail, say so with the output" in prompt, \
-        "the outcome-reporting rules are missing from the prompt"
-
-
 TESTS = {
     "trim-context-bloat": trim_context_bloat,
     "defer-workflow-description": defer_workflow_description,
     "defer-artifact-description": defer_artifact_description,
     "tool-defer-whitelist": tool_defer_whitelist,
     "task-reminder-conditional": task_reminder_conditional,
-    "communicating-with-user": communicating_with_user,
-    "ant-faithful-outcomes": ant_faithful_outcomes,
 }
 
 if __name__ == "__main__":

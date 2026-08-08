@@ -41,13 +41,6 @@
 #                              agent task-notifications carry a <trigger>
 #                              element naming what started the run: original
 #                              launch, user message, SendMessage, or auto-resume
-#   communicating-with-user    every model gets the full "# Communicating with
-#                              the user" prompt section instead of the clipped
-#                              "# Text output" variant
-#   ant-faithful-outcomes      every model gets the prompt's faithful
-#                              outcome-reporting rules: failing tests reported
-#                              with their output, skipped steps named, verified
-#                              results stated without hedging
 #
 # Default-off, enable via patches-local/enable (both together — they are a pair):
 #   thinking-visibility        thinking blocks render inline in the normal view
@@ -68,8 +61,7 @@ TWEAKCC="$ROOT/node_modules/.bin/tweakcc"
 DEFAULT_PATCH_IDS="no-collapse-reads toolsearch-visibility cron-visibility tool-defer-whitelist
            trim-context-bloat defer-workflow-description defer-artifact-description
            sticky-prompt-header task-reminder-conditional agents-view-shortcut
-           mcp-per-subagent agent-list-models agents-view-models task-notification-provenance
-           communicating-with-user ant-faithful-outcomes"
+           mcp-per-subagent agent-list-models agents-view-models task-notification-provenance"
 
 # Machine-local patch selection, id per line, both files optional and living
 # in gitignored patches-local/ (so they count toward the promotion stamp's
