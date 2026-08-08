@@ -7,7 +7,7 @@ Claude Code ships as a single-file executable with its JavaScript bundled inside
 Two properties make that safe enough to run every day:
 
 - **Every patch refuses rather than guesses.** Anchors are content-bearing (property names, string literals, tool-name constants — never a bare control-flow shape), match counts are asserted exactly, and edits splice by index. A patch that no longer fits aborts the build with the binary untouched.
-- **Every patch has a behavioral test.** Anchor counts catch layout drift but not semantic drift: a patch can apply cleanly to a lookalike site and quietly do nothing. `tests/` asserts what the patched binary *does* — what it sends to the API, what it draws on screen — and only a candidate that passes gets promoted.
+- **Every patch has a behavioral test, or a written excuse.** Anchor counts catch layout drift but not semantic drift: a patch can apply cleanly to a lookalike site and quietly do nothing. `tests/` asserts what the patched binary *does* — what it sends to the API, what it draws on screen — and only a candidate that passes gets promoted. An applied patch with no test fails the gate unless `tests/waivers` names it and says why a test cannot exist yet.
 
 ## The patches
 
@@ -133,7 +133,7 @@ The service runs once at login and on directory changes, has no start timeout, a
 
 ## Tests
 
-`tests/run-all.sh <binary> [dropped-id ...]` asserts each patch's *behavior* against a candidate, and is what gates promotion. It names any patch it has no test for rather than counting it as passing.
+`tests/run-all.sh <binary> [dropped-id ...]` asserts each patch's *behavior* against a candidate, and is what gates promotion. What it must cover comes from the patch set actually applied, so a patch with no test fails the run unless `tests/waivers` names it with a reason.
 
 - `capture_proxy.py` — stands in for the API: records every request and answers from a canned script, so tests are hermetic and cost no tokens.
 - `proxy-suite.py <binary> <id>` — asserts on outgoing payloads (system prompt, tool schemas).

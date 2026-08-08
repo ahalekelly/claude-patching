@@ -6,19 +6,17 @@
 #   run-all.sh <binary> [dropped-patch-id ...]
 #
 # Dropped ids are reported as skipped instead of run. Exit 0 = every test that
-# ran passed. Run it against a stock binary as the negative control: every test
-# must fail there, or it is not discriminating.
+# ran passed and every applied patch had one. Run it against a stock binary as
+# the negative control: every test must fail there, or it is not discriminating.
 set -uo pipefail
 TESTS="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BIN="${1:?usage: run-all.sh <binary> [dropped-patch-id ...]}"
 shift
 DROPPED=" $* "
 
-PROXY_TESTS="trim-context-bloat tool-defer-whitelist defer-workflow-description
-             defer-artifact-description task-reminder-conditional"
-PTY_TESTS="no-collapse-reads toolsearch-visibility sticky-prompt-header cron-visibility
-           agents-view-shortcut agents-view-models thinking-visibility thinking-no-fold
-           thinking-latest"
+PROXY_TESTS="$("$TESTS/proxy-suite.py" --list)"
+PTY_TESTS="$("$TESTS/pty-suite.py" --list)"
+LIVE_TESTS="mcp-per-subagent task-notification-provenance"
 
 pass=0 fail=0 skip=0
 
@@ -58,6 +56,18 @@ case "$DROPPED" in
   *) if out="$("$TESTS/task-notification-provenance/run.py" "$BIN" 2>&1)"; then report pass "$id"
      else report fail "$id" "$(reason "$out")"; fi;;
 esac
+
+# Coverage. The suite is only a gate if every applied patch reaches it, so the
+# applied set decides what must be tested — an untested patch fails here instead
+# of silently not being run. tests/waivers is the escape hatch, and each entry
+# has to say why a test cannot exist yet.
+for id in $("$TESTS/../apply-display-patches.sh" --print-ids); do
+  case "$DROPPED" in *" $id "*) continue;; esac
+  case " $PROXY_TESTS $PTY_TESTS $LIVE_TESTS " in *[[:space:]]"$id"[[:space:]]*) continue;; esac
+  waiver="$(awk -v id="$id" '$1 == id { $1 = ""; sub(/^ +/, ""); print; exit }' "$TESTS/waivers")"
+  if [[ -n "$waiver" ]]; then report skip "$id" "no behavioral test — waived: $waiver"
+  else report fail "$id" "applied with no behavioral test"; fi
+done
 
 printf '\n%d passed, %d failed, %d skipped\n' "$pass" "$fail" "$skip"
 exit $((fail > 0))

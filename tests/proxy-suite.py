@@ -161,6 +161,11 @@ TESTS = {
 }
 
 if __name__ == "__main__":
+    # run-all.sh derives its coverage from this list, so a patch loses its test
+    # only by losing its entry here, never by drifting out of a second list.
+    if sys.argv[1:] == ["--list"]:
+        print("\n".join(TESTS))
+        sys.exit(0)
     binary, test_id = sys.argv[1], sys.argv[2]
     signal.signal(signal.SIGALRM,
                   lambda *_: (_ for _ in ()).throw(AssertionError("test timed out")))
