@@ -13,7 +13,7 @@ Two properties make that safe enough to run every day:
 
 | id | what changes |
 | --- | --- |
-| `no-collapse-reads` | Read/Grep/Glob calls render individually instead of collapsing into "Read 3 files" |
+| `no-collapse-reads` | Read/Grep/Glob/Bash calls render individually instead of collapsing into "Read 3 files" or "ran 4 shell commands" |
 | `cron-visibility` | a cron-fired prompt renders in the transcript, and reaches the model prefixed `CronJob:` instead of arriving as an anonymous user turn |
 | `tool-defer-whitelist` | tools named in `CLAUDE_CODE_IMMEDIATE_TOOLS` ship their full schema up front instead of being deferred behind ToolSearch |
 | `trim-context-bloat` | drops `userEmail`, `currentDate` and the model-family paragraph from the system prompt |

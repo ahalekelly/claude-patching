@@ -118,14 +118,20 @@ def read_blocks(paths):
 
 
 def no_collapse_reads(binary):
-    """Parallel Read calls render as individual lines, not a "Read N files" roll-up."""
+    """Reads and shell commands render as individual lines, not roll-ups.
+
+    Stock collapses parallel Reads into "Read N files" and — in the tui — Bash
+    calls into "ran N shell commands"; patched, each call is its own line.
+    """
     scratch = Scratch("no-collapse")
     paths = []
     for name in ("alpha.txt", "beta.txt", "gamma.txt"):
         path = scratch.project / name
         path.write_text(f"contents of {name}\n")
         paths.append(path)
-    with CaptureProxy([read_blocks(paths), [{"text": "all read"}]]) as proxy:
+    bash = {"tool": "Bash", "id": "toolu_bash0",
+            "input": {"command": "echo quokka-bash-probe"}}
+    with CaptureProxy([read_blocks(paths) + [bash], [{"text": "all read"}]]) as proxy:
         term = start(binary, scratch, proxy)
         term.submit("read them")
         term.wait_for("all read", timeout=90)
@@ -136,6 +142,10 @@ def no_collapse_reads(binary):
         f"reads were collapsed into a roll-up:\n{screen}"
     named = sum(1 for name in ("alpha.txt", "beta.txt", "gamma.txt") if name in screen)
     assert named == 3, f"only {named}/3 reads rendered individually:\n{screen}"
+    assert "shell command" not in screen, \
+        f"the shell command was collapsed into a roll-up:\n{screen}"
+    assert "quokka-bash-probe" in screen, \
+        f"the shell command did not render individually:\n{screen}"
 
 
 def toolsearch_visibility(binary):

@@ -1,6 +1,7 @@
 #!/usr/bin/env node
-// no-collapse-reads: render every Read/Grep/Glob call on its own transcript
-// line instead of rolling consecutive ones up into "Read 3 files".
+// no-collapse-reads: render every Read/Grep/Glob/Bash call on its own
+// transcript line instead of rolling consecutive ones up into "Read 3 files"
+// or "ran 4 shell commands".
 //
 // Claude Code classifies each tool call in a `getToolDisplayKind`-style helper
 // that returns a flags object — {isCollapsible,isSearch,isRead,isList,isREPL,
@@ -13,11 +14,13 @@
 //       s=o.isSearch||o.isRead||i,a=<bashNames>.includes(e);
 //   return{isCollapsible:s||(<fullscreen>()?a:!1),...}
 //
-// The patch drops the `s||`, so search/read/list calls are no longer
-// collapsible and each renders individually. The fullscreen-mode bash roll-up
-// (the second disjunct) is left intact — that one collapses shell commands,
-// not file reads. Every other branch of the helper is untouched, so MCP calls,
-// memory writes and the REPL keep their stock display.
+// The patch replaces the whole isCollapsible expression with false, so
+// search, read, list and shell calls all render individually. Every other
+// branch of the helper is untouched, so MCP calls, memory writes and the REPL
+// keep their stock display. With no shell calls in the groups, the group
+// row's git-op summaries ("committed <sha>", "pushed to <branch>") — derived
+// from grouped Bash calls — no longer appear; the commands themselves render
+// instead.
 import { readFileSync, writeFileSync } from "node:fs";
 
 const jsPath = process.argv[2];
@@ -47,9 +50,9 @@ const [, kind, tool, input, isList, isSearchOrRead, isBashName, bashNames, name,
 const patched =
   `let ${kind}=${tool}.isSearchOrReadCommand(${input}??{}),${isList}=${kind}.isList??!1,` +
   `${isSearchOrRead}=${kind}.isSearch||${kind}.isRead||${isList},${isBashName}=${bashNames}.includes(${name});` +
-  `return{isCollapsible:${fullscreen}()?${isBashName}:!1,` +
+  `return{isCollapsible:!1,` +
   `isSearch:${kind}.isSearch,isRead:${kind}.isRead,isList:${isList},`;
 js = js.slice(0, m.index) + patched + js.slice(m.index + m[0].length);
 
 writeFileSync(jsPath, js);
-console.log("no-collapse-reads: search/read/list tool calls are no longer collapsible");
+console.log("no-collapse-reads: search/read/list/shell tool calls are no longer collapsible");
