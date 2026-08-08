@@ -81,9 +81,18 @@ if [[ ! -f "$STOCK.orig" ]]; then
     echo "ERROR: $STOCK carries a .patched stamp — it is a patched binary, not stock; refusing to back it up as .orig" >&2
     exit 1
   fi
+  # A port can fire while the updater is still writing the 270 MB binary, and a
+  # backup taken then would be trusted as stock forever. The updater's finalize
+  # step is what makes the file executable, so a binary that runs is a complete
+  # one.
+  if [[ ! -x "$STOCK" ]] || ! "$STOCK" --version >/dev/null 2>&1; then
+    echo "ERROR: $STOCK does not execute — still being installed, or broken; refusing to back it up as .orig" >&2
+    exit 1
+  fi
   cp "$STOCK" "$STOCK.orig"
   echo "Backed up stock binary to $STOCK.orig"
 fi
+[[ -s "$STOCK.orig" ]] || { echo "ERROR: $STOCK.orig is empty — delete it and re-run to back up the stock binary again" >&2; exit 1; }
 
 WORK="$(mktemp -d "${TMPDIR:-/tmp}/claude-patching.XXXXXX")"
 trap 'rm -rf "$WORK"' EXIT

@@ -11,6 +11,11 @@
 # the next launch take the silent fast path. After promotion an advisory agent
 # reviews what the port learned; it recommends, it never edits.
 set -uo pipefail
+# launchd and systemd fire the autoport with a minimal PATH that misses the
+# tools this needs: claude lives in ~/.local/bin, and on macOS node, jq and uv
+# in /opt/homebrew/bin. Without them the mechanical apply fails on a missing
+# node and the port reports it as patch drift.
+export PATH="$HOME/.local/bin:/opt/homebrew/bin:$PATH"
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$ROOT/lib.sh"
 LOCAL="$ROOT/patches-local"
@@ -90,6 +95,13 @@ for sibling in "$VERSIONS"/*.orig "$VERSIONS"/*.patched; do
   [[ -e "$sibling" && ! -f "$VERSIONS/${v%.*}" ]] && { rm -rf "$sibling"; pruned="$pruned $v"; }
 done
 [[ -n "$pruned" ]] && say "pruned state for uninstalled versions:$pruned"
+
+# A watcher event can fire while the updater is still writing the binary. That
+# is not a failed port — no agent escalation, no 24-hour damper — so exit
+# quietly and let the next versions-directory event retry. The .orig backup
+# guard in apply-display-patches.sh stays as the last line of defense.
+"$BIN" --version >/dev/null 2>&1 ||
+  { say "$VER does not execute yet — still being installed; not porting"; exit 0; }
 
 CAND="$WORK/claude-$VER"
 if ! "$ROOT/apply-display-patches.sh" "$VER" "$CAND" > "$WORK/apply.log" 2>&1; then
