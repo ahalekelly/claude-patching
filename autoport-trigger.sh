@@ -34,5 +34,7 @@ STAMP="$(file_id "$BIN"; fingerprint)"
 # exec rather than spawn: the service manager owns this pid, so the port it
 # becomes is the job it tracks. launchd's ThrottleInterval and systemd's refusal
 # to retrigger an active service coalesce bursts of watch events. The port's own
-# damper handles a version whose port already failed.
-exec "$ROOT/background-port.sh" "$VER" >/dev/null 2>&1
+# damper handles a version whose port already failed. Stdout stays attached to
+# the service manager's log (the plist's StandardOutPath, systemd's journal), so
+# a port that dies before it can start writing its own log still leaves a trace.
+exec "$ROOT/background-port.sh" "$VER"

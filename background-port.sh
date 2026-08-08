@@ -36,13 +36,23 @@ exec > >(tee -a "$STATE/port-$VER.log") 2>&1
 
 say() { echo "[$(date '+%F %T')] $*"; }
 
+# Everything that can change this port's outcome: the patched bytes' inputs plus
+# the gate that judges them. Deliberately broader than the stamp's fingerprint —
+# fixing a test, a waiver or the README must clear the damper, but must not
+# invalidate an already-promoted stamp.
+damper_fingerprint() {
+  { fingerprint
+    find "$ROOT/tests" -type f -not -path '*__pycache__*' 2>/dev/null | sort | xargs cat /dev/null
+    cat "$ROOT/README.md"; } | "$HASH"
+}
+
 # Retry damper. Both the launch check and the versions watcher fire this script,
 # and the watcher can fire repeatedly, so a version whose port failed must not
-# respawn an agent every time. A day, or any change to the patch set, clears it.
-# No desktop notification here for the same reason.
+# respawn an agent every time. A day, or any change to the port's inputs, clears
+# it. No desktop notification here for the same reason.
 if [[ -f "$STATE/$VER.failed" ]] &&
    [[ -z "$(find "$STATE/$VER.failed" -maxdepth 0 -mmin +1440 2>/dev/null)" ]] &&
-   [[ "$(head -1 "$STATE/$VER.failed")" == "$(fingerprint)" ]]; then
+   [[ "$(head -1 "$STATE/$VER.failed")" == "$(damper_fingerprint)" ]]; then
   say "the port of $VER failed recently — not retrying; delete $STATE/$VER.failed to force a retry"
   printf 'claude-patching: the port of %s failed recently — not retrying. See %s; delete %s to force a retry.\n' \
     "$VER" "$STATE/port-$VER.log" "$STATE/$VER.failed" > "$STATE/port-message"
@@ -65,7 +75,7 @@ finish() { # <headline> — notify now, and leave a note for the next launch
 }
 
 fail() { # <reason>
-  { fingerprint
+  { damper_fingerprint
     date '+%F %T'
     echo "$1"; } > "$STATE/$VER.failed"
   finish "port of $VER failed: $1"
@@ -77,31 +87,58 @@ say "porting $VER"
 # Drop state for versions Claude Code no longer has installed. Before the
 # candidate is built rather than after: patches-local/ counts toward the patch
 # set's fingerprint, so pruning it later would leave the stamp we just wrote
-# describing inputs that no longer exist.
+# describing inputs that no longer exist. The updater can uninstall a version
+# another port is still working on, so a fresh lock protects everything of its
+# version — reclaiming a live run's lock, log or re-anchors out from under it
+# would be worse than a few days of stale files.
+protected=" $VER "
+for lock in "$STATE"/*.lock; do
+  [[ -d "$lock" && -z "$(find "$lock" -maxdepth 0 -mmin +60 2>/dev/null)" ]] || continue
+  v="$(basename "$lock" | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)"
+  [[ -n "$v" ]] && protected="$protected$v "
+done
+alive() { # <version> — installed, being ported right now, or held by a fresh lock
+  [[ -f "$VERSIONS/$1" ]] && return 0
+  case "$protected" in *" $1 "*) return 0;; esac
+  return 1
+}
 pruned=""
 for dir in "$LOCAL"/*/; do
   v="$(basename "$dir")"
-  [[ -d "$dir" && ! -f "$VERSIONS/$v" ]] && { rm -rf "$dir"; pruned="$pruned patches-local/$v"; }
+  [[ -d "$dir" ]] && ! alive "$v" && { rm -rf "$dir"; pruned="$pruned patches-local/$v"; }
 done
 for entry in "$STATE"/*; do
   v="$(basename "$entry" | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)"
-  [[ -e "$entry" && -n "$v" && ! -f "$VERSIONS/$v" ]] &&
+  [[ -e "$entry" && -n "$v" ]] && ! alive "$v" &&
     { rm -rf "$entry"; pruned="$pruned $(basename "$entry")"; }
 done
 # Our own leftovers in the versions directory, 270 MB apiece, once the version
-# they belong to is gone. Nothing else in there is ours to delete.
-for sibling in "$VERSIONS"/*.orig "$VERSIONS"/*.patched; do
-  v="$(basename "$sibling")"
-  [[ -e "$sibling" && ! -f "$VERSIONS/${v%.*}" ]] && { rm -rf "$sibling"; pruned="$pruned $v"; }
+# they belong to is gone: .orig, .patched, and the .new or .lock a crashed
+# promotion can leave. The newest .orig survives even orphaned — it is the
+# previous bundle the port agent diffs against when a patch drifts.
+newest_orig="$(ls "$VERSIONS" 2>/dev/null | grep '\.orig$' | sort -V | tail -1)"
+for sibling in "$VERSIONS"/*.orig "$VERSIONS"/*.patched "$VERSIONS"/*.new "$VERSIONS"/*.lock; do
+  name="$(basename "$sibling")"
+  v="$(echo "$name" | grep -oE '^[0-9]+\.[0-9]+\.[0-9]+')"
+  [[ -e "$sibling" && -n "$v" && "$name" != "$newest_orig" ]] && ! alive "$v" &&
+    { rm -rf "$sibling"; pruned="$pruned $name"; }
 done
 [[ -n "$pruned" ]] && say "pruned state for uninstalled versions:$pruned"
 
-# A watcher event can fire while the updater is still writing the binary. That
-# is not a failed port — no agent escalation, no 24-hour damper — so exit
-# quietly and let the next versions-directory event retry. The .orig backup
-# guard in apply-display-patches.sh stays as the last line of defense.
-"$BIN" --version >/dev/null 2>&1 ||
-  { say "$VER does not execute yet — still being installed; not porting"; exit 0; }
+# A watcher event can fire while the updater is still writing the binary — not
+# a failed port, so no agent escalation and no 24-hour damper: exit quietly and
+# let the next versions-directory event retry. But a binary that still cannot
+# run an hour after it last changed is not mid-install: a corrupted download or
+# a poisoned code signature stays broken forever, and earns the failure marker
+# and its notification. The .orig backup guard in apply-display-patches.sh
+# stays as the last line of defense.
+if ! "$BIN" --version >/dev/null 2>&1; then
+  [[ ! -e "$BIN" ]] && fail "$BIN does not exist — stale ~/.local/bin/claude symlink?"
+  [[ -n "$(find "$BIN" -maxdepth 0 -mmin +60 2>/dev/null)" ]] &&
+    fail "$VER still cannot execute an hour after install — broken download or poisoned signature?"
+  say "$VER does not execute yet — still being installed; not porting"
+  exit 0
+fi
 
 CAND="$WORK/claude-$VER"
 if ! "$ROOT/apply-display-patches.sh" "$VER" "$CAND" > "$WORK/apply.log" 2>&1; then
@@ -185,7 +222,7 @@ for id in $EFFECTIVE; do
   grep -qxF "$VER $id" "$STATE/reanchor-history" 2>/dev/null || echo "$VER $id" >> "$STATE/reanchor-history"
   releases="$(grep -c " $id\$" "$STATE/reanchor-history")"
   first="$(grep " $id\$" "$STATE/reanchor-history" | head -1 | cut -d' ' -f1)"
-  debt="re-anchor debt: $id has run on a local re-anchor for $releases release(s) (since $first) — patches/$id.mjs is stale"
+  debt="re-anchor debt: $id has needed a local re-anchor in $releases release(s) since $first — patches/$id.mjs is stale"
   say "$debt"
   printf 'claude-patching: %s\n' "$debt" >> "$STATE/port-message"
 done
