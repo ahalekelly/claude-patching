@@ -14,9 +14,16 @@ BIN="${1:?usage: run-all.sh <binary> [dropped-patch-id ...]}"
 shift
 DROPPED=" $* "
 
+# Each suite names what it can test, and each tests/<id>/run.py is a live-model
+# test for that id — no second hand-maintained list to drift out of. An empty
+# listing is a broken environment (uv, PATH), not an empty suite: refuse rather
+# than run nothing and let the coverage check blame the patches.
 PROXY_TESTS="$("$TESTS/proxy-suite.py" --list)"
 PTY_TESTS="$("$TESTS/pty-suite.py" --list)"
-LIVE_TESTS="mcp-per-subagent task-notification-provenance"
+LIVE_TESTS="$(for t in "$TESTS"/*/run.py; do basename "$(dirname "$t")"; done)"
+for suite in PROXY_TESTS PTY_TESTS LIVE_TESTS; do
+  [[ -n "${!suite}" ]] || { echo "FAIL  the $suite listing came back empty — suite runner broken?"; exit 1; }
+done
 
 pass=0 fail=0 skip=0
 
@@ -61,19 +68,11 @@ off_ids="$(comm -13 <(printf '%s\n' $("$TESTS/../apply-display-patches.sh" --pri
 for id in $PROXY_TESTS; do run "$TESTS/proxy-suite.py" "$id"; done
 for id in $PTY_TESTS; do run "$TESTS/pty-suite.py" "$id"; done
 
-id=mcp-per-subagent
-case "$DROPPED" in
-  *" $id "*) report skip "$id" "mandatory patch — cannot be dropped";;
-  *) if out="$("$TESTS/mcp-per-subagent/run.py" "$BIN" 2>&1)"; then report pass "$id"
-     else report fail "$id" "$(reason "$out")"; fi;;
-esac
-
-id=task-notification-provenance
-case "$DROPPED" in
-  *" $id "*) report skip "$id" "patch dropped for this build";;
-  *) if out="$("$TESTS/task-notification-provenance/run.py" "$BIN" 2>&1)"; then report pass "$id"
-     else report fail "$id" "$(reason "$out")"; fi;;
-esac
+for id in $LIVE_TESTS; do
+  case "$DROPPED" in *" $id "*) report skip "$id" "patch dropped for this build"; continue;; esac
+  if out="$("$TESTS/$id/run.py" "$BIN" 2>&1)"; then report pass "$id"
+  else report fail "$id" "$(reason "$out")"; fi
+done
 
 # Coverage. The suite is only a gate if every applied patch reaches it, so the
 # applied set decides what must be tested — an untested patch fails here instead
