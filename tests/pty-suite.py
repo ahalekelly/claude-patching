@@ -241,36 +241,39 @@ def agents_view_shortcut(binary):
     assert before != after, "ctrl+a left the screen untouched"
 
 
-def agent_model_display(binary):
+def agents_view_models(binary):
     """An agents-view job row shows the model from its --model respawn flag.
 
-    A completed job record seeded into the config dir renders as a Completed
-    row when `claude agents` mounts; patched, its age cell reads
-    "fable · <age>". Stock renders the age alone. The in-session agent-list
-    half of the patch has no hermetic test: its rows require a live subagent
+    Two completed job records seeded into the config dir render as Completed
+    rows when `claude agents` mounts; patched, their age cells read
+    "fable · <age>" and — for a Bedrock-style provider-prefixed id —
+    "opus · <age>". Stock renders the ages alone. The sibling patch
+    agent-list-models has no hermetic test: its rows require a live subagent
     spawn, which the capture proxy cannot script deterministically.
     """
     scratch = Scratch("agent-model")
     now_ms = int(time.time() * 1000)
     iso = lambda ms: time.strftime("%Y-%m-%dT%H:%M:%S.000Z", time.gmtime(ms / 1000))
-    jobdir = scratch.config / "jobs" / "zzmodel1"
-    jobdir.mkdir(parents=True)
-    (jobdir / "state.json").write_text(json.dumps({
-        "state": "done", "detail": "probe finished", "tempo": "idle",
-        "inFlight": {"tasks": 0, "queued": 0, "kinds": []},
-        "tokens": 1234, "output": {"result": "probe finished"},
-        "children": None, "template": "claude",
-        "respawnFlags": ["--agent", "claude", "--model", "claude-fable-5[1m]"],
-        "intent": "quokka model probe", "name": "quokka model probe",
-        "nameSource": "auto",
-        "sessionId": "zzmodel1-0000-4000-8000-000000000000",
-        "resumeSessionId": "zzmodel1-0000-4000-8000-000000000000",
-        "daemonShort": "zzmodel1", "cliVersion": "0.0.0",
-        "cwd": str(scratch.project), "originCwd": str(scratch.project),
-        "backend": "daemon",
-        "createdAt": iso(now_ms - 300_000), "updatedAt": iso(now_ms - 60_000),
-        "firstTerminalAt": iso(now_ms - 60_000),
-    }))
+    jobs = [("zzmodel1", "quokka model probe", "claude-fable-5[1m]"),
+            ("zzmodel2", "axolotl bedrock probe", "us.anthropic.claude-opus-4-6-20250401-v1:0")]
+    for short, intent, model in jobs:
+        jobdir = scratch.config / "jobs" / short
+        jobdir.mkdir(parents=True)
+        (jobdir / "state.json").write_text(json.dumps({
+            "state": "done", "detail": "probe finished", "tempo": "idle",
+            "inFlight": {"tasks": 0, "queued": 0, "kinds": []},
+            "tokens": 1234, "output": {"result": "probe finished"},
+            "children": None, "template": "claude",
+            "respawnFlags": ["--agent", "claude", "--model", model],
+            "intent": intent, "name": intent, "nameSource": "auto",
+            "sessionId": f"{short}-0000-4000-8000-000000000000",
+            "resumeSessionId": f"{short}-0000-4000-8000-000000000000",
+            "daemonShort": short, "cliVersion": "0.0.0",
+            "cwd": str(scratch.project), "originCwd": str(scratch.project),
+            "backend": "daemon",
+            "createdAt": iso(now_ms - 300_000), "updatedAt": iso(now_ms - 60_000),
+            "firstTerminalAt": iso(now_ms - 60_000),
+        }))
     with CaptureProxy() as proxy:
         env = scratch.env(proxy)
         env.update({"TERM": "xterm-256color", "COLUMNS": str(COLS),
@@ -280,13 +283,17 @@ def agent_model_display(binary):
             screen = term.text()
             term.close()
             scratch.cleanup()
-            raise AssertionError(f"the seeded job row never rendered:\n{screen}")
+            raise AssertionError(f"the seeded job rows never rendered:\n{screen}")
         term.pump(2)
         screen = term.text()
         term.close()
     scratch.cleanup()
-    row = next(r for r in screen.split("\n") if "quokka model probe" in r)
-    assert "fable ·" in row, f"the job row shows no model:\n{row!r}\n{screen}"
+    for intent, family in (("quokka model probe", "fable"),
+                           ("axolotl bedrock probe", "opus")):
+        row = next((r for r in screen.split("\n") if intent in r), None)
+        assert row is not None, f"the {intent!r} row is not on screen:\n{screen}"
+        assert f"{family} ·" in row, \
+            f"the {intent!r} row shows no {family!r} model:\n{row!r}\n{screen}"
 
 
 TESTS = {
@@ -295,7 +302,7 @@ TESTS = {
     "sticky-prompt-header": sticky_prompt_header,
     "cron-visibility": cron_visibility,
     "agents-view-shortcut": agents_view_shortcut,
-    "agent-model-display": agent_model_display,
+    "agents-view-models": agents_view_models,
 }
 
 if __name__ == "__main__":

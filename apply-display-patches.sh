@@ -32,9 +32,11 @@
 #   mcp-per-subagent           each subagent gets its own process for the stdio
 #                              MCP servers its frontmatter declares inline, and
 #                              each such server sees CLAUDE_MCP_PER_AGENT=1
-#   agent-model-display        the in-session agent list shows each subagent's
-#                              resolved model, and agents-view job rows show
-#                              their --model flag in the age column
+#   agent-list-models          the in-session agent list shows each row's
+#                              model: subagents as "elapsed · model · tokens",
+#                              the main row as a right-aligned "model · tokens"
+#   agents-view-models         agents-view job rows show their --model flag
+#                              in the age column ("fable · 3m")
 #   task-notification-provenance
 #                              agent task-notifications carry a <trigger>
 #                              element naming what started the run: original
@@ -54,7 +56,7 @@ TWEAKCC="$ROOT/node_modules/.bin/tweakcc"
 PATCH_IDS="no-collapse-reads toolsearch-visibility cron-visibility tool-defer-whitelist
            trim-context-bloat defer-workflow-description defer-artifact-description
            sticky-prompt-header task-reminder-conditional agents-view-shortcut
-           mcp-per-subagent agent-model-display task-notification-provenance"
+           mcp-per-subagent agent-list-models agents-view-models task-notification-provenance"
 
 VER="${1:?usage: apply-display-patches.sh <version> <output-binary>}"
 OUT="${2:?usage: apply-display-patches.sh <version> <output-binary>}"

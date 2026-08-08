@@ -1,6 +1,6 @@
 # claude-patching
 
-Thirteen patches for the **native Claude Code binary** on macOS, each covered by a behavioral test, plus a port that keeps them applied across updates without ever making you wait for it.
+Fourteen patches for the **native Claude Code binary** on macOS, each covered by a behavioral test, plus a port that keeps them applied across updates without ever making you wait for it.
 
 Claude Code ships as a single-file Mach-O with its JavaScript bundled inside. Several things it does — collapsing tool calls, hiding ToolSearch and cron fires, spending thousands of standing prompt tokens on tool descriptions you rarely use, sharing one MCP server process between concurrent subagents — have no setting. So the bundle is unpacked, patched, and repacked.
 
@@ -24,7 +24,8 @@ Two properties make that safe enough to run every day:
 | `task-reminder-conditional` | the periodic "task tools haven't been used recently" reminder fires only when the session's task list is non-empty |
 | `agents-view-shortcut` | a rebindable keybinding action opens the agents view from anywhere; stock offers only left-arrow on an empty idle prompt |
 | `mcp-per-subagent` | each subagent gets its own process for the stdio MCP servers its frontmatter declares inline ([#84638](https://github.com/anthropics/claude-code/issues/84638)) |
-| `agent-model-display` | the in-session agent list shows each subagent's resolved model ("fable · 11m · ↓ 92.8k tokens"), and agents-view job rows show their `--model` flag in the age column ("fable · 3m") |
+| `agent-list-models` | the in-session agent list shows each row's model — subagents as "11m 50s · fable · ↓ 92.8k tokens" (the resolved model, so silently-inherited spawns are visible), the main row as a right-aligned "fable · ↓ 12k tokens" |
+| `agents-view-models` | agents-view job rows show their `--model` flag in the age column ("fable · 3m") |
 | `task-notification-provenance` | agent task-notifications carry a `<trigger>` element naming what started the run — original launch, a user message sent to the agent, a SendMessage, or an auto-resume — so an owner can tell a user-initiated continuation from a rogue one |
 
 Each patch is one self-contained script under `patches/`, run as `node patches/<id>.mjs <unpacked-cli.js>`, with a header comment explaining the stock behavior, the anchor, and why the anchor is safe.

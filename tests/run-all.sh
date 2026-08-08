@@ -17,7 +17,7 @@ DROPPED=" $* "
 PROXY_TESTS="trim-context-bloat tool-defer-whitelist defer-workflow-description
              defer-artifact-description task-reminder-conditional"
 PTY_TESTS="no-collapse-reads toolsearch-visibility sticky-prompt-header cron-visibility
-           agents-view-shortcut agent-model-display"
+           agents-view-shortcut agents-view-models"
 
 pass=0 fail=0 skip=0
 
