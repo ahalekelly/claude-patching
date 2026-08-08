@@ -118,10 +118,12 @@ def read_blocks(paths):
 
 
 def no_collapse_tool_calls(binary):
-    """Reads and shell commands render as individual lines, not roll-ups.
+    """Tool calls render individually, and ctrl+f toggles stock folding back.
 
     Stock collapses parallel Reads into "Read N files" and — in the tui — Bash
     calls into "ran N shell commands"; patched, each call is its own line.
+    The default ctrl+f binding folds the already-rendered turn into the stock
+    roll-up, and a second press unfolds it again.
     """
     scratch = Scratch("no-collapse")
     paths = []
@@ -136,6 +138,12 @@ def no_collapse_tool_calls(binary):
         term.submit("read them")
         term.wait_for("all read", timeout=90)
         screen = term.text()
+        term.send("\x06")  # ctrl+f: fold
+        term.pump(2)
+        folded = term.text()
+        term.send("\x06")  # ctrl+f: unfold
+        term.pump(2)
+        unfolded = term.text()
         term.close()
     scratch.cleanup()
     assert not re.search(r"Read \d+ files", screen), \
@@ -146,6 +154,13 @@ def no_collapse_tool_calls(binary):
         f"the shell command was collapsed into a roll-up:\n{screen}"
     assert "quokka-bash-probe" in screen, \
         f"the shell command did not render individually:\n{screen}"
+    assert re.search(r"Read \d+ files", folded), \
+        f"ctrl+f did not fold the rendered turn into a roll-up:\n{folded}"
+    assert re.search(r"Read \d+ files", unfolded) is None, \
+        f"a second ctrl+f did not unfold the roll-up:\n{unfolded}"
+    named = sum(1 for name in ("alpha.txt", "beta.txt", "gamma.txt") if name in unfolded)
+    assert named == 3, \
+        f"only {named}/3 reads rendered individually after unfolding:\n{unfolded}"
 
 
 def toolsearch_visibility(binary):
