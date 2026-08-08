@@ -1,6 +1,6 @@
 # claude-patching
 
-Twelve patches for the **native Claude Code binary** on macOS, each covered by a behavioral test, plus a port that keeps them applied across updates without ever making you wait for it.
+Thirteen patches for the **native Claude Code binary** on macOS, each covered by a behavioral test, plus a port that keeps them applied across updates without ever making you wait for it.
 
 Claude Code ships as a single-file Mach-O with its JavaScript bundled inside. Several things it does — collapsing tool calls, hiding ToolSearch and cron fires, spending thousands of standing prompt tokens on tool descriptions you rarely use, sharing one MCP server process between concurrent subagents — have no setting. So the bundle is unpacked, patched, and repacked.
 
@@ -25,6 +25,7 @@ Two properties make that safe enough to run every day:
 | `agents-view-shortcut` | a rebindable keybinding action opens the agents view from anywhere; stock offers only left-arrow on an empty idle prompt |
 | `mcp-per-subagent` | each subagent gets its own process for the stdio MCP servers its frontmatter declares inline ([#84638](https://github.com/anthropics/claude-code/issues/84638)) |
 | `agent-model-display` | the in-session task menu shows each subagent's resolved model, and agents-view job rows show their `--model` flag in the age column ("fable · 3m") |
+| `task-notification-provenance` | agent task-notifications carry a `<trigger>` element naming what started the run — original launch, a user message sent to the agent, a SendMessage, or an auto-resume — so an owner can tell a user-initiated continuation from a rogue one |
 
 Each patch is one self-contained script under `patches/`, run as `node patches/<id>.mjs <unpacked-cli.js>`, with a header comment explaining the stock behavior, the anchor, and why the anchor is safe.
 
@@ -91,8 +92,9 @@ The stamp file `<binary>.patched` holds the patched binary's inode, size and mti
 
 - `check-and-apply.sh <target-file>` — pre-launch check: stamp fast path, archive fallback, staleness warning, background port. Exit 0 = silent, exit 1 = printed something the wrapper should hold for. Exits immediately when `CLAUDE_PATCHING_AUTOPORT` is set, so the port's own sessions never recurse.
 - `background-port.sh [version]` — the reconciler: lock, mechanical apply, agent escalation, gate, stock-suite run, promotion, notification, advisory pass.
-- `apply-display-patches.sh <version> <output-binary>` — pure candidate builder: unpacks `versions/<version>.orig` (backing it up on first sight), applies `PATCH_IDS` in order, checks the result parses, repacks to the output path. Fails loudly, writing nothing, if any patch does not match.
-- `port-agent.sh` / `advisory-agent.sh` — the two escalations, both launched through `agent-run.sh`: a Claude session in auto permission mode, in a visible Terminal window when a GUI session exists and headless otherwise.
+- `apply-display-patches.sh <version> <output-binary>` — pure candidate builder: unpacks `versions/<version>.orig` (backing it up on first sight), applies `PATCH_IDS` in order, checks the result parses, repacks to the output path and signs it. Fails loudly, writing nothing, if any patch does not match.
+- `port-agent.sh` / `advisory-agent.sh` — the two escalations, both launched through `agent-run.sh`: a Claude session in auto permission mode, in a visible Terminal window when a GUI session exists and headless otherwise. Each step it takes lands in `port-state/<tag>-<version>.log` as it happens — assistant text, a line per tool call, then the final report.
+- `setup-signing.sh` — one-time, run by hand: creates the local certificate the port signs patched binaries with.
 - `patches/` — the committed patch set.
 - `patches-local/` — machine-local overlay written by the port: `<version>/<id>.mjs` re-anchors, `<version>/dropped`.
 - `port-state/` — locks, logs, failure markers, and the note the next launch prints.
@@ -104,7 +106,8 @@ The stamp file `<binary>.patched` holds the patched binary's inode, size and mti
 - `capture_proxy.py` — stands in for the API: records every request and answers from a canned script, so tests are hermetic and cost no tokens.
 - `proxy-suite.py <binary> <id>` — asserts on outgoing payloads (system prompt, tool schemas).
 - `pty-suite.py <binary> <id>` — drives the TUI under a [pyte](https://github.com/selectel/pyte) screen and asserts on rendered rows, for the patches whose point is what gets drawn.
-- `mcp-per-subagent/run.py <binary>` — the one test that needs a live model: one agent definition launched twice concurrently must produce two server processes with overlapping lifetimes, two initialize handshakes, both carrying `CLAUDE_MCP_PER_AGENT=1`, and a survivor whose late call still succeeds after its sibling's server shuts down.
+- `mcp-per-subagent/run.py <binary>` — needs a live model: one agent definition launched twice concurrently must produce two server processes with overlapping lifetimes, two initialize handshakes, both carrying `CLAUDE_MCP_PER_AGENT=1`, and a survivor whose late call still succeeds after its sibling's server shuts down.
+- `task-notification-provenance/run.py <binary>` — needs a live model: a session launches one background subagent and later resumes it with SendMessage; the first notification in the transcript must attribute the run to the original launch, and the second must name the SendMessage and quote its text.
 
 ### Upstream watch
 
@@ -118,8 +121,14 @@ After promotion an advisory agent classifies those, reads the per-test stock fai
 
 A repatch only changes the file on disk; every claude process keeps the JS it loaded at start. Two consequences beyond the obvious "restart your sessions":
 
-- **The daemon's warm spares serve stale code.** The Claude Code daemon pre-forks spare processes (`claude bg-spare` + `bg-pty-host` pairs under `/tmp/cc-daemon-<uid>/<daemon>/spare/`) that load the binary's JS at fork time. Daemon-launched sessions (desktop app, agents view) claim a spare on start, so a session "restarted" right after a repatch can still run pre-patch code — repeatedly, until the pool cycles. Diagnose with `ps -axo pid,lstart,command | grep bg-spare` and compare spare fork times against the binary mtime. Promotion runs `pkill -f -- '--bg-spare'`, which kills unclaimed spares **and** live sessions claimed from spares (their argv keeps `--bg-spare`): every daemon-attached session bounces for a few seconds at promotion and auto-resumes on the new binary. That is the intended trade — promotions are rare and sessions come back patched. Terminal launches via the shell wrapper exec the binary directly and never touch the spare pool.
+- **The daemon's warm spares serve stale code.** The Claude Code daemon pre-forks spare processes (`claude bg-spare` + `bg-pty-host` pairs under `/tmp/cc-daemon-<uid>/<daemon>/spare/`) that load the binary's JS at fork time. Daemon-launched sessions (desktop app, agents view) claim a spare on start, so a session "restarted" right after a repatch can still run pre-patch code — repeatedly, until the pool cycles. Diagnose with `ps -axo pid,lstart,command | grep bg-spare` and compare spare fork times against the binary mtime. Promotion clears both halves of the problem: it kills every unclaimed spare, and every `--bg-pty-host` wrapper along with its direct children, which is how it reaches sessions claimed from a spare — those rewrite their argv to their own resume command and are otherwise unrecognizable. Every daemon-attached session bounces for a few seconds at promotion and auto-resumes on the new binary. That is the intended trade — promotions are rare and sessions come back patched. Terminal launches via the shell wrapper exec the binary directly and never touch the spare pool.
 - **The inode swap can kill live sessions.** Sessions launched from the replaced inode may die when the binary is swapped underneath them; they resume cleanly, but a repatch mid-conversation is what that crash was.
+
+### Code signing and macOS permission prompts
+
+macOS keys TCC permissions — automation, accessibility, screen recording — to a binary's signing identity, so an unpatched Claude Code is granted them once as `com.anthropic.claude-code`. A repacked binary cannot keep Anthropic's signature. Every candidate is therefore re-signed under the constant identifier `claude-patched`, with a local certificate when one exists and ad-hoc otherwise.
+
+Ad-hoc is the weak case: with no certificate, the identity is the binary's own hash, so each promotion is an app macOS has never seen and every permission is asked for again. Run `./setup-signing.sh` once, in a real Terminal, to fix that for good — it creates a self-signed `claude-patching` code-signing certificate in your login keychain, trusts it for code signing, and makes its key usable without a dialog so unattended ports can sign with it. It asks for a trust confirmation and your login password, and refuses to claim success if the identity does not come out valid. Expect one final round of permission prompts on the next promotion; after that the grants carry across every one.
 
 ### Restoring the stock binary
 
