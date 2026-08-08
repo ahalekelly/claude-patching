@@ -35,6 +35,10 @@
 #   agent-model-display        the in-session task menu shows each subagent's
 #                              resolved model, and agents-view job rows show
 #                              their --model flag in the age column
+#   task-notification-provenance
+#                              agent task-notifications carry a <trigger>
+#                              element naming what started the run: original
+#                              launch, user message, SendMessage, or auto-resume
 #
 # Restore stock binary — copy to a new file and rename, never write the live
 # binary in place. macOS caches a Mach-O's code signature per inode, so an
@@ -50,7 +54,7 @@ TWEAKCC="$ROOT/node_modules/.bin/tweakcc"
 PATCH_IDS="no-collapse-reads toolsearch-visibility cron-visibility tool-defer-whitelist
            trim-context-bloat defer-workflow-description defer-artifact-description
            sticky-prompt-header task-reminder-conditional agents-view-shortcut
-           mcp-per-subagent agent-model-display"
+           mcp-per-subagent agent-model-display task-notification-provenance"
 
 VER="${1:?usage: apply-display-patches.sh <version> <output-binary>}"
 OUT="${2:?usage: apply-display-patches.sh <version> <output-binary>}"
@@ -97,4 +101,18 @@ node --check "$JS"
 # live binary, per the code-signature-per-inode caveat above.
 cp "$STOCK.orig" "$OUT"
 "$TWEAKCC" repack "$JS" "$OUT"
+
+# tweakcc's repack ad-hoc signs under a generated identifier, which makes every
+# promotion a brand new app to macOS: TCC keys its grants to the signing
+# identity, and an ad-hoc one is just the binary's own hash. A constant
+# identifier plus the local certificate setup-signing.sh creates gives every
+# patched binary the same identity, so the permissions granted once stick.
+# Without that certificate the signature stays ad-hoc — the prompts return on
+# each promotion, but at least they name something recognizable.
+if security find-identity -p codesigning -v 2>/dev/null | grep -q '"claude-patching"'; then
+  codesign --force --sign claude-patching --identifier claude-patched "$OUT"
+else
+  echo "No claude-patching signing identity — ad-hoc signing. Run setup-signing.sh to stop macOS re-asking for permissions after every promotion."
+  codesign --force --sign - --identifier claude-patched "$OUT"
+fi
 echo "Candidate written to $OUT"
