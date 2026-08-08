@@ -13,17 +13,19 @@
 // same sentence. Anything unexpected fails loudly, so the build aborts before
 // repack and the binary stays untouched.
 //
-// Content drift: HASH is the sha256[:16] of the literal's raw source text in
-// the stock bundle the skill was snapshotted from. When an update rewrites the
-// description without moving the anchor, the mismatch fails the patch and says
-// so — refresh the skill's SKILL.md from the new text (unpack the old and new
-// binaries and diff the literals at the anchor), then paste the printed hash
-// in here.
-import { readFileSync, writeFileSync } from "node:fs";
-import { createHash } from "node:crypto";
+// The skill is a build product. Before editing the bundle the patch renders the
+// literal it is about to remove — escapes decoded, ${} interpolations resolved
+// to the values the bundle assigns them — and writes the whole SKILL.md, fixed
+// header and all. A description rewritten upstream therefore reaches the skill
+// on the next build and prints SKILL SNAPSHOT CHANGED, so it lands as a diff to
+// review in the skills directory instead of as guidance quietly dropped.
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { homedir } from "node:os";
+import { dirname, join } from "node:path";
 
+const ID = "defer-workflow-description";
 const SKILL = "workflow-tool";
-const HASH = "3427b9fba88d9302";
+const SKILL_PATH = join(homedir(), ".claude", "skills", SKILL, "SKILL.md");
 const MIN = 3000; // the real description is ~20k chars
 const MAX = 60000;
 const ANCHOR =
@@ -34,15 +36,34 @@ ONLY call this tool when the user has explicitly opted into multi-agent orchestr
 
 REQUIRED before writing or editing any workflow script: invoke the Skill tool with skill: "workflow-tool" to load the full scripting API (export const meta, agent()/parallel()/pipeline()/phase()/log(), args, budget, nested workflow(), resume semantics) and the orchestration patterns. Scripts are plain JavaScript, not TypeScript, and Date.now()/Math.random()/argless new Date() throw.`;
 
+// Everything above the snapshot in SKILL.md. The patch owns the whole file, so
+// this is the only place to edit the skill's framing.
+const HEADER = `---
+name: workflow-tool
+description: Full reference for the Workflow tool — scripting API (meta, agent/parallel/pipeline/phase/log/args/budget/workflow), orchestration patterns, opt-in rules, resume. Load before writing or editing any Workflow script.
+---
+
+# Workflow tool reference
+
+The Workflow tool's inline description is a short stub (patched into the Claude Code binary by \`~/.agents/claude-patching\`) that points here; this skill holds the full original guidance. Everything below is the tool's complete usage text.
+
+The ${ID} patch writes this file from the binary it defers, so edit the patch rather than this file. Values the binary interpolates are inlined; an expression the patch cannot resolve to a literal is left as \`\${...}\`.
+
+This machine configures a small workflow size guideline: keep workflows under ~5 agents unless the user's prompt calls for a different scale.
+
+---
+
+`;
+
 const jsPath = process.argv[2];
 if (!jsPath) {
-  console.error("usage: defer-workflow-description.mjs <unpacked-cli.js>");
+  console.error(`usage: ${ID}.mjs <unpacked-cli.js>`);
   process.exit(1);
 }
 let js = readFileSync(jsPath, "utf8");
 
 const fail = (msg) => {
-  console.error(`ERROR: defer-workflow-description: ${msg}`);
+  console.error(`ERROR: ${ID}: ${msg}`);
   process.exit(1);
 };
 
@@ -93,6 +114,111 @@ function scanExpression(start) {
   return js.length;
 }
 
+// The text the model receives for the literal running from `start` to `end`:
+// escapes decoded and ${} interpolations resolved.
+function renderLiteral(start, end, quote) {
+  if (quote !== "`") return decode(js.slice(start, end), quote);
+  let out = "";
+  let seg = start;
+  let i = start;
+  while (i < end) {
+    if (js[i] === "\\") { i += 2; continue; }
+    if (js[i] === "$" && js[i + 1] === "{") {
+      const close = scanExpression(i + 2); // first index after the "}"
+      out += decode(js.slice(seg, i), "`") + interpolate(js.slice(i + 2, close - 1));
+      i = seg = close;
+      continue;
+    }
+    i++;
+  }
+  return out + decode(js.slice(seg, end), "`");
+}
+
+// Literal source to runtime text, decoded by the engine that wrote the escapes.
+// A template segment holds no unescaped backtick or "${", so it re-parses as a
+// template literal of its own.
+function decode(src, quote) {
+  return new Function(`return ${quote}${src}${quote}`)();
+}
+
+// The text one ${...} produces. Its identifiers are looked up in the bundle and
+// the expression evaluated over them; an expression reading anything the bundle
+// does not fix to a literal stays verbatim, so the snapshot shows what varies.
+function interpolate(expr) {
+  const names = identifiers(expr);
+  const values = names.map(constValue);
+  if (values.some((v) => v === undefined)) return "${" + expr + "}";
+  try {
+    const out = new Function(...names, `return (${expr})`)(...values);
+    return typeof out === "string" || typeof out === "number"
+      ? String(out)
+      : "${" + expr + "}";
+  } catch {
+    return "${" + expr + "}";
+  }
+}
+
+// The identifiers an expression reads, skipping literal contents and the
+// property names after a ".".
+function identifiers(expr) {
+  const names = new Set();
+  for (let i = 0; i < expr.length; i++) {
+    const c = expr[i];
+    if (c === '"' || c === "'" || c === "`") {
+      i++;
+      while (i < expr.length && expr[i] !== c) i += expr[i] === "\\" ? 2 : 1;
+    } else if (/[$A-Za-z_]/.test(c)) {
+      let j = i + 1;
+      while (j < expr.length && /[$\w]/.test(expr[j])) j++;
+      if (expr[i - 1] !== ".") names.add(expr.slice(i, j));
+      i = j - 1;
+    }
+  }
+  return [...names];
+}
+
+// The value the bundle fixes a minified name to, when exactly one assignment
+// gives it a string, number or boolean literal.
+function constValue(name) {
+  const re = new RegExp(`(?:^|[^$\\w.])${name.replace(/\$/g, "\\$")}=(?!=)`, "g");
+  let at = -1;
+  let m;
+  while ((m = re.exec(js))) {
+    if (at !== -1) return undefined; // assigned in more than one place
+    at = m.index + m[0].length;
+  }
+  if (at === -1) return undefined;
+  const quote = js[at];
+  if (quote === '"' || quote === "'") {
+    const end = literalEnd(at + 1, quote);
+    return end === -1 ? undefined : decode(js.slice(at + 1, end), quote);
+  }
+  const rest = js.slice(at, at + 32);
+  const num = rest.match(/^-?\d+(\.\d+)?(?![$\w.])/);
+  if (num) return Number(num[0]);
+  const bool = rest.match(/^!([01])(?![$\w])/);
+  return bool ? bool[1] === "0" : undefined;
+}
+
+// Rewrite SKILL.md and say so when it moved. Content never fails the build —
+// a changed description is news to review, not a reason to withhold the binary.
+function writeSnapshot(text) {
+  const content = HEADER + text + "\n";
+  const existing = existsSync(SKILL_PATH) ? readFileSync(SKILL_PATH, "utf8") : null;
+  if (existing === content) {
+    console.log(`${ID}: skill snapshot unchanged (${SKILL_PATH})`);
+    return;
+  }
+  mkdirSync(dirname(SKILL_PATH), { recursive: true });
+  writeFileSync(SKILL_PATH, content);
+  console.log(
+    existing === null
+      ? `${ID}: SKILL SNAPSHOT CREATED — ${SKILL_PATH}`
+      : `${ID}: SKILL SNAPSHOT CHANGED — review the diff at ${SKILL_PATH}`,
+  );
+}
+
+let snapshot = null;
 let replaced = 0;
 let from = 0;
 while (true) {
@@ -113,20 +239,16 @@ while (true) {
   if (!",;})]".includes(next))
     fail(`unexpected char ${JSON.stringify(next)} after the literal at ${i} — refusing`);
 
-  const actual = createHash("sha256").update(js.slice(i, j)).digest("hex").slice(0, 16);
-  if (actual !== HASH)
-    fail(
-      `the Workflow description text changed (hash ${actual}, expected ${HASH}) — ` +
-        `refresh the ${SKILL} skill's SKILL.md from the new text, then set HASH to ${actual}`,
-    );
+  snapshot = renderLiteral(i, j, quote);
 
   const encoded = JSON.stringify(REPLACEMENT);
   js = js.slice(0, i - 1) + encoded + js.slice(j + 1);
   from = i - 1 + encoded.length;
   replaced++;
-  console.log(`defer-workflow-description: ${len} chars -> ${encoded.length} at ${i}`);
+  console.log(`${ID}: ${len} chars -> ${encoded.length} at ${i}`);
 }
 if (replaced !== 1)
   fail(`replaced ${replaced} literals, expected exactly 1 — bundle layout changed, refusing`);
 
+writeSnapshot(snapshot);
 writeFileSync(jsPath, js);

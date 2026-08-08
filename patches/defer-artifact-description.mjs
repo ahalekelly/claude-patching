@@ -8,7 +8,7 @@
 // The description is assembled in the tool's prompt() from chunks:
 //   intro         a plain literal — replaced with the stub
 //   rules         a large template literal — its use is deleted
-//   capabilities  ditto
+//   capabilities  ditto, appended after a blank line
 //   Language / Supporting-files chunks are left alone: they only appear when
 //   those features are enabled, and then their text is needed.
 //
@@ -21,21 +21,24 @@
 // the chunk's minified variable name from its definition and delete the ${name}
 // use in the assembly template, leaving the definition behind as a dead string.
 //
-// Content drift: each target carries the sha256[:16] of its literal's raw
-// source text in the stock bundle the skill was snapshotted from. Layout drift
-// and content drift both abort loudly, binary untouched. After refreshing the
-// skill's SKILL.md from the new text (unpack the old and new binaries and diff
-// the literals at the anchors below), update the hashes here — the mismatch
-// error prints the new values.
-import { readFileSync, writeFileSync } from "node:fs";
-import { createHash } from "node:crypto";
+// The skill is a build product. Before editing the bundle the patch renders
+// every chunk it is about to defer — escapes decoded, ${} interpolations
+// resolved to the values the bundle assigns them — joins them in the order
+// prompt() would have, and writes the whole SKILL.md, fixed header and all. A
+// description rewritten upstream therefore reaches the skill on the next build
+// and prints SKILL SNAPSHOT CHANGED, so it lands as a diff to review in the
+// skills directory instead of as guidance quietly dropped.
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { homedir } from "node:os";
+import { dirname, join } from "node:path";
 
+const ID = "defer-artifact-description";
 const SKILL = "artifact-tool";
+const SKILL_PATH = join(homedir(), ".claude", "skills", SKILL, "SKILL.md");
 
 const TARGETS = [
   {
     label: "intro chunk",
-    hash: "e5af971e17318b68",
     min: 800, // UI labels reusing this phrase are <300 chars; the chunk is ~1.5k
     max: 5000,
     anchor: "Render an HTML or Markdown file to an Artifact",
@@ -49,48 +52,52 @@ Hard rules that always apply: pages must be fully self-contained — a strict CS
   },
   {
     label: "rules chunk",
-    hash: "f73d519cfd381bc2",
     anchor: "**To update**: Edit the file, then call Artifact again with the same file path",
     blankUse: true,
   },
   {
     label: "capabilities chunk",
-    hash: "9b98ebf921a530f2",
     anchor: "**Runtime capabilities** (optional): depending on what is enabled",
+    lead: "\n\n", // prompt() appends this chunk after a blank line
     blankUse: true,
   },
 ];
 
+// Everything above the snapshot in SKILL.md. The patch owns the whole file, so
+// this is the only place to edit the skill's framing.
+const HEADER = `---
+name: artifact-tool
+description: Full reference for the Artifact tool — publish/update/list flows, cross-session URL targeting, sharing semantics, favicon/title rules, runtime capabilities, publishing constraints. Load before any Artifact call.
+---
+
+# Artifact tool reference
+
+The Artifact tool's inline description is a short stub (patched into the Claude Code binary by \`~/.agents/claude-patching\`) that points here; this skill holds the full original guidance. Everything below is the tool's complete usage text.
+
+The ${ID} patch writes this file from the binary it defers, so edit the patch rather than this file. Values the binary interpolates are inlined; an expression the patch cannot resolve to a literal is left as \`\${...}\`.
+
+---
+
+`;
+
 const jsPath = process.argv[2];
 if (!jsPath) {
-  console.error("usage: defer-artifact-description.mjs <unpacked-cli.js>");
+  console.error(`usage: ${ID}.mjs <unpacked-cli.js>`);
   process.exit(1);
 }
 let js = readFileSync(jsPath, "utf8");
 
 const fail = (msg) => {
-  console.error(`ERROR: defer-artifact-description: ${msg}`);
+  console.error(`ERROR: ${ID}: ${msg}`);
   process.exit(1);
 };
 
-const drift = [];
 for (const target of TARGETS) {
   if (target.blankUse) blankUseSite(target);
   else replaceLiteral(target);
 }
-if (drift.length) {
-  console.error(
-    `ERROR: defer-artifact-description: the Artifact description text changed — refresh the ${SKILL} skill's SKILL.md from the new text, then update the hashes here:`,
-  );
-  for (const line of drift) console.error("  " + line);
-  process.exit(1);
-}
+writeSnapshot(TARGETS.map((t) => (t.lead ?? "") + t.text).join(""));
 writeFileSync(jsPath, js);
-
-function checkHash({ label, hash }, text) {
-  const actual = createHash("sha256").update(text).digest("hex").slice(0, 16);
-  if (actual !== hash) drift.push(`${label}: hash ${actual} != expected ${hash}`);
-}
 
 // Index of a literal's closing delimiter; `start` is the first content char.
 // Template literals need a real scan: ${} interpolations may nest strings and
@@ -139,6 +146,110 @@ function scanExpression(start) {
   return js.length;
 }
 
+// The text the model receives for the literal running from `start` to `end`:
+// escapes decoded and ${} interpolations resolved.
+function renderLiteral(start, end, quote) {
+  if (quote !== "`") return decode(js.slice(start, end), quote);
+  let out = "";
+  let seg = start;
+  let i = start;
+  while (i < end) {
+    if (js[i] === "\\") { i += 2; continue; }
+    if (js[i] === "$" && js[i + 1] === "{") {
+      const close = scanExpression(i + 2); // first index after the "}"
+      out += decode(js.slice(seg, i), "`") + interpolate(js.slice(i + 2, close - 1));
+      i = seg = close;
+      continue;
+    }
+    i++;
+  }
+  return out + decode(js.slice(seg, end), "`");
+}
+
+// Literal source to runtime text, decoded by the engine that wrote the escapes.
+// A template segment holds no unescaped backtick or "${", so it re-parses as a
+// template literal of its own.
+function decode(src, quote) {
+  return new Function(`return ${quote}${src}${quote}`)();
+}
+
+// The text one ${...} produces. Its identifiers are looked up in the bundle and
+// the expression evaluated over them; an expression reading anything the bundle
+// does not fix to a literal stays verbatim, so the snapshot shows what varies.
+function interpolate(expr) {
+  const names = identifiers(expr);
+  const values = names.map(constValue);
+  if (values.some((v) => v === undefined)) return "${" + expr + "}";
+  try {
+    const out = new Function(...names, `return (${expr})`)(...values);
+    return typeof out === "string" || typeof out === "number"
+      ? String(out)
+      : "${" + expr + "}";
+  } catch {
+    return "${" + expr + "}";
+  }
+}
+
+// The identifiers an expression reads, skipping literal contents and the
+// property names after a ".".
+function identifiers(expr) {
+  const names = new Set();
+  for (let i = 0; i < expr.length; i++) {
+    const c = expr[i];
+    if (c === '"' || c === "'" || c === "`") {
+      i++;
+      while (i < expr.length && expr[i] !== c) i += expr[i] === "\\" ? 2 : 1;
+    } else if (/[$A-Za-z_]/.test(c)) {
+      let j = i + 1;
+      while (j < expr.length && /[$\w]/.test(expr[j])) j++;
+      if (expr[i - 1] !== ".") names.add(expr.slice(i, j));
+      i = j - 1;
+    }
+  }
+  return [...names];
+}
+
+// The value the bundle fixes a minified name to, when exactly one assignment
+// gives it a string, number or boolean literal.
+function constValue(name) {
+  const re = new RegExp(`(?:^|[^$\\w.])${name.replace(/\$/g, "\\$")}=(?!=)`, "g");
+  let at = -1;
+  let m;
+  while ((m = re.exec(js))) {
+    if (at !== -1) return undefined; // assigned in more than one place
+    at = m.index + m[0].length;
+  }
+  if (at === -1) return undefined;
+  const quote = js[at];
+  if (quote === '"' || quote === "'") {
+    const end = literalEnd(at + 1, quote);
+    return end === -1 ? undefined : decode(js.slice(at + 1, end), quote);
+  }
+  const rest = js.slice(at, at + 32);
+  const num = rest.match(/^-?\d+(\.\d+)?(?![$\w.])/);
+  if (num) return Number(num[0]);
+  const bool = rest.match(/^!([01])(?![$\w])/);
+  return bool ? bool[1] === "0" : undefined;
+}
+
+// Rewrite SKILL.md and say so when it moved. Content never fails the build —
+// a changed description is news to review, not a reason to withhold the binary.
+function writeSnapshot(text) {
+  const content = HEADER + text + "\n";
+  const existing = existsSync(SKILL_PATH) ? readFileSync(SKILL_PATH, "utf8") : null;
+  if (existing === content) {
+    console.log(`${ID}: skill snapshot unchanged (${SKILL_PATH})`);
+    return;
+  }
+  mkdirSync(dirname(SKILL_PATH), { recursive: true });
+  writeFileSync(SKILL_PATH, content);
+  console.log(
+    existing === null
+      ? `${ID}: SKILL SNAPSHOT CREATED — ${SKILL_PATH}`
+      : `${ID}: SKILL SNAPSHOT CHANGED — review the diff at ${SKILL_PATH}`,
+  );
+}
+
 function replaceLiteral(target) {
   const { label, anchor, replacement, min, max } = target;
   let replaced = 0;
@@ -160,13 +271,13 @@ function replaceLiteral(target) {
     const next = js[j + 1];
     if (!",;})]".includes(next))
       fail(`${label}: unexpected char ${JSON.stringify(next)} after the literal at ${i} — refusing`);
-    checkHash(target, js.slice(i, j));
+    target.text = renderLiteral(i, j, quote);
 
     const encoded = JSON.stringify(replacement);
     js = js.slice(0, i - 1) + encoded + js.slice(j + 1);
     from = i - 1 + encoded.length;
     replaced++;
-    console.log(`defer-artifact-description: ${label}: ${len} chars -> ${encoded.length} at ${i}`);
+    console.log(`${ID}: ${label}: ${len} chars -> ${encoded.length} at ${i}`);
   }
   if (replaced !== 1)
     fail(`${label}: replaced ${replaced} literals, expected exactly 1 — bundle layout changed, refusing`);
@@ -181,7 +292,7 @@ function blankUseSite(target) {
   if (quote !== '"' && quote !== "'" && quote !== "`") fail(`${label}: anchor not at a literal start`);
   const end = literalEnd(i, quote);
   if (end === -1) fail(`${label}: unterminated literal at ${i}`);
-  checkHash(target, js.slice(i, end));
+  target.text = renderLiteral(i, end, quote);
 
   const m = js.slice(Math.max(0, i - 40), i - 1).match(/([$A-Za-z_][$\w]*)=$/);
   if (!m) fail(`${label}: could not derive the chunk's variable name from its definition`);
@@ -190,5 +301,5 @@ function blankUseSite(target) {
   if (first === -1) fail(`${label}: no ${use} use site found`);
   if (js.indexOf(use, first + 1) !== -1) fail(`${label}: multiple ${use} use sites — refusing`);
   js = js.slice(0, first) + js.slice(first + use.length);
-  console.log(`defer-artifact-description: ${label}: removed ${use} from the assembly template`);
+  console.log(`${ID}: ${label}: removed ${use} from the assembly template`);
 }
