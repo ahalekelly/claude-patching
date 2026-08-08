@@ -1,36 +1,44 @@
 #!/usr/bin/env node
-// thinking-latest: the collapsed read/search group row shows its most recent
-// thinking block in full, instead of the truncated one-line summary stock
-// draws while streaming and drops when the turn completes.
+// thinking-latest: the collapsed read/search group row keeps a one-line
+// summary of its most recent thinking block — first line of the block,
+// ellipsis when cut off — visible after the turn completes.
 //
-// The group row component has two render paths. Its verbose path (per-message
-// click expansion, transcript mode, --verbose) walks the group's messages and
-// renders every thinking block through the ThinkingBlock component:
+// Stock draws such a line only while the group is streaming, and from the
+// group's latestThinkingSummary field, which the transcript grouper clears on
+// the next collapsible tool call:
 //
-//   if(<block>?.type==="thinking"&&<block>.thinking)
-//     return <jsx>.jsx(<Box>,{marginTop:1,children:
-//       <jsx>.jsx(<ThinkingBlock>,{param:<block>,addMargin:!1,
-//                                  isTranscriptMode:!0,verbose:!0})},<msg>.uuid)
+//   ye=<hint>(ce,<cap>),he=<linger>(s?e.latestThinkingSummary:void 0,<ms>),
+//   Ce=s&&he!==void 0,Pe=Ce?he:ye;
+//   ...
+//   s&&Pe!==void 0&&<jsx>(<Box>,{flexDirection:"row",children:[
+//     <"  ⎿  " gutter>,
+//     ...Ce?<one line, GtT(Pe,columns-5,10)>:<hint lines>...]})
 //
-// The collapsed path renders the "Thought for Ns, ..." summary row, and under
-// it — only while the group is streaming — a single line holding the latest
-// thinking text collapsed to whitespace (latestThinkingSummary), truncated to
-// the row width. Once the turn completes the thinking is invisible until the
-// row is clicked into the verbose path.
+// (s is isActiveGroup; GtT wrap-truncates to a row budget and appends "…".)
+// Once the turn completes the row disappears, and the thinking is invisible
+// until the row is clicked into its expanded view.
 //
-// The patch changes only the collapsed path:
+// The patch changes only this collapsed path; the click expansion and
+// transcript mode are untouched:
 //
-// - The group's most recent thinking block renders in full under the summary
-//   row, through the same ThinkingBlock call the verbose path uses. It stays
-//   after the turn completes, so the latest thinking is always readable
-//   without a click; clicking the row still opens every block, unchanged.
-// - The one-line latestThinkingSummary render is dropped — the full block
-//   replaces it. The row's non-thinking display hints (the file being read,
-//   the pattern being searched) are untouched.
+// - The summary text is computed from the group's own message list — the last
+//   thinking block, whitespace-collapsed — instead of latestThinkingSummary,
+//   so it survives both the turn completing and the grouper's clearing.
+// - The row and its thinking branch are un-gated from isActiveGroup, so the
+//   line persists once the turn is done. The tool display hints the same row
+//   shows stay streaming-only, and a group whose thinking line is showing
+//   never switches back to a tool hint.
+// - The thinking line's row budget drops from 10 wrapped rows to 1, so it is
+//   the block's first line with "…" when cut off.
+// - The line renders through the plain Text component instead of the Markdown
+//   one. Only plain Text reads the row-hover context that un-dims dim text,
+//   so this makes the thinking line brighten on hover together with the rest
+//   of the row; a one-line whitespace-collapsed preview loses nothing by
+//   skipping Markdown.
 //
-// thinking-no-fold keeps thinking messages out of these groups entirely, which
-// would leave this patch nothing to render — apply-display-patches.sh refuses
-// the combination.
+// thinking-no-fold keeps thinking messages out of these groups entirely,
+// which would leave this patch nothing to render — apply-display-patches.sh
+// refuses the combination.
 import { readFileSync, writeFileSync } from "node:fs";
 
 const jsPath = process.argv[2];
@@ -54,57 +62,80 @@ function matchOne(label, regex) {
   return matches[0];
 }
 
-// The verbose path's thinking render names the jsx runtime, the Box component
-// and the ThinkingBlock component. Anchored on the thinking type guard plus
-// the exact prop signature — a lookalike would have to render a keyed
-// marginTop:1 box around a param/addMargin/isTranscriptMode/verbose call.
-const verbose = matchOne(
-  "verbose thinking render",
-  /if\(([$\w]+)\?\.type==="thinking"&&\1\.thinking\)return ([$\w]+)\.jsx\(([$\w]+),\{marginTop:1,children:\2\.jsx\(([$\w]+),\{param:\1,addMargin:!1,isTranscriptMode:!0,verbose:!0\}\)\},([$\w]+)\.uuid\)/g,
-);
-const [, , jsx, box, thinkingBlock] = verbose;
+function spliceOne(label, regex, build) {
+  const m = matchOne(label, regex);
+  js = js.slice(0, m.index) + build(m) + js.slice(m.index + m[0].length);
+  console.log(`thinking-latest: ${label} patched`);
+}
 
 // The component's destructuring names the group's message list. Anchored on
 // the group record's own field names — only the group row destructures
 // searchCount through messages in one pattern.
 const header = matchOne(
   "group row destructuring",
-  /\{searchCount:[$\w]+,readCount:[$\w]+,listCount:[$\w]+,replCount:[$\w]+,memorySearchCount:[$\w]+,memoryReadCount:[$\w]+,memoryWriteCount:[$\w]+,messages:([$\w]+)\}=([$\w]+)/g,
+  /\{searchCount:[$\w]+,readCount:[$\w]+,listCount:[$\w]+,replCount:[$\w]+,memorySearchCount:[$\w]+,memoryReadCount:[$\w]+,memoryWriteCount:[$\w]+,messages:([$\w]+)\}=[$\w]+/g,
 );
-const [, messages] = header;
+const messages = header[1];
 
-// Drop the one-line summary: latestThinkingSummary is read into the row's
-// hint slot in exactly one place, guarded by the isActiveGroup flag.
-const summary = matchOne(
-  "one-line thinking summary",
-  /=([$\w]+)\(([$\w]+)\?([$\w]+)\.latestThinkingSummary:void 0,([$\w]+)\)/g,
-);
-js =
-  js.slice(0, summary.index) +
-  `=${summary[1]}(void 0,${summary[4]})` +
-  js.slice(summary.index + summary[0].length);
-console.log("thinking-latest: one-line thinking summary dropped");
+// The last thinking block in the group, collapsed to one line. Same walk as
+// the row's expanded view: direct assistant entries plus grouped_tool_use
+// members, last non-empty thinking wins.
+const lastThinking =
+  `(()=>{let zzT;for(let zzM of ${messages}){` +
+  `let zzA=zzM.type==="assistant"?[zzM]:zzM.type==="grouped_tool_use"?zzM.messages:[];` +
+  `for(let zzN of zzA){let zzC=zzN.message.content[0];` +
+  `if(zzC?.type==="thinking"&&zzC.thinking?.trim())zzT=zzC.thinking.trim().replace(/\\s+/g," ")}}` +
+  `return zzT})()`;
 
-// Inject the full latest-thinking render into the collapsed return, right
-// after the summary row. Anchored on the row's closing markup followed by the
-// memoryOps element — the only children array that sequences the two.
-const site = matchOne(
-  "collapsed row injection point",
-  /\.jsx\(([$\w]+),\{\}\)\]\}\)\]\}\),([$\w]+)\.memoryOps&&/g,
+// Summary source and gates, one adjacent run. latestThinkingSummary is read
+// into the row's hint slot in exactly one place.
+let activeFlag, thinkingFlag, hintText;
+spliceOne(
+  "summary source and gate",
+  /([$\w]+)=([$\w]+)\(([$\w]+)\?([$\w]+)\.latestThinkingSummary:void 0,([$\w]+)\),([$\w]+)=\3&&\1!==void 0,([$\w]+)=\6\?\1:([$\w]+);/g,
+  (m) => {
+    const [, he, linger, s, , ms, ce, pe, ye] = m;
+    activeFlag = s;
+    thinkingFlag = ce;
+    hintText = pe;
+    return `${he}=${linger}(${lastThinking},${ms}),${ce}=${he}!==void 0,${pe}=${ce}?${he}:${ye};`;
+  },
 );
-const injected =
-  `(()=>{let zzLast;for(let zzM of ${messages}){` +
-  `let zzArr=zzM.type==="assistant"?[zzM]:zzM.type==="grouped_tool_use"?zzM.messages:[];` +
-  `for(let zzN of zzArr){let zzC=zzN.message.content[0];` +
-  `if(zzC?.type==="thinking"&&zzC.thinking)zzLast=zzN}}` +
-  `return zzLast?${jsx}.jsx(${box},{children:` +
-  `${jsx}.jsx(${thinkingBlock},{param:zzLast.message.content[0],addMargin:!1,isTranscriptMode:!0,verbose:!0})},zzLast.uuid):null})(),`;
-js =
-  js.slice(0, site.index) +
-  `.jsx(${site[1]},{})]})]}),` +
-  injected +
-  `${site[2]}.memoryOps&&` +
-  js.slice(site.index + site[0].length);
-console.log("thinking-latest: latest thinking block rendered on the collapsed row");
+
+// The row's render guard, anchored on the gutter cell markup that follows it.
+// Thinking lines show always; tool display hints stay streaming-only.
+spliceOne(
+  "row render guard",
+  new RegExp(
+    `\\b${activeFlag}&&${hintText}!==void 0&&([$\\w]+\\.jsxs\\([$\\w]+,\\{flexDirection:"row",children:\\[[$\\w]+\\.jsx\\([$\\w]+,\\{width:5,flexShrink:0)`,
+    "g",
+  ),
+  (m) => `(${thinkingFlag}||${activeFlag})&&${hintText}!==void 0&&${m[1]}`,
+);
+
+// The plain Text component, named by the "  ⎿  " gutter cells of the group
+// row's sub-rows. Several sub-rows carry one; they must all name the same
+// component.
+const gutters = [
+  ...js.matchAll(
+    /[$\w]+\.jsx\(([$\w]+),\{"aria-hidden":!0,dimColor:!0,children:"  \\u23BF  "\}\)/g,
+  ),
+];
+const gutterNames = new Set(gutters.map((m) => m[1]));
+if (gutterNames.size !== 1)
+  fail(
+    `gutter cells: [${[...gutterNames]}] from ${gutters.length} matches, expected one shared component — bundle layout changed, refusing`,
+  );
+const plainText = gutters[0][1];
+
+// The thinking line: row budget drops to 1 — first line only, "…" when cut
+// off — and the Markdown component is swapped for plain Text so the line
+// un-dims on row hover.
+spliceOne(
+  "one-line hoverable render",
+  /([$\w]+)\.jsx\(([$\w]+),\{dimColor:!0,italic:!0,children:([$\w]+)\(([$\w]+),([$\w]+)-([$\w]+),([$\w]+)\)\}\):\4\.split/g,
+  (m) =>
+    `${m[1]}.jsx(${plainText},{dimColor:!0,italic:!0,children:${m[3]}(${m[4]},${m[5]}-${m[6]},1)}):${m[4]}.split`,
+);
 
 writeFileSync(jsPath, js);

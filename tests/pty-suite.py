@@ -361,17 +361,18 @@ def thinking_no_fold(binary):
 
 
 def thinking_latest(binary):
-    """The collapsed group's pill shows its latest thinking block in full.
+    """The pill keeps a one-line summary of its latest thinking block.
 
     Two thinking blocks stream in one turn; both fold into one collapsed
-    group. Patched, the pill row stays and the second block's full text
-    renders under it — the first block's does not. Stock keeps the pill but
-    shows no thinking text at all once the turn is done, and the one-line
-    summary it draws mid-stream truncates long before an end-of-block marker.
+    group. Patched, once the turn completes the pill row still shows the
+    second block's first line, ellipsis-truncated — the block's tail and the
+    earlier block stay hidden. Stock shows no thinking at all once the turn
+    is done.
     """
-    earlier = ("Circling the problem from afar. " * 5) + "zqx-earlier-marker"
+    earlier = "zqx-earlier-lead " + ("padding words here. " * 8)
+    latest = "zqx-latest-lead " + ("closing thoughts follow. " * 8) + "zqx-latest-tail"
     scratch = Scratch("thinking-latest")
-    script = [[{"thinking": earlier}, {"thinking": THINKING_TEXT},
+    script = [[{"thinking": earlier}, {"thinking": latest},
                {"text": "thinking answered"}]]
     with CaptureProxy(script) as proxy:
         term = start(binary, scratch, proxy)
@@ -384,9 +385,14 @@ def thinking_latest(binary):
     assert answered, f"the turn never completed:\n{screen}"
     assert "Thought for" in screen, \
         f"the collapsed group's pill is gone:\n{screen}"
-    assert THINKING_MARKER in screen, \
-        f"the latest thinking block is not on the collapsed row:\n{screen}"
-    assert "zqx-earlier-marker" not in screen, \
+    row = next((r for r in screen.split("\n") if "zqx-latest-lead" in r), None)
+    assert row is not None, \
+        f"the latest thinking block's first line is not on the pill row:\n{screen}"
+    assert "…" in row, \
+        f"the thinking line is not ellipsis-truncated:\n{row!r}\n{screen}"
+    assert "zqx-latest-tail" not in screen, \
+        f"more than the first line rendered:\n{screen}"
+    assert "zqx-earlier-lead" not in screen, \
         f"an earlier thinking block rendered too:\n{screen}"
 
 
