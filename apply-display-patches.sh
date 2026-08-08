@@ -89,7 +89,9 @@ if [[ ! -f "$STOCK.orig" ]]; then
     echo "ERROR: $STOCK does not execute — still being installed, or broken; refusing to back it up as .orig" >&2
     exit 1
   fi
-  cp "$STOCK" "$STOCK.orig"
+  # Copy then rename, so a port killed mid-copy cannot leave a truncated file
+  # under the canonical name.
+  cp "$STOCK" "$STOCK.orig.new" && mv "$STOCK.orig.new" "$STOCK.orig"
   echo "Backed up stock binary to $STOCK.orig"
 fi
 [[ -s "$STOCK.orig" ]] || { echo "ERROR: $STOCK.orig is empty — delete it and re-run to back up the stock binary again" >&2; exit 1; }
