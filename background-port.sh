@@ -12,6 +12,7 @@
 # reviews what the port learned; it recommends, it never edits.
 set -uo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$ROOT/lib.sh"
 LOCAL="$ROOT/patches-local"
 STATE="$ROOT/port-state"
 VERSIONS="$HOME/.local/share/claude/versions"
@@ -22,13 +23,6 @@ export CLAUDE_PATCHING_AUTOPORT=1
 VER="${1:-$(basename "$(realpath "$HOME/.local/bin/claude")")}"
 BIN="$VERSIONS/$VER"
 mkdir -p "$LOCAL" "$STATE"
-
-# Every input that decides the patched bytes. Keep identical in
-# check-and-apply.sh and autoport-trigger.sh.
-fingerprint() {
-  find "$ROOT/apply-display-patches.sh" "$ROOT/patches" "$ROOT/patches-local" \
-    -type f 2>/dev/null | sort | xargs cat /dev/null | shasum
-}
 
 say() { echo "[$(date '+%F %T')] $*"; }
 
@@ -57,7 +51,7 @@ trap 'rmdir "$LOCK" 2>/dev/null; rm -rf "$WORK"' EXIT
 finish() { # <headline> — notify now, and leave a note for the next launch
   say "$1"
   printf 'claude-patching: %s\n' "$1" > "$STATE/port-message"
-  osascript -e "display notification \"$1\" with title \"claude-patching\"" 2>/dev/null || true
+  notify "claude-patching" "$1"
 }
 
 fail() { # <reason>
@@ -109,8 +103,8 @@ SUSPECT="$(awk '$1=="pass"{printf "%s ", $2}' "$STOCK_LOG")"
 
 # Promotion. Under the same lock check-and-apply.sh takes, so no launch ever
 # reads a half-promoted state, and every file is written new then moved into
-# place — macOS caches a Mach-O's code signature per inode, so overwriting a
-# live binary leaves the kernel SIGKILLing every launch of it.
+# place — macOS caches a Mach-O's code signature per inode, while Linux rejects
+# overwriting a running ELF with ETXTBSY.
 if ! mkdir "$BIN.lock" 2>/dev/null; then
   [[ -n "$(find "$BIN.lock" -maxdepth 0 -mmin +10 2>/dev/null)" ]] && rmdir "$BIN.lock" 2>/dev/null
   mkdir "$BIN.lock" 2>/dev/null || fail "a launch holds the binary lock"
@@ -120,7 +114,7 @@ cp "$CAND" "$BIN.new" && mv "$BIN.new" "$BIN"
 cp "$CAND" "$ARCHIVE/$VER.new" && mv "$ARCHIVE/$VER.new" "$ARCHIVE/$VER"
 ls "$ARCHIVE" | sort -Vr | tail -n +3 | while read -r old; do rm -f "$ARCHIVE/$old"; done
 
-{ stat -f '%i %z %m' "$BIN"; fingerprint; } > "$BIN.patched"
+{ file_id "$BIN"; fingerprint; } > "$BIN.patched"
 
 # Relink the app bundle so desktop and daemon launches share what the terminal
 # launches, then drop everything still running pre-promotion JS. The daemon's
@@ -150,7 +144,7 @@ if "$ROOT/advisory-agent.sh" "$VER" "$STOCK_LOG" "$ADVICE" && [[ -s "$ADVICE" ]]
   headline="$(head -1 "$ADVICE")"
   printf 'claude-patching: upstream watch for %s: %s\n  full review: %s\n' "$VER" "$headline" "$ADVICE" \
     >> "$STATE/port-message"
-  osascript -e "display notification \"$headline\" with title \"claude-patching: upstream watch\"" 2>/dev/null || true
+  notify "claude-patching: upstream watch" "$headline"
   say "advisory: $headline"
 else
   say "the advisory agent produced nothing — see $STATE/advisory-$VER.log"

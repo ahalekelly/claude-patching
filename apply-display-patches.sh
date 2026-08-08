@@ -48,8 +48,8 @@
 #                              of folding into the "Thought for Ns" pill
 #
 # Restore stock binary — copy to a new file and rename, never write the live
-# binary in place. macOS caches a Mach-O's code signature per inode, so an
-# in-place overwrite leaves the kernel SIGKILLing every launch of that inode:
+# binary in place. macOS caches a Mach-O's code signature per inode, while Linux
+# rejects overwriting a running ELF with ETXTBSY:
 #   cd <versions-dir> && cp <ver>.orig <ver>.new && mv <ver>.new <ver>
 #   ln -f <ver> ~/.local/share/claude/ClaudeCode.app/Contents/MacOS/claude
 set -euo pipefail
@@ -129,21 +129,24 @@ done
 node --check "$JS"
 # tweakcc repacks into an existing Claude Code binary, so the candidate starts
 # as a copy of the stock one. A fresh file every time, never an overwrite of a
-# live binary, per the code-signature-per-inode caveat above.
+# live binary, per the code-signature and ETXTBSY caveats above.
 cp "$STOCK.orig" "$OUT"
 "$TWEAKCC" repack "$JS" "$OUT"
 
-# tweakcc's repack ad-hoc signs under a generated identifier, which makes every
-# promotion a brand new app to macOS: TCC keys its grants to the signing
-# identity, and an ad-hoc one is just the binary's own hash. A constant
-# identifier plus the local certificate setup-signing.sh creates gives every
-# patched binary the same identity, so the permissions granted once stick.
-# Without that certificate the signature stays ad-hoc — the prompts return on
-# each promotion, but at least they name something recognizable.
-if security find-identity -p codesigning -v 2>/dev/null | grep -q '"claude-patching"'; then
-  codesign --force --sign claude-patching --identifier claude-patched "$OUT"
-else
-  echo "No claude-patching signing identity — ad-hoc signing. Run setup-signing.sh to stop macOS re-asking for permissions after every promotion."
-  codesign --force --sign - --identifier claude-patched "$OUT"
+# Linux binaries stay unsigned. On macOS tweakcc's repack ad-hoc signs under a
+# generated identifier, which makes every promotion a brand new app: TCC keys
+# its grants to the signing identity, and an ad-hoc one is just the binary's own
+# hash. A constant identifier plus the local certificate setup-signing.sh
+# creates gives every patched binary the same identity, so the permissions
+# granted once stick. Without that certificate the signature stays ad-hoc — the
+# prompts return on each promotion, but at least they name something
+# recognizable.
+if [[ "$(uname)" == Darwin ]]; then
+  if security find-identity -p codesigning -v 2>/dev/null | grep -q '"claude-patching"'; then
+    codesign --force --sign claude-patching --identifier claude-patched "$OUT"
+  else
+    echo "No claude-patching signing identity — ad-hoc signing. Run setup-signing.sh to stop macOS re-asking for permissions after every promotion."
+    codesign --force --sign - --identifier claude-patched "$OUT"
+  fi
 fi
 echo "Candidate written to $OUT"

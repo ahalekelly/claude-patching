@@ -1,0 +1,8 @@
+[Unit]
+Description=Watch Claude Code's versions directory for installs
+
+[Path]
+PathModified=%h/.local/share/claude/versions
+
+[Install]
+WantedBy=default.target

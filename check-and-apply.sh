@@ -17,6 +17,7 @@
 # edited patch set fails the check and gets reconciled.
 set -uo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$ROOT/lib.sh"
 STATE="$ROOT/port-state"
 ARCHIVE="$HOME/.local/share/claude/patched"
 TARGET="${1:?usage: check-and-apply.sh <target-file>}"
@@ -27,12 +28,7 @@ TARGET="${1:?usage: check-and-apply.sh <target-file>}"
 
 BIN="$(realpath "$HOME/.local/bin/claude")"
 VER="$(basename "$BIN")"
-# Every input that decides the patched bytes. Keep identical in
-# background-port.sh and autoport-trigger.sh.
-FINGERPRINT="$(find "$ROOT/apply-display-patches.sh" "$ROOT/patches" "$ROOT/patches-local" \
-  -type f 2>/dev/null | sort | xargs cat /dev/null | shasum)"
-STAMP="$(stat -f '%i %z %m' "$BIN"
-  echo "$FINGERPRINT")"
+STAMP="$(file_id "$BIN"; fingerprint)"
 
 launch() { echo "$1" > "$TARGET"; }
 
@@ -60,7 +56,7 @@ if [[ -n "$FALLBACK" ]]; then
   # Silent indefinite fallback is this design's main risk, and old versions do
   # get hard-deprecated: say so loudly once the gap gets real.
   behind=$(( ${VER##*.} - ${FALLBACK##*.} ))
-  days=$(( ( $(stat -f %m "$BIN") - $(stat -f %m "$ARCHIVE/$FALLBACK") ) / 86400 ))
+  days=$(( ( $(file_mtime "$BIN") - $(file_mtime "$ARCHIVE/$FALLBACK") ) / 86400 ))
   if [[ "${VER%.*}" != "${FALLBACK%.*}" || $behind -gt 3 || $days -gt 7 ]]; then
     echo "claude-patching: WARNING — that is $behind release(s) and $days day(s) behind $VER. Check $STATE/port-$VER.log."
   fi

@@ -1,0 +1,9 @@
+[Unit]
+Description=Port claude-patching onto a newly installed Claude Code version
+
+[Service]
+Type=oneshot
+ExecStart=%h/.agents/claude-patching/autoport-trigger.sh
+
+[Install]
+WantedBy=default.target

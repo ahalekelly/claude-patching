@@ -1,8 +1,8 @@
 # claude-patching
 
-Sixteen patches for the **native Claude Code binary** on macOS — fourteen applied by default, two opt-in — plus a port that keeps them applied across updates without ever making you wait for it.
+Sixteen patches for the **native Claude Code binary** on macOS and Linux — fourteen applied by default, two opt-in — plus a port that keeps them applied across updates without ever making you wait for it.
 
-Claude Code ships as a single-file Mach-O with its JavaScript bundled inside. Several things it does — collapsing tool calls, hiding ToolSearch and cron fires, spending thousands of standing prompt tokens on tool descriptions you rarely use, sharing one MCP server process between concurrent subagents — have no setting. So the bundle is unpacked, patched, and repacked.
+Claude Code ships as a single-file executable with its JavaScript bundled inside. Several things it does — collapsing tool calls, hiding ToolSearch and cron fires, spending thousands of standing prompt tokens on tool descriptions you rarely use, sharing one MCP server process between concurrent subagents — have no setting. So the bundle is unpacked, patched, and repacked.
 
 Two properties make that safe enough to run every day:
 
@@ -42,8 +42,9 @@ The two `defer-*-description` patches move each tool's description into a skill 
 
 ## Requirements
 
-- macOS, and Claude Code installed natively (`~/.local/bin/claude` → `~/.local/share/claude/versions/<version>`). The npm install is a different shape and is not supported.
+- macOS or Linux, and Claude Code installed natively (`~/.local/bin/claude` → `~/.local/share/claude/versions/<version>`). The npm install is a different shape and is not supported.
 - `node`, `python3`, and `jq`.
+- `notify-send` is optional on Linux for desktop notifications.
 - [`pyte`](https://github.com/selectel/pyte) for the PTY half of the suite — the tests fetch it themselves if `uv` is installed, since they run under `uv run --script`.
 - A logged-in `claude` CLI, for the two agents the port escalates to. Without one, the port still works mechanically; it just cannot re-anchor a patch that has drifted or file an upstream-watch report.
 
@@ -89,7 +90,7 @@ The port itself runs detached, in three tiers:
 2. **Re-anchor.** If a patch no longer applies, a Claude agent (`port-agent.sh`) is given the failing output, the previous release's bundle, and [Piebald-AI/claude-code-system-prompts](https://github.com/Piebald-AI/claude-code-system-prompts) — which publishes Claude Code's system prompts per release, minutes after each one — and writes re-anchored patches into `patches-local/<version>/`. Those win over `patches/` for that version only. A patch it cannot repair goes in `patches-local/<version>/dropped` and is skipped, so one cosmetic patch can never pin the machine to an old release.
 3. **Gate.** The candidate must report a version, complete a trivial prompt, and pass `tests/run-all.sh`. **Only a candidate that passes is promoted** — the agent never touches the live launch path.
 
-A failed port writes `port-state/<version>.failed` and is not retried for 24 hours or until the patch set itself changes, so a broken version cannot respawn an agent every time something triggers it. Promotion takes the same lock a launch takes, writes every file new and moves it into place, relinks the app bundle, and leaves a note the next launch prints along with a desktop notification.
+A failed port writes `port-state/<version>.failed` and is not retried for 24 hours or until the patch set itself changes, so a broken version cannot respawn an agent every time something triggers it. Promotion takes the same lock a launch takes, writes every file new and moves it into place, relinks the macOS app bundle, and leaves a note the next launch prints along with a desktop notification.
 
 The stamp file `<binary>.patched` holds the patched binary's inode, size and mtime plus a fingerprint of every input that decides the patched bytes, so a binary replaced underneath it — an update reinstalling the same version, a manual restore — or a change to the patches themselves fails the check and gets reconciled instead of being trusted as patched.
 
@@ -101,17 +102,28 @@ Claude Code's auto-updater installs new versions on its own schedule, and the da
 cp com.akelly.claude-patching.autoport.plist ~/Library/LaunchAgents/ && launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.akelly.claude-patching.autoport.plist
 ```
 
+On Linux, install the equivalent systemd user units:
+
+```bash
+cp claude-patching-autoport.{service,path} ~/.config/systemd/user/ && systemctl --user daemon-reload && systemctl --user enable --now claude-patching-autoport.{path,service}
+```
+
+The service runs once at login and on directory changes, has no start timeout, and coalesces triggers while active. Its output goes to the user journal (`journalctl --user -u claude-patching-autoport`), while each port keeps `port-state/port-<version>.log`; edit `ExecStart` if the checkout is elsewhere.
+
 `autoport-trigger.sh` first waits for the new binary's size to hold still, since the watch fires while the updater is still writing it, then takes the same stamp fast path the launch check takes and execs the port only if the stamp fails. launchd requires absolute paths, so edit the plist if your checkout is not at `~/.agents/claude-patching`.
 
 ### Files
 
 - `check-and-apply.sh <target-file>` — pre-launch check: stamp fast path, archive fallback, staleness warning, background port. Exit 0 = silent, exit 1 = printed something the wrapper should hold for. Exits immediately when `CLAUDE_PATCHING_AUTOPORT` is set, so the port's own sessions never recurse.
 - `background-port.sh [version]` — the reconciler: retry damper, lock, mechanical apply, agent escalation, gate, stock-suite run, promotion, notification, advisory pass.
-- `autoport-trigger.sh` — fired by launchd on any change to the versions directory: settle wait, stamp fast path, else `exec` the port so launchd tracks it as the job.
-- `com.akelly.claude-patching.autoport.plist` — that launchd agent. Absolute paths, `RunAtLoad` so an install during a logout is caught, `ThrottleInterval` so a burst of writes fires it once.
-- `apply-display-patches.sh <version> <output-binary>` — pure candidate builder: unpacks `versions/<version>.orig` (backing it up on first sight), applies `PATCH_IDS` in order, checks the result parses, repacks to the output path and signs it. Fails loudly, writing nothing, if any patch does not match.
+- `lib.sh` — shared platform seams and patch-set fingerprint.
+- `autoport-trigger.sh` — fired by launchd or systemd on any change to the versions directory: settle wait, stamp fast path, else `exec` the port so the service manager tracks it as the job.
+- `com.akelly.claude-patching.autoport.plist` — the launchd agent. Absolute paths, `RunAtLoad` so an install during a logout is caught, `ThrottleInterval` so a burst of writes fires it once.
+- `claude-patching-autoport.path` — the systemd user path watcher.
+- `claude-patching-autoport.service` — the systemd user service, also started at login.
+- `apply-display-patches.sh <version> <output-binary>` — pure candidate builder: unpacks `versions/<version>.orig` (backing it up on first sight), applies `PATCH_IDS` in order, checks the result parses, repacks to the output path and signs it on macOS. Fails loudly, writing nothing, if any patch does not match.
 - `port-agent.sh` / `advisory-agent.sh` — the two escalations, both launched through `agent-run.sh`: a Claude session in auto permission mode, in a visible Terminal window when a GUI session exists and headless otherwise. Each step it takes lands in `port-state/<tag>-<version>.log` as it happens — assistant text, a line per tool call, then the final report.
-- `setup-signing.sh` — one-time, run by hand: creates the local certificate the port signs patched binaries with.
+- `setup-signing.sh` — macOS-only, run by hand once: creates the local certificate the port signs patched binaries with.
 - `patches/` — the committed patch set.
 - `patches-local/` — machine-local overlay written by the port: `<version>/<id>.mjs` re-anchors, `<version>/dropped`.
 - `port-state/` — locks, logs, failure markers, and the note the next launch prints.
@@ -139,9 +151,11 @@ After promotion an advisory agent classifies those, reads the per-test stock fai
 A repatch only changes the file on disk; every claude process keeps the JS it loaded at start. Two consequences beyond the obvious "restart your sessions":
 
 - **The daemon's warm spares serve stale code.** The Claude Code daemon pre-forks spare processes (`claude bg-spare` + `bg-pty-host` pairs under `/tmp/cc-daemon-<uid>/<daemon>/spare/`) that load the binary's JS at fork time. Daemon-launched sessions (desktop app, agents view) claim a spare on start, so a session "restarted" right after a repatch can still run pre-patch code — repeatedly, until the pool cycles. Diagnose with `ps -axo pid,lstart,command | grep bg-spare` and compare spare fork times against the binary mtime. Promotion clears both halves of the problem: it kills every unclaimed spare, and every `--bg-pty-host` wrapper along with its direct children, which is how it reaches sessions claimed from a spare — those rewrite their argv to their own resume command and are otherwise unrecognizable. Every daemon-attached session bounces for a few seconds at promotion and auto-resumes on the new binary. That is the intended trade — promotions are rare and sessions come back patched. Terminal launches via the shell wrapper exec the binary directly and never touch the spare pool.
-- **The inode swap can kill live sessions.** Sessions launched from the replaced inode may die when the binary is swapped underneath them; they resume cleanly, but a repatch mid-conversation is what that crash was.
+- **The inode swap can kill live sessions on macOS.** Sessions launched from the replaced inode may die when the binary is swapped underneath them; they resume cleanly, but a repatch mid-conversation is what that crash was.
 
 ### Code signing and macOS permission prompts
+
+This concern is macOS-only: Linux binaries run unsigned, and `setup-signing.sh` is a no-op there.
 
 macOS keys TCC permissions — automation, accessibility, screen recording — to a binary's signing identity, so an unpatched Claude Code is granted them once as `com.anthropic.claude-code`. A repacked binary cannot keep Anthropic's signature. Every candidate is therefore re-signed under the constant identifier `claude-patched`, with a local certificate when one exists and ad-hoc otherwise.
 
@@ -158,13 +172,15 @@ ln -f <ver> ~/.local/share/claude/ClaudeCode.app/Contents/MacOS/claude
 trash <ver>.patched
 ```
 
-A binary already poisoned this way is only recoverable by replacing it through a fresh inode the same way — the file itself is fine, the kernel's cached verdict for that inode is not.
+On Linux, the same write-new-then-rename rule avoids `ETXTBSY` on a running binary; there is no app bundle to relink.
+
+A binary already poisoned this way is only recoverable by replacing it through a fresh inode the same way — the file itself is fine, the macOS kernel's cached verdict for that inode is not.
 
 ## Credits
 
 [phate45/claude-patching](https://github.com/phate45/claude-patching) pioneered patching the native Claude Code binary this way, and is where the ideas behind five of these patches came from. That project carries no license, so nothing here is derived from its code: every patch in `patches/` is an original implementation written against anchors derived independently from the bundle, with its own behavioral test as the contract.
 
-[tweakcc](https://github.com/Piebald-AI/tweakcc) does the Mach-O unpack and repack, and [Piebald-AI/claude-code-system-prompts](https://github.com/Piebald-AI/claude-code-system-prompts) is the port agent's fastest signal on prompt-text drift.
+[tweakcc](https://github.com/Piebald-AI/tweakcc) does the unpack and repack of the single-file executable, and [Piebald-AI/claude-code-system-prompts](https://github.com/Piebald-AI/claude-code-system-prompts) is the port agent's fastest signal on prompt-text drift.
 
 ## License
 

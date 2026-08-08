@@ -12,6 +12,7 @@
 # certificate makes every future patched binary the same app: you answer the
 # prompts once more, and never again.
 set -euo pipefail
+[[ "$(uname)" == Darwin ]] || { echo "Code signing is macOS-only — nothing to set up."; exit 0; }
 NAME=claude-patching
 KEYCHAIN="$HOME/Library/Keychains/login.keychain-db"
 
