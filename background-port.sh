@@ -102,12 +102,19 @@ ls "$ARCHIVE" | sort -Vr | tail -n +3 | while read -r old; do rm -f "$ARCHIVE/$o
 { stat -f '%i %z %m' "$BIN"; fingerprint; } > "$BIN.patched"
 
 # Relink the app bundle so desktop and daemon launches share what the terminal
-# launches, and drop the daemon's warm spares, which load the binary's JS at
-# fork time and would otherwise keep serving pre-promotion code. This match is
-# deliberately broad: sessions claimed from a spare keep --bg-spare in their
-# argv, so live daemon-attached sessions die here too — accepted, because the
-# daemon auto-resumes each one in seconds on the freshly promoted binary.
+# launches, then drop everything still running pre-promotion JS. The daemon's
+# warm spares load the binary's JS at fork time; a session claimed from a spare
+# rewrites its argv to its own resume command, so the only thing that still
+# names it is the --bg-pty-host wrapper it hangs off — kill each wrapper's
+# direct children and the sessions go with it. The match spans every daemon on
+# the machine deliberately: live daemon-attached sessions die here too —
+# accepted, because the daemon auto-resumes each one in seconds on the freshly
+# promoted binary.
 [[ -e "$APP" ]] && ln -f "$BIN" "$APP"
+for wrapper in $(pgrep -f -- '--bg-pty-host' 2>/dev/null); do
+  pkill -P "$wrapper" 2>/dev/null || true
+  kill "$wrapper" 2>/dev/null || true
+done
 pkill -f -- '--bg-spare' 2>/dev/null || true
 rmdir "$BIN.lock" 2>/dev/null
 rm -f "$STATE/$VER.failed"
