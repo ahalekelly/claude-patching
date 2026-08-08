@@ -1,6 +1,6 @@
 # claude-patching
 
-Sixteen patches for the **native Claude Code binary** on macOS — fourteen applied by default, two opt-in — plus a port that keeps them applied across updates without ever making you wait for it.
+Eighteen patches for the **native Claude Code binary** on macOS — sixteen applied by default, two opt-in — plus a port that keeps them applied across updates without ever making you wait for it.
 
 Claude Code ships as a single-file Mach-O with its JavaScript bundled inside. Several things it does — collapsing tool calls, hiding ToolSearch and cron fires, spending thousands of standing prompt tokens on tool descriptions you rarely use, sharing one MCP server process between concurrent subagents — have no setting. So the bundle is unpacked, patched, and repacked.
 
@@ -27,6 +27,8 @@ Two properties make that safe enough to run every day:
 | `agent-list-models` | the in-session agent list shows each row's model — subagents as "11m 50s · fable · ↓ 92.8k tokens", the main row as a right-aligned "fable · ↓ 12k tokens" |
 | `agents-view-models` | agents-view job rows show their `--model` flag in the age column ("fable · 3m") |
 | `task-notification-provenance` | agent task-notifications carry a `<trigger>` element naming what started the run — original launch, a user message sent to the agent, a SendMessage, or an auto-resume — so an owner can tell a user-initiated continuation from a rogue one ([#84957](https://github.com/anthropics/claude-code/issues/84957)) |
+| `communicating-with-user` | every model gets the full "# Communicating with the user" prompt section; stock reserves it for a few model families and hands everything else a clipped bulleted variant |
+| `ant-faithful-outcomes` | the outcome-reporting rules (never claim tests pass over failing output, don't hedge confirmed results) reach every session; stock builds them only into the simple system prompt |
 | `thinking-visibility` *(default-off)* | thinking blocks render inline in the normal chat view, expanded; stock shows them only in transcript mode (ctrl+o) or under `--verbose` |
 | `thinking-no-fold` *(default-off)* | a thinking block stays its own transcript entry instead of folding into the adjacent collapsed read/search group's "Thought for Ns" pill |
 

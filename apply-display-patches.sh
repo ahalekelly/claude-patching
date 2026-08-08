@@ -114,6 +114,10 @@ resolve_patch() {
 # The stock backup is the canonical patch source: back it up on first sight of a
 # version, always rebuild from it, so re-running over a patched install is safe.
 if [[ ! -f "$STOCK.orig" ]]; then
+  if [[ -f "$STOCK.patched" ]]; then
+    echo "ERROR: $STOCK carries a .patched stamp — it is a patched binary, not stock; refusing to back it up as .orig" >&2
+    exit 1
+  fi
   cp "$STOCK" "$STOCK.orig"
   echo "Backed up stock binary to $STOCK.orig"
 fi
