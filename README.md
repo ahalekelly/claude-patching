@@ -91,14 +91,26 @@ The port itself runs detached, in three tiers:
 2. **Re-anchor.** If a patch no longer applies, a Claude agent (`port-agent.sh`) is given the failing output, the previous release's bundle, and [Piebald-AI/claude-code-system-prompts](https://github.com/Piebald-AI/claude-code-system-prompts) — which publishes Claude Code's system prompts per release, minutes after each one — and writes re-anchored patches into `patches-local/<version>/`. Those win over `patches/` for that version only. A patch it cannot repair goes in `patches-local/<version>/dropped` and is skipped, so one cosmetic patch can never pin the machine to an old release.
 3. **Gate.** The candidate must report a version, complete a trivial prompt, and pass `tests/run-all.sh`. **Only a candidate that passes is promoted** — the agent never touches the live launch path.
 
-A failed port writes `port-state/<version>.failed` and is not retried for 24 hours or until the patch set itself changes, so a broken version cannot respawn an agent on every launch. Promotion takes the same lock a launch takes, writes every file new and moves it into place, relinks the app bundle, and leaves a note the next launch prints along with a desktop notification.
+A failed port writes `port-state/<version>.failed` and is not retried for 24 hours or until the patch set itself changes, so a broken version cannot respawn an agent every time something triggers it. Promotion takes the same lock a launch takes, writes every file new and moves it into place, relinks the app bundle, and leaves a note the next launch prints along with a desktop notification.
 
 The stamp file `<binary>.patched` holds the patched binary's inode, size and mtime plus a fingerprint of every input that decides the patched bytes, so a binary replaced underneath it — an update reinstalling the same version, a manual restore — or a change to the patches themselves fails the check and gets reconciled instead of being trusted as patched.
+
+### Porting on install, not on launch
+
+Claude Code's auto-updater installs new versions on its own schedule, and the daemon spawns background sessions on one the moment it lands — long before your next terminal launch. A launchd agent watches the versions directory and fires the same background port within seconds of an install:
+
+```bash
+cp com.akelly.claude-patching.autoport.plist ~/Library/LaunchAgents/ && launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.akelly.claude-patching.autoport.plist
+```
+
+`autoport-trigger.sh` first waits for the new binary's size to hold still, since the watch fires while the updater is still writing it, then takes the same stamp fast path the launch check takes and execs the port only if the stamp fails. launchd requires absolute paths, so edit the plist if your checkout is not at `~/.agents/claude-patching`.
 
 ### Files
 
 - `check-and-apply.sh <target-file>` — pre-launch check: stamp fast path, archive fallback, staleness warning, background port. Exit 0 = silent, exit 1 = printed something the wrapper should hold for. Exits immediately when `CLAUDE_PATCHING_AUTOPORT` is set, so the port's own sessions never recurse.
-- `background-port.sh [version]` — the reconciler: lock, mechanical apply, agent escalation, gate, stock-suite run, promotion, notification, advisory pass.
+- `background-port.sh [version]` — the reconciler: retry damper, lock, mechanical apply, agent escalation, gate, stock-suite run, promotion, notification, advisory pass.
+- `autoport-trigger.sh` — fired by launchd on any change to the versions directory: settle wait, stamp fast path, else `exec` the port so launchd tracks it as the job.
+- `com.akelly.claude-patching.autoport.plist` — that launchd agent. Absolute paths, `RunAtLoad` so an install during a logout is caught, `ThrottleInterval` so a burst of writes fires it once.
 - `apply-display-patches.sh <version> <output-binary>` — pure candidate builder: unpacks `versions/<version>.orig` (backing it up on first sight), applies `PATCH_IDS` in order, checks the result parses, repacks to the output path and signs it. Fails loudly, writing nothing, if any patch does not match.
 - `port-agent.sh` / `advisory-agent.sh` — the two escalations, both launched through `agent-run.sh`: a Claude session in auto permission mode, in a visible Terminal window when a GUI session exists and headless otherwise. Each step it takes lands in `port-state/<tag>-<version>.log` as it happens — assistant text, a line per tool call, then the final report.
 - `setup-signing.sh` — one-time, run by hand: creates the local certificate the port signs patched binaries with.

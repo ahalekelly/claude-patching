@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.akelly.claude-patching.autoport</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/Users/akelly/.agents/claude-patching/autoport-trigger.sh</string>
+  </array>
+  <key>WatchPaths</key>
+  <array>
+    <string>/Users/akelly/.local/share/claude/versions</string>
+  </array>
+  <key>RunAtLoad</key>
+  <true/>
+  <key>ThrottleInterval</key>
+  <integer>30</integer>
+  <key>StandardOutPath</key>
+  <string>/Users/akelly/.agents/claude-patching/port-state/autoport-trigger.log</string>
+  <key>StandardErrorPath</key>
+  <string>/Users/akelly/.agents/claude-patching/port-state/autoport-trigger.log</string>
+</dict>
+</plist>
