@@ -22,7 +22,7 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PATCHES="$ROOT/patches"
 LOCAL="$ROOT/patches-local"
 TWEAKCC="$ROOT/node_modules/.bin/tweakcc"
-DEFAULT_PATCH_IDS="no-collapse-reads cron-visibility tool-defer-whitelist
+DEFAULT_PATCH_IDS="no-collapse-tool-calls cron-visibility tool-defer-whitelist
            trim-context-bloat defer-workflow-description defer-artifact-description
            sticky-prompt-header task-reminder-conditional agents-view-shortcut
            mcp-per-subagent agent-list-models agents-view-models task-notification-provenance"

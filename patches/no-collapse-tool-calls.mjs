@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// no-collapse-reads: render every Read/Grep/Glob/Bash call on its own
+// no-collapse-tool-calls: render every Read/Grep/Glob/Bash call on its own
 // transcript line instead of rolling consecutive ones up into "Read 3 files"
 // or "ran 4 shell commands".
 //
@@ -25,13 +25,13 @@ import { readFileSync, writeFileSync } from "node:fs";
 
 const jsPath = process.argv[2];
 if (!jsPath) {
-  console.error("usage: no-collapse-reads.mjs <unpacked-cli.js>");
+  console.error("usage: no-collapse-tool-calls.mjs <unpacked-cli.js>");
   process.exit(1);
 }
 let js = readFileSync(jsPath, "utf8");
 
 const fail = (msg) => {
-  console.error(`ERROR: no-collapse-reads: ${msg}`);
+  console.error(`ERROR: no-collapse-tool-calls: ${msg}`);
   process.exit(1);
 };
 
@@ -55,4 +55,4 @@ const patched =
 js = js.slice(0, m.index) + patched + js.slice(m.index + m[0].length);
 
 writeFileSync(jsPath, js);
-console.log("no-collapse-reads: search/read/list/shell tool calls are no longer collapsible");
+console.log("no-collapse-tool-calls: search/read/list/shell tool calls are no longer collapsible");

@@ -117,7 +117,7 @@ def read_blocks(paths):
             for i, p in enumerate(paths)]
 
 
-def no_collapse_reads(binary):
+def no_collapse_tool_calls(binary):
     """Reads and shell commands render as individual lines, not roll-ups.
 
     Stock collapses parallel Reads into "Read N files" and — in the tui — Bash
@@ -391,7 +391,7 @@ def thinking_latest(binary):
 
 
 TESTS = {
-    "no-collapse-reads": no_collapse_reads,
+    "no-collapse-tool-calls": no_collapse_tool_calls,
     "toolsearch-visibility": toolsearch_visibility,
     "sticky-prompt-header": sticky_prompt_header,
     "cron-visibility": cron_visibility,
