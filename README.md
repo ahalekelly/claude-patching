@@ -1,6 +1,6 @@
 # claude-patching
 
-Sixteen patches for the **native Claude Code binary** on macOS and Linux — thirteen applied by default, three opt-in — plus a port that keeps them applied across updates without ever making you wait for it.
+Seventeen patches for the **native Claude Code binary** on macOS and Linux — thirteen applied by default, four opt-in — plus a port that keeps them applied across updates without ever making you wait for it.
 
 Claude Code ships as a single-file executable with its JavaScript bundled inside. Several things it does — collapsing tool calls, hiding ToolSearch and cron fires, spending thousands of standing prompt tokens on tool descriptions you rarely use, sharing one MCP server process between concurrent subagents — have no setting. So the bundle is unpacked, patched, and repacked.
 
@@ -29,6 +29,7 @@ Two properties make that safe enough to run every day:
 | `toolsearch-visibility` *(default-off)* | ToolSearch calls render with their query instead of being absorbed silently |
 | `thinking-visibility` *(default-off)* | thinking blocks render inline in the normal chat view, expanded; stock shows them only in transcript mode (ctrl+o) or under `--verbose` |
 | `thinking-no-fold` *(default-off)* | a thinking block stays its own transcript entry instead of folding into the adjacent collapsed read/search group's "Thought for Ns" pill |
+| `thinking-latest` *(default-off)* | the "Thought for Ns" pill shows its group's most recent thinking block in full, streaming and after the turn completes; clicking the pill still opens every block |
 
 Each patch is one self-contained script under `patches/`, run as `node patches/<id>.mjs <unpacked-cli.js>`, with a header comment explaining the stock behavior, the anchor, and why the anchor is safe.
 
@@ -36,7 +37,7 @@ Each patch is one self-contained script under `patches/`, run as `node patches/<
 
 `toolsearch-visibility` ships default-off: ToolSearch fires constantly in tool-heavy sessions, and the rows are noise once you trust that deferred tools load. Enable it via `patches-local/enable` when debugging tool discovery.
 
-The two thinking patches ship default-off (stock's stream-then-collapse behavior is a reasonable preference) and are designed as a pair — enable both via `patches-local/enable` or neither. Alone, `thinking-no-fold` unfolds thinking into a render path that stock draws as nothing, and `thinking-visibility` barely matters because nearly every thinking block gets folded before it reaches that path.
+The three thinking patches ship default-off (stock's stream-then-collapse behavior is a reasonable preference) and offer two mutually exclusive presentations. `thinking-visibility` + `thinking-no-fold` are a pair — enable both via `patches-local/enable` or neither: every thinking block renders as its own inline entry and the "Thought for Ns" pill disappears. Alone, `thinking-no-fold` unfolds thinking into a render path that stock draws as nothing, and `thinking-visibility` barely matters because nearly every thinking block gets folded before it reaches that path. `thinking-latest` is the quieter alternative: the pill stays, always showing only its group's most recent thinking block in full, and clicking it opens the rest. It conflicts with `thinking-no-fold` — with thinking kept out of the groups there is nothing for the pill to show — and the build refuses that combination.
 
 The two `defer-*-description` patches move each tool's description into a skill rather than delete it, so they write that skill themselves: every build renders the original text out of the binary — escapes decoded, interpolated values inlined — and rewrites `~/.claude/skills/workflow-tool/SKILL.md` and `~/.claude/skills/artifact-tool/SKILL.md` in full, frontmatter and preamble included. Edit the patch, not the SKILL.md. When a build changes one it prints `SKILL SNAPSHOT CHANGED` with the path, so an upstream rewrite of a description surfaces as a reviewable diff in your skills directory instead of as guidance silently dropped — anchor drift still aborts the build, snapshot content never does.
 

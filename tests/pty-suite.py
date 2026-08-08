@@ -350,6 +350,36 @@ def thinking_no_fold(binary):
         f"the thinking block did not render as its own entry:\n{screen}"
 
 
+def thinking_latest(binary):
+    """The collapsed group's pill shows its latest thinking block in full.
+
+    Two thinking blocks stream in one turn; both fold into one collapsed
+    group. Patched, the pill row stays and the second block's full text
+    renders under it — the first block's does not. Stock keeps the pill but
+    shows no thinking text at all once the turn is done, and the one-line
+    summary it draws mid-stream truncates long before an end-of-block marker.
+    """
+    earlier = ("Circling the problem from afar. " * 5) + "zqx-earlier-marker"
+    scratch = Scratch("thinking-latest")
+    script = [[{"thinking": earlier}, {"thinking": THINKING_TEXT},
+               {"text": "thinking answered"}]]
+    with CaptureProxy(script) as proxy:
+        term = start(binary, scratch, proxy)
+        term.submit("think it over")
+        answered = term.wait_for("thinking answered", timeout=90)
+        term.pump(4)
+        screen = term.text()
+        term.close()
+    scratch.cleanup()
+    assert answered, f"the turn never completed:\n{screen}"
+    assert "Thought for" in screen, \
+        f"the collapsed group's pill is gone:\n{screen}"
+    assert THINKING_MARKER in screen, \
+        f"the latest thinking block is not on the collapsed row:\n{screen}"
+    assert "zqx-earlier-marker" not in screen, \
+        f"an earlier thinking block rendered too:\n{screen}"
+
+
 TESTS = {
     "no-collapse-reads": no_collapse_reads,
     "toolsearch-visibility": toolsearch_visibility,
@@ -359,6 +389,7 @@ TESTS = {
     "agents-view-models": agents_view_models,
     "thinking-visibility": thinking_visibility,
     "thinking-no-fold": thinking_no_fold,
+    "thinking-latest": thinking_latest,
 }
 
 if __name__ == "__main__":

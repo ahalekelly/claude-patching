@@ -47,6 +47,9 @@
 #                              (enable the two thinking patches together — pair)
 #   thinking-no-fold           thinking stays its own transcript entry instead
 #                              of folding into the "Thought for Ns" pill
+#   thinking-latest            the collapsed group's pill shows its latest
+#                              thinking block in full; click still opens all
+#                              (conflicts with thinking-no-fold)
 #
 # Restore stock binary — copy to a new file and rename, never write the live
 # binary in place. macOS caches a Mach-O's code signature per inode, while Linux
@@ -79,6 +82,10 @@ for id in $DEFAULT_PATCH_IDS $ENABLE; do
   case " $DISABLE " in *" $id "*) continue;; esac
   PATCH_IDS="$PATCH_IDS $id"
 done
+case " $PATCH_IDS " in *" thinking-no-fold "*) case " $PATCH_IDS " in *" thinking-latest "*)
+  echo "ERROR: thinking-no-fold and thinking-latest conflict — thinking-no-fold keeps thinking out of the groups thinking-latest renders from" >&2
+  exit 1;;
+esac;; esac
 
 # --print-ids: the effective id list, for the port to derive which suite
 # tests to skip. Per-version drops are separate (the port already knows them).
