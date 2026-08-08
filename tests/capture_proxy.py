@@ -16,7 +16,8 @@ def sse(event, data):
 def stream_for(blocks):
     """SSE byte stream for one assistant turn made of `blocks`.
 
-    A block is {"text": "..."} or {"tool": name, "id": id, "input": {...}}.
+    A block is {"text": "..."}, {"thinking": "..."}, or
+    {"tool": name, "id": id, "input": {...}}.
     """
     out = [
         sse("message_start", {
@@ -38,6 +39,21 @@ def stream_for(blocks):
             out.append(sse("content_block_delta", {
                 "type": "content_block_delta", "index": i,
                 "delta": {"type": "text_delta", "text": block["text"]}}))
+        elif "thinking" in block:
+            # The signature is opaque to the client, which only carries it back
+            # on the next request, so any string does.
+            out.append(sse("content_block_start", {
+                "type": "content_block_start", "index": i,
+                "content_block": {"type": "thinking", "thinking": "",
+                                  "signature": ""}}))
+            out.append(sse("content_block_delta", {
+                "type": "content_block_delta", "index": i,
+                "delta": {"type": "thinking_delta",
+                          "thinking": block["thinking"]}}))
+            out.append(sse("content_block_delta", {
+                "type": "content_block_delta", "index": i,
+                "delta": {"type": "signature_delta",
+                          "signature": "canned-signature"}}))
         else:
             stop = "tool_use"
             out.append(sse("content_block_start", {

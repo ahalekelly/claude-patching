@@ -296,6 +296,60 @@ def agents_view_models(binary):
             f"the {intent!r} row shows no {family!r} model:\n{row!r}\n{screen}"
 
 
+THINKING_MARKER = "zqx-thinking-marker"
+# The marker sits at the end so it can only match a fully rendered block: the
+# one-line summary stock draws on the group row while a turn streams is
+# truncated long before it.
+THINKING_TEXT = ("Weighing the request from every angle. " * 5) + THINKING_MARKER
+
+
+def thinking_turn(binary, scratch, extra_settings=None):
+    """Run one turn that thinks and then answers; return the finished screen."""
+    if extra_settings:
+        scratch.write_settings(**extra_settings)
+    script = [[{"thinking": THINKING_TEXT}, {"text": "thinking answered"}]]
+    with CaptureProxy(script) as proxy:
+        term = start(binary, scratch, proxy)
+        term.submit("think it over")
+        answered = term.wait_for("thinking answered", timeout=90)
+        term.pump(4)
+        screen = term.text()
+        term.close()
+    scratch.cleanup()
+    assert answered, f"the turn never completed:\n{screen}"
+    return screen
+
+
+def thinking_visibility(binary):
+    """A thinking block's text renders in the normal chat view, in full.
+
+    Stock draws thinking only in transcript mode (ctrl+o) or under --verbose.
+    showThinkingSummaries is on, as it is on this install, so the assertion is
+    about the block that stays on screen once the turn is done, not the live
+    summary line that both builds show while it streams.
+    """
+    screen = thinking_turn(binary, Scratch("thinking-visible"),
+                           {"showThinkingSummaries": True})
+    assert THINKING_MARKER in screen, \
+        f"the thinking block is not in the normal view:\n{screen}"
+
+
+def thinking_no_fold(binary):
+    """A thinking block is its own transcript entry, not a collapsed pill.
+
+    Stock folds it into the adjacent collapsed read/search group, which renders
+    as "Thought for Ns · ctrl+o to expand" — a turn that only thinks and answers
+    still gets such a group, opened by the thinking message itself.
+    """
+    screen = thinking_turn(binary, Scratch("thinking-no-fold"))
+    # Asserted before the rendered text on purpose: the pill is stock's own
+    # behavior, so it is what a stock failure reason should name.
+    assert "Thought for" not in screen, \
+        f"the thinking block was folded into a collapsed group:\n{screen}"
+    assert THINKING_MARKER in screen, \
+        f"the thinking block did not render as its own entry:\n{screen}"
+
+
 TESTS = {
     "no-collapse-reads": no_collapse_reads,
     "toolsearch-visibility": toolsearch_visibility,
@@ -303,6 +357,8 @@ TESTS = {
     "cron-visibility": cron_visibility,
     "agents-view-shortcut": agents_view_shortcut,
     "agents-view-models": agents_view_models,
+    "thinking-visibility": thinking_visibility,
+    "thinking-no-fold": thinking_no_fold,
 }
 
 if __name__ == "__main__":
