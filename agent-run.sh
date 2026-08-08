@@ -5,9 +5,11 @@
 #
 # The agent runs the version being ported, sandboxed in auto permission mode,
 # in a visible Terminal window when a GUI session exists and headless otherwise,
-# so a port is watchable while it happens without ever depending on a GUI. This
-# script blocks until that window's run finishes, and exits with the agent's own
-# exit code. Its log is port-state/<tag>-<version>.log.
+# so a port is watchable while it happens without ever depending on a GUI. The
+# run streams: a line lands in the log as each step happens, so a half-hour
+# agent reads as progress rather than as a hang. This script blocks until that
+# window's run finishes, and exits with the agent's own exit code. Its log is
+# port-state/<tag>-<version>.log.
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 STATE="$ROOT/port-state"
@@ -30,8 +32,24 @@ cat > "$RUN" <<EOF
 mkdir '$STATE/$TAG-$VER.lock' 2>/dev/null || exit 0
 cd "$ROOT"
 export CLAUDE_PATCHING_AUTOPORT=1
+# -p writes nothing until the final message, so the log sits empty for the whole
+# run. stream-json emits an event per step instead; render one line each —
+# assistant text as written, a tool call as its name and the head of its input,
+# the final result in full. Anything that is not an event, stderr included,
+# passes through as it came.
 "\$HOME/.local/share/claude/versions/$VER" -p --model opus --permission-mode auto \\
-  "\$(cat '$PROMPT')" 2>&1 | tee '$LOG'
+  --output-format stream-json --verbose "\$(cat '$PROMPT')" 2>&1 |
+jq --unbuffered -rR '
+  if ((fromjson? | type) // "raw") != "object" then .
+  else fromjson
+  | if .type == "assistant" then
+      .message.content[]
+      | if .type == "text" then .text
+        elif .type == "tool_use" then "→ " + .name + " " + (.input | tojson)[0:160]
+        else empty end
+    elif .type == "result" then .result // tojson
+    else empty end
+  end' | tee '$LOG'
 echo "\${PIPESTATUS[0]}" > '$DONE'
 EOF
 chmod +x "$RUN"
