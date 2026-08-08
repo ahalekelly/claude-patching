@@ -1,6 +1,6 @@
 # claude-patching
 
-Seventeen patches for the **native Claude Code binary** on macOS and Linux — thirteen applied by default, four opt-in — plus a port that keeps them applied across updates without ever making you wait for it.
+Patches for the **native Claude Code binary** on macOS and Linux — all applied by default except the ones the table below marks default-off — plus a port that keeps them applied across updates without ever making you wait for it.
 
 Claude Code ships as a single-file executable with its JavaScript bundled inside. Several things it does — collapsing tool calls, hiding ToolSearch and cron fires, spending thousands of standing prompt tokens on tool descriptions you rarely use, sharing one MCP server process between concurrent subagents — have no setting. So the bundle is unpacked, patched, and repacked.
 

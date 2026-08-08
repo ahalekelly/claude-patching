@@ -40,6 +40,24 @@ run() { # <runner> <id>
   else report fail "$id" "$(reason "$out")"; fi
 }
 
+# The README's table is the only description of the patch set, so a patch added
+# or removed without it goes undocumented. Silent while it holds, because this
+# suite also runs against a stock binary as a negative control, where anything
+# that passes has lost its discrimination — a documentation check would show up
+# there as exactly that.
+readme_ids() { # [marker] — the ids of the table's rows, or only those carrying <marker>
+  grep '^| `' "$TESTS/../README.md" | grep -F -- "${1-}" | sed 's/^| `\([^`]*\)`.*/\1/' | sort
+}
+differing() { comm -3 <(printf '%s\n' "$1") <(printf '%s\n' "$2") | tr -s '[:space:]' ' '; }
+patch_ids="$(basename -s .mjs "$TESTS/../patches/"*.mjs | sort)"
+off_ids="$(comm -13 <(printf '%s\n' $("$TESTS/../apply-display-patches.sh" --print-default-ids) | sort) \
+                    <(printf '%s\n' "$patch_ids"))"
+[[ "$(readme_ids)" == "$patch_ids" ]] ||
+  report fail README-table "patches/ and the README's table differ on:$(differing "$(readme_ids)" "$patch_ids")"
+[[ "$(readme_ids '*(default-off)*')" == "$off_ids" ]] ||
+  report fail README-default-off \
+    "the table's default-off marks and the default patch set differ on:$(differing "$(readme_ids '*(default-off)*')" "$off_ids")"
+
 for id in $PROXY_TESTS; do run "$TESTS/proxy-suite.py" "$id"; done
 for id in $PTY_TESTS; do run "$TESTS/pty-suite.py" "$id"; done
 

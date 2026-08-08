@@ -7,49 +7,9 @@
 # <output-binary>. It never touches the live launch path — archiving, stamping
 # and relinking are background-port.sh's job, after the functional suite passes.
 #
-# The patch set, in application order. Each id is a script in patches/ with a
-# header comment explaining what it changes and why:
-#
-#   no-collapse-reads          Read/Grep/Glob shown individually, not "Read 3 files"
-#   cron-visibility            cron-fired prompts render, and reach the model
-#                              with a CronJob prefix
-#   tool-defer-whitelist       tools named in CLAUDE_CODE_IMMEDIATE_TOOLS skip
-#                              ToolSearch deferral
-#   trim-context-bloat         drops userEmail, currentDate and the model-family
-#                              paragraph from the system prompt
-#   defer-workflow-description Workflow's description becomes a stub pointing at
-#                              the workflow-tool skill, which holds the full text
-#   defer-artifact-description ditto for Artifact and the artifact-tool skill
-#   sticky-prompt-header       the previous-prompt header above the transcript
-#                              shows whenever the prompt is off-screen (stock:
-#                              only when scrolled up), in readable contrast
-#   task-reminder-conditional  the periodic task_reminder nag only fires when
-#                              the session's task list is non-empty
-#   agents-view-shortcut       a rebindable shortcut opens the agents view from
-#                              anywhere; stock only offers left-arrow on an
-#                              empty idle prompt
-#   mcp-per-subagent           each subagent gets its own process for the stdio
-#                              MCP servers its frontmatter declares inline, and
-#                              each such server sees CLAUDE_MCP_PER_AGENT=1
-#   agent-list-models          the in-session agent list shows each row's
-#                              model: subagents as "elapsed · model · tokens",
-#                              the main row as a right-aligned "model · tokens"
-#   agents-view-models         agents-view job rows show their --model flag
-#                              in the age column ("fable · 3m")
-#   task-notification-provenance
-#                              agent task-notifications carry a <trigger>
-#                              element naming what started the run: original
-#                              launch, user message, SendMessage, or auto-resume
-#
-# Default-off, enable via patches-local/enable:
-#   toolsearch-visibility      ToolSearch calls render with their query
-#   thinking-visibility        thinking blocks render inline in the normal view
-#                              (enable the two thinking patches together — pair)
-#   thinking-no-fold           thinking stays its own transcript entry instead
-#                              of folding into the "Thought for Ns" pill
-#   thinking-latest            the collapsed group's pill shows its latest
-#                              thinking block in full; click still opens all
-#                              (conflicts with thinking-no-fold)
+# DEFAULT_PATCH_IDS below is the patch set, in application order. The README's
+# table documents what each one changes; each patches/<id>.mjs header explains
+# its anchor and why that anchor is safe.
 #
 # Restore stock binary — copy to a new file and rename, never write the live
 # binary in place. macOS caches a Mach-O's code signature per inode, while Linux
@@ -87,9 +47,12 @@ case " $PATCH_IDS " in *" thinking-no-fold "*) case " $PATCH_IDS " in *" thinkin
   exit 1;;
 esac;; esac
 
-# --print-ids: the effective id list, for the port to derive which suite
-# tests to skip. Per-version drops are separate (the port already knows them).
+# --print-ids: the effective id list, for the port to derive which suite tests
+# to skip and which patches must be covered. Per-version drops are separate (the
+# port already knows them). --print-default-ids ignores the machine-local
+# selection, which is how the suite checks the README's default-off marks.
 if [[ "${1:-}" == "--print-ids" ]]; then echo $PATCH_IDS; exit 0; fi
+if [[ "${1:-}" == "--print-default-ids" ]]; then echo $DEFAULT_PATCH_IDS; exit 0; fi
 
 VER="${1:?usage: apply-display-patches.sh <version> <output-binary>}"
 OUT="${2:?usage: apply-display-patches.sh <version> <output-binary>}"
