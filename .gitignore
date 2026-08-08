@@ -4,3 +4,4 @@ port-state
 __pycache__/
 .DS_Store
 plans/
+.worktrees/
