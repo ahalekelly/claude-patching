@@ -10,6 +10,6 @@
   },
   "private": true,
   "dependencies": {
-    "tweakcc": "^4.3.2"
+    "tweakcc": "github:ahalekelly/tweakcc#d78f94fab99a77d63cbdb314719bc95d4004d4e4"
   }
 }
