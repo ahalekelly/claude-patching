@@ -32,6 +32,10 @@ cat > "$RUN" <<EOF
 mkdir '$STATE/$TAG-$VER.lock' 2>/dev/null || exit 0
 cd "$ROOT"
 export CLAUDE_PATCHING_AUTOPORT=1
+# This machine's agent credentials live in the .claude-work profile, kept fresh
+# by the background-job daemon. The default profile's keychain OAuth is not
+# maintained, and a headless -p run cannot open a login flow to refresh it.
+export CLAUDE_CONFIG_DIR="\$HOME/.claude-work"
 # -p writes nothing until the final message, so the log sits empty for the whole
 # run. stream-json emits an event per step instead; render one line each —
 # assistant text as written, a tool call as its name and the head of its input,
