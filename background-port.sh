@@ -165,15 +165,17 @@ chmod +x "$CAND"
 DROPPED="$(cat "$LOCAL/$VER/dropped" 2>/dev/null | tr '\n' ' ')"
 # Patches not in this machine's effective set (default-off ones never enabled,
 # or locally disabled) get their suite tests skipped the same way dropped
-# per-version patches do.
+# per-version patches do — but only real per-version drops belong in the
+# promotion banner.
 EFFECTIVE="$("$ROOT/apply-display-patches.sh" --print-ids)"
+SKIPPED="$DROPPED"
 for id in $(basename -s .mjs "$ROOT/patches/"*.mjs); do
-  case " $EFFECTIVE " in *" $id "*) ;; *) DROPPED="$DROPPED $id";; esac
+  case " $EFFECTIVE " in *" $id "*) ;; *) SKIPPED="$SKIPPED $id";; esac
 done
 "$CAND" --version >/dev/null 2>&1 || fail "the candidate does not report a version"
 "$CAND" -p --model sonnet "reply with the single word ok" >/dev/null 2>&1 ||
   fail "the candidate cannot complete a prompt"
-"$ROOT/tests/run-all.sh" "$CAND" $DROPPED || fail "the functional suite did not pass"
+"$ROOT/tests/run-all.sh" "$CAND" $SKIPPED || fail "the functional suite did not pass"
 
 # The same suite against the stock binary. Every test is meant to fail here — a
 # test that passes has lost its discrimination, which means one of: Anthropic
@@ -184,7 +186,7 @@ done
 # fixes the underlying behavior, and only its failure reason says which. The
 # advisory agent classifies; the port just records.
 STOCK_LOG="$STATE/stock-suite-$VER.log"
-"$ROOT/tests/run-all.sh" "$VERSIONS/$VER.orig" $DROPPED > "$STOCK_LOG" 2>&1
+"$ROOT/tests/run-all.sh" "$VERSIONS/$VER.orig" $SKIPPED > "$STOCK_LOG" 2>&1
 SUSPECT="$(awk '$1=="pass"{printf "%s ", $2}' "$STOCK_LOG")"
 [[ -n "$SUSPECT" ]] && say "suspect — these tests also pass on stock $VER: $SUSPECT"
 
