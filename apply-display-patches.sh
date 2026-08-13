@@ -26,7 +26,8 @@ TWEAKCC="$ROOT/node_modules/.bin/tweakcc"
 DEFAULT_PATCH_IDS="no-collapse-tool-calls cron-visibility tool-defer-whitelist
            trim-context-bloat defer-workflow-description defer-artifact-description
            sticky-prompt-header task-reminder-conditional agents-view-shortcut
-           mcp-per-subagent agent-list-models agents-view-models task-notification-provenance"
+           new-session-shortcut mcp-per-subagent agent-list-models agents-view-models
+           task-notification-provenance"
 
 # Machine-local patch selection, id per line, both files optional and living
 # in gitignored patches-local/ (so they count toward the promotion stamp's

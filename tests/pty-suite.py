@@ -12,14 +12,17 @@ from the capture proxy so it costs no tokens, and asserts on the rendered rows.
 Exit 0 = pass. Every test must fail on a stock binary.
 """
 import fcntl
+import hashlib
 import json
 import os
 import pathlib
 import pty
 import re
 import select
+import shutil
 import signal
 import struct
+import subprocess
 import sys
 import termios
 import time
@@ -260,10 +263,101 @@ def agents_view_shortcut(binary):
         term.pump(6)
         after = term.text()
         term.close()
+        _reap_scratch_daemon(scratch)
     scratch.cleanup()
     assert "moved to the background" in after and "Needs input" in after, \
         f"ctrl+a did not open the agents view:\n{after}"
     assert before != after, "ctrl+a left the screen untouched"
+
+
+def _reap_scratch_daemon(scratch):
+    """Kill the transient daemon tree the test's session spawns left behind.
+
+    `claude agents` and the new-session spawn flow hand sessions to a
+    transient daemon whose process tree — daemon, bg-spare warm pool, pty
+    hosts, the spawned sessions themselves — outlives the pty child, so the
+    test would leak live processes without this. Every kill pattern is pinned
+    to this scratch: its daemon runtime dir cc-daemon-<uid>/<hash>, where
+    <hash> is sha256 of the scratch's CLAUDE_CONFIG_DIR (matching the
+    bg-spare and pty-host argvs), the session ids its job state recorded
+    (matching the session processes), and the scratch root itself (matching
+    the daemon's --spawned-by argv). Nothing broad enough to reach the
+    user's own daemons.
+    """
+    uid = os.getuid()
+    roots = {str(scratch.root), os.path.realpath(scratch.root)}
+    daemon_dirs = {}
+    for cfg in {str(scratch.config), os.path.realpath(scratch.config)}:
+        digest = hashlib.sha256(cfg.encode()).hexdigest()[:8]
+        daemon_dirs[digest] = pathlib.Path(f"/tmp/cc-daemon-{uid}/{digest}")
+    # The handoff is asynchronous — a session backgrounded just before the
+    # pty died may still be respawning under the daemon during the first kill
+    # round — so sweep repeatedly, re-reading the daemon dir each round (it
+    # names a socket per session it hosts, and the bare session processes
+    # carry nothing else a kill pattern could target), until a round finds
+    # nothing alive.
+    for _ in range(5):
+        patterns = set(roots)
+        for digest, daemon_dir in daemon_dirs.items():
+            patterns.add(f"cc-daemon-{uid}/{digest}")
+            for sub in ("pty", "rv"):
+                for sock in (daemon_dir / sub).glob("*.sock"):
+                    short = sock.name.split(".")[0]
+                    if re.fullmatch(r"[0-9a-f]{8}", short):
+                        # No leading dashes: pkill parses them as options.
+                        patterns.add(f"session-id {short}")
+        killed = [pattern for pattern in patterns
+                  if subprocess.run(["pkill", "-9", "-f", pattern],
+                                    capture_output=True).returncode == 0]
+        if not killed:
+            break
+        time.sleep(1)
+    for daemon_dir in daemon_dirs.values():
+        shutil.rmtree(daemon_dir, ignore_errors=True)
+
+
+def new_session_shortcut(binary):
+    """ctrl+n spawns and attaches a fresh session, from FleetView and in-session.
+
+    \\x0e is how a terminal sends ctrl+n. In `claude agents`, stock moves the
+    list selection; patched runs the new-session spawn flow and the screen
+    becomes an attached fresh session, whose footer hint "← for agents" is a
+    string FleetView itself never draws. From an idle session, stock does
+    nothing; patched backgrounds the conversation into the agents view, whose
+    next render consumes the handoff stamp and auto-spawns — the attached
+    fresh session draws "manual mode on" where the origin session showed the
+    bypassPermissions banner.
+    """
+    scratch = Scratch("new-session")
+    with CaptureProxy() as proxy:
+        env = scratch.env(proxy)
+        env.update({"TERM": "xterm-256color", "COLUMNS": str(COLS),
+                    "LINES": str(ROWS), "FORCE_COLOR": "0", "NO_COLOR": "1"})
+        term = Term([binary, "agents"], env, str(scratch.project))
+        opened = term.wait_for("describe a task for a new session", timeout=90)
+        if opened:
+            term.send("\x0e")
+            attached = term.wait_for("← for agents", timeout=60)
+            screen = term.text()
+        term.close()
+        _reap_scratch_daemon(scratch)
+    scratch.cleanup()
+    assert opened, "the agents view never rendered"
+    assert attached, \
+        f"ctrl+n in the agents view did not attach a fresh session:\n{screen}"
+
+    scratch = Scratch("new-session-repl")
+    with CaptureProxy() as proxy:
+        term = start(binary, scratch, proxy)
+        term.pump(2)
+        term.send("\x0e")
+        attached = term.wait_for("manual mode on", timeout=60)
+        screen = term.text()
+        term.close()
+        _reap_scratch_daemon(scratch)
+    scratch.cleanup()
+    assert attached, \
+        f"ctrl+n in a session did not spawn and attach a fresh session:\n{screen}"
 
 
 def agents_view_models(binary):
@@ -307,11 +401,13 @@ def agents_view_models(binary):
         if not term.wait_for("quokka model probe", timeout=90):
             screen = term.text()
             term.close()
+            _reap_scratch_daemon(scratch)
             scratch.cleanup()
             raise AssertionError(f"the seeded job rows never rendered:\n{screen}")
         term.pump(2)
         screen = term.text()
         term.close()
+        _reap_scratch_daemon(scratch)
     scratch.cleanup()
     for intent, family in (("quokka model probe", "fable"),
                            ("axolotl bedrock probe", "opus")):
@@ -417,6 +513,7 @@ TESTS = {
     "sticky-prompt-header": sticky_prompt_header,
     "cron-visibility": cron_visibility,
     "agents-view-shortcut": agents_view_shortcut,
+    "new-session-shortcut": new_session_shortcut,
     "agents-view-models": agents_view_models,
     "thinking-visibility": thinking_visibility,
     "thinking-no-fold": thinking_no_fold,
