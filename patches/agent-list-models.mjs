@@ -70,13 +70,15 @@ replaceOne(
 );
 
 // The strip component's hook block, stock:
-//   let t=st((ae)=>ae.tasks),r=EC(),n=st((ae)=>ae.effortValue)
-// Prepend a main-loop-model subscription. Unconditional and first, so the
-// hook order stays fixed across renders.
+//   function $Gl({showWorkflows:e=!1}={}){let t=st((X)=>X.tasks),r=rA(),...
+// Anchored on the component's own showWorkflows prop plus its first hook, so
+// the hooks that follow can come and go. Prepend a main-loop-model
+// subscription: unconditional and first, so the hook order stays fixed across
+// renders.
 replaceOne(
   "main model hook",
-  /let ([$\w]+)=st\(\(([$\w]+)\)=>\2\.tasks\),([$\w]+)=EC\(\),([$\w]+)=st\(\(([$\w]+)\)=>\5\.effortValue\)/g,
-  "let __almMM=st(($2)=>$2.mainLoopModel),$1=st(($2)=>$2.tasks),$3=EC(),$4=st(($5)=>$5.effortValue)",
+  /function ([$\w]+)\(\{showWorkflows:([$\w]+)=!1\}=\{\}\)\{let ([$\w]+)=st\(\(([$\w]+)\)=>\4\.tasks\),/g,
+  "function $1({showWorkflows:$2=!1}={}){let __almMM=st(($4)=>$4.mainLoopModel),$3=st(($4)=>$4.tasks),",
 );
 
 // The main row (a separate component with no task record) renders inside the

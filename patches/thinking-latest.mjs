@@ -88,17 +88,23 @@ const lastThinking =
   `return zzT})()`;
 
 // Summary source and gates, one adjacent run. latestThinkingSummary is read
-// into the row's hint slot in exactly one place.
+// into the row's hint slot in exactly one place, gated on the group being
+// active and the turn not being a live brief:
+//
+//   Te=XTm(s&&!ge?e.latestThinkingSummary:void 0,S$v),Pe=s&&Te!==void 0,_e=Pe?Te:fe,
+//
+// Both gates go with the source they guarded; the brief flag stays bound ahead
+// of the run for whatever else reads it.
 let activeFlag, thinkingFlag, hintText;
 spliceOne(
   "summary source and gate",
-  /([$\w]+)=([$\w]+)\(([$\w]+)\?([$\w]+)\.latestThinkingSummary:void 0,([$\w]+)\),([$\w]+)=\3&&\1!==void 0,([$\w]+)=\6\?\1:([$\w]+);/g,
+  /([$\w]+)=([$\w]+)\(([$\w]+)&&!([$\w]+)\?([$\w]+)\.latestThinkingSummary:void 0,([$\w]+)\),([$\w]+)=\3&&\1!==void 0,([$\w]+)=\7\?\1:([$\w]+)([,;])/g,
   (m) => {
-    const [, he, linger, s, , ms, ce, pe, ye] = m;
+    const [, he, linger, s, , , ms, ce, pe, ye, sep] = m;
     activeFlag = s;
     thinkingFlag = ce;
     hintText = pe;
-    return `${he}=${linger}(${lastThinking},${ms}),${ce}=${he}!==void 0,${pe}=${ce}?${he}:${ye};`;
+    return `${he}=${linger}(${lastThinking},${ms}),${ce}=${he}!==void 0,${pe}=${ce}?${he}:${ye}${sep}`;
   },
 );
 

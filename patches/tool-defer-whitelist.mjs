@@ -38,7 +38,7 @@ function only(label, regex) {
   return matches[0];
 }
 
-const name = only("isDeferredTool export", /isDeferredTool:\(\)=>([$\w]+),/g)[1];
+const name = only("isDeferredTool export", /isDeferredTool:\(\)=>([$\w]+)[,}]/g)[1];
 // The head of the predicate: the always-load escape, the non-deferrable-builtin
 // list, and the MCP branch our check has to precede.
 const head = only(

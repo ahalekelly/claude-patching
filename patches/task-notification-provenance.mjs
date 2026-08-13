@@ -193,7 +193,7 @@ const trigger = (kind, from, text) =>
     "A task-notification fires each time this agent stops with no live background children of its own\\. The user can send it another message and resume it, so the same task-id may notify more than once\\.";
   const m = matchOne(
     new RegExp(
-      "Ld\\(\\{value:[$\\w]+\\(\\{taskId:([$\\w]+),toolUseId:[$\\w]+,outputFile:[$\\w]+\\(\\1\\),status:[$\\w]+,summary:([$\\w]+)\\([$\\w]+\\),body:`\\n<note>" +
+      "[$\\w]+\\(\\{value:[$\\w]+\\(\\{taskId:([$\\w]+),toolUseId:[$\\w]+,outputFile:[$\\w]+\\(\\1\\),status:[$\\w]+,summary:([$\\w]+)\\([$\\w]+\\),body:`\\n<note>" +
         noteProse +
         "</note>",
       "g",
