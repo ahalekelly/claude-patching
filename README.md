@@ -90,8 +90,8 @@ Resolution order: the newest installed version if its stamp is valid (the silent
 The port itself runs detached, in three tiers:
 
 1. **Mechanical.** Apply the patch set to the new bundle. Usually enough — most releases move nothing a content-bearing anchor depends on.
-2. **Re-anchor.** If a patch no longer applies, a Claude agent (`port-agent.sh`) is given the failing output, the previous release's bundle, and [Piebald-AI/claude-code-system-prompts](https://github.com/Piebald-AI/claude-code-system-prompts) — which publishes Claude Code's system prompts per release, minutes after each one — and writes re-anchored patches into `patches-local/<version>/`. Those win over `patches/` for that version only. A patch it cannot repair goes in `patches-local/<version>/dropped` and is skipped, so one cosmetic patch can never pin the machine to an old release.
-3. **Gate.** The candidate must report a version, complete a trivial prompt, and pass `tests/run-all.sh`. **Only a candidate that passes is promoted** — the agent never touches the live launch path.
+2. **Re-anchor.** If a patch no longer applies, a Claude agent (`port-agent.sh`) gets the failure, the previous release's bundle, and [Piebald-AI/claude-code-system-prompts](https://github.com/Piebald-AI/claude-code-system-prompts), then edits the drifted patch in place. A patch it cannot repair goes in `patches-local/<version>/dropped`, so one cosmetic patch cannot pin the machine to an old release.
+3. **Gate.** The candidate must report a version, complete a trivial prompt, and pass `tests/run-all.sh`. **Only a candidate that passes is promoted.** After promotion, the port commits the agent's re-anchors automatically. The agent never touches the live launch path.
 
 A failed port writes `port-state/<version>.failed` and is not retried for 24 hours or until the patch set itself changes, so a broken version cannot respawn an agent every time something triggers it. Promotion takes the same lock a launch takes, writes every file new and moves it into place, relinks the macOS app bundle, and leaves a note the next launch prints along with a desktop notification.
 
@@ -127,9 +127,9 @@ The service runs once at login and on directory changes, has no start timeout, a
 - `apply-display-patches.sh <version> <output-binary>` — pure candidate builder: unpacks `versions/<version>.orig` (backing it up on first sight), applies `PATCH_IDS` in order, checks the result parses, repacks to the output path and signs it on macOS. Fails loudly, writing nothing, if any patch does not match.
 - `port-agent.sh` / `advisory-agent.sh` — the two escalations, both launched through `agent-run.sh`: a Claude session in auto permission mode, in a visible Terminal window when a GUI session exists and headless otherwise. Each step it takes lands in `port-state/<tag>-<version>.log` as it happens — assistant text, a line per tool call, then the final report.
 - `setup-signing.sh` — macOS-only, run by hand once: creates the local certificate the port signs patched binaries with.
-- `patches/` — the committed patch set.
-- `patches-local/` — machine-local overlay written by the port: `<version>/<id>.mjs` re-anchors, `<version>/dropped`.
-- `port-state/` — locks, logs, failure markers, the note the next launch prints, and `reanchor-history`: a line per version a patch was carried by a local re-anchor, which the port turns into a "re-anchor debt" line naming each committed patch that has gone stale.
+- `patches/` — the committed patch set, including re-anchors that pass the port's functional gate.
+- `patches-local/` — machine-local `enable` and `disable` selections, plus `<version>/dropped`.
+- `port-state/` — locks, logs, failure markers, and the note the next launch prints.
 
 ## Tests
 

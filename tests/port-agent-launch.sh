@@ -40,7 +40,8 @@ case "$(cat "$run")" in
   *) echo "ok:   never bypasses permissions";;
 esac
 check "sets the recursion guard" "CLAUDE_PATCHING_AUTOPORT=1" "$(cat "$run")"
-check "prompt names the overlay directory" "patches-local/$VER/" "$(cat "$ROOT/port-state/port-agent-$VER.prompt")"
+check "prompt edits failing patches in place" "editing the failing patches/<id>.mjs in place" "$(cat "$ROOT/port-state/port-agent-$VER.prompt")"
+check "prompt names the dropped file" "patches-local/$VER/dropped" "$(cat "$ROOT/port-state/port-agent-$VER.prompt")"
 check "prompt forbids dropping mcp-per-subagent" "never droppable" "$(cat "$ROOT/port-state/port-agent-$VER.prompt")"
 
 rm -f "$ROOT/port-state/port-agent-$VER."{done,command,prompt}

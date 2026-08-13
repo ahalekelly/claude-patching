@@ -3,9 +3,10 @@
 #
 #   apply-display-patches.sh <version> <output-binary>
 #
-# Pure: reads versions/<version>.orig and writes the candidate to
-# <output-binary>. It never touches the live launch path — archiving, stamping
-# and relinking are background-port.sh's job, after the functional suite passes.
+# Pure: reads versions/<version>.orig, the committed patches, and machine-local
+# selection and drop files, then writes the candidate to <output-binary>. It
+# never touches the live launch path — archiving, stamping and relinking are
+# background-port.sh's job, after the functional suite passes.
 #
 # DEFAULT_PATCH_IDS below is the patch set, in application order. The README's
 # table documents what each one changes; each patches/<id>.mjs header explains
@@ -67,12 +68,8 @@ case " $DROPPED " in
   *" mcp-per-subagent "*) echo "ERROR: mcp-per-subagent is mandatory and cannot be dropped" >&2; exit 1;;
 esac
 
-# patches-local/<ver>/<id>.mjs is a machine-local re-anchor written by the port
-# agent for a version the committed patch no longer fits. Same filename wins.
-resolve_patch() {
-  local id="$1"
-  [[ -f "$LOCAL/$VER/$id.mjs" ]] && echo "$LOCAL/$VER/$id.mjs" || echo "$PATCHES/$id.mjs"
-}
+# patches-local holds only machine-local selection and per-version drops; every
+# applied patch comes from the committed patch set.
 
 # The stock backup is the canonical patch source: back it up on first sight of a
 # version, always rebuild from it, so re-running over a patched install is safe.
@@ -103,9 +100,8 @@ JS="$WORK/cli-$VER.js"
 
 for id in $PATCH_IDS; do
   case " $DROPPED " in *" $id "*) echo "--- $id  DROPPED for $VER"; continue;; esac
-  patch="$(resolve_patch "$id")"
-  echo "--- $id  ($patch)"
-  node "$patch" "$JS"
+  echo "--- $id  ($PATCHES/$id.mjs)"
+  node "$PATCHES/$id.mjs" "$JS"
 done
 
 node --check "$JS"

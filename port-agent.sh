@@ -5,9 +5,9 @@
 #
 #   port-agent.sh <version> <apply-log>
 #
-# The agent's only intended output is patches-local/<version>/; the promotion
-# gate, not the agent, decides whether anything it produces reaches the launch
-# path.
+# The agent re-anchors committed patches in place. The promotion gate decides
+# whether its work reaches the launch path, and background-port.sh commits it
+# only after that gate passes.
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 STATE="$ROOT/port-state"
@@ -51,24 +51,23 @@ Drift inputs:
   the fastest way to see prompt-text changes, which is what the trim-context-bloat
   and defer-*-description patches anchor on.
 
-Write the ported patch set to patches-local/$VER/ and nothing else:
+Re-anchor by editing the failing patches/<id>.mjs in place, and nothing else.
+Re-anchor only what fails; leave every patch that still applies alone. Do not
+git-commit — the port commits your work after its functional gate passes.
 
-- patches-local/$VER/<id>.mjs — a re-anchored copy of patches/<id>.mjs, which
-  wins over the committed one for this version only. Re-anchor only what fails;
-  leave every patch that still applies alone.
-- patches-local/$VER/dropped — one id per line, for a patch whose anchor has
-  drifted past repair. mcp-per-subagent is behavioral, is never droppable, and
-  its guards firing means Claude Code changed something the patch depends on —
-  report that rather than working around it.
+For a patch whose anchor has drifted past repair, write its id to
+patches-local/$VER/dropped, one id per line. mcp-per-subagent is behavioral,
+is never droppable, and its guards firing means Claude Code changed something
+the patch depends on — report that rather than working around it.
 
 Keep the house style when you re-anchor: content-bearing anchors (property
 names, string literals — never a bare control-flow shape), an exact match-count
 assertion, splice by index rather than a substring replace, and a loud refusal
 on any drift.
 
-Do not touch anything in $VERSIONS, and do not edit the committed patches in
-patches/. Stop when \`./apply-display-patches.sh $VER /tmp/candidate\` succeeds,
-and report what you re-anchored and what you dropped.
+Do not touch anything in $VERSIONS. Stop when
+\`./apply-display-patches.sh $VER /tmp/candidate\` succeeds, and report what you
+re-anchored and what you dropped.
 EOF
 
 exec "$ROOT/agent-run.sh" "$VER" port-agent "$PROMPT" 45

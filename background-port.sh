@@ -27,6 +27,7 @@ export CLAUDE_PATCHING_AUTOPORT=1
 
 VER="${1:-$(basename "$(realpath "$HOME/.local/bin/claude")")}"
 BIN="$VERSIONS/$VER"
+AGENT_EDITED=0
 mkdir -p "$LOCAL" "$STATE"
 
 # The port owns its log, so a run started by hand leaves the same trace as one
@@ -75,10 +76,17 @@ finish() { # <headline> — notify now, and leave a note for the next launch
 }
 
 fail() { # <reason>
+  local reason="$1" rejected
+  if [[ "$AGENT_EDITED" == 1 && -n "$(git -C "$ROOT" status --porcelain -- patches/)" ]]; then
+    rejected="$STATE/patches-$VER.rejected.diff"
+    git -C "$ROOT" diff -- patches/ > "$rejected"
+    git -C "$ROOT" checkout -- patches/
+    reason="$reason; rejected patch edits saved to $rejected"
+  fi
   { damper_fingerprint
     date '+%F %T'
-    echo "$1"; } > "$STATE/$VER.failed"
-  finish "port of $VER failed: $1"
+    echo "$reason"; } > "$STATE/$VER.failed"
+  finish "port of $VER failed: $reason"
   exit 1
 }
 
@@ -89,7 +97,7 @@ say "porting $VER"
 # set's fingerprint, so pruning it later would leave the stamp we just wrote
 # describing inputs that no longer exist. The updater can uninstall a version
 # another port is still working on, so a fresh lock protects everything of its
-# version — reclaiming a live run's lock, log or re-anchors out from under it
+# version — reclaiming a live run's lock, log or drop list out from under it
 # would be worse than a few days of stale files.
 protected=" $VER "
 for lock in "$STATE"/*.lock; do
@@ -143,8 +151,11 @@ fi
 CAND="$WORK/claude-$VER"
 if ! "$ROOT/apply-display-patches.sh" "$VER" "$CAND" > "$WORK/apply.log" 2>&1; then
   tail -20 "$WORK/apply.log"
+  [[ -z "$(git -C "$ROOT" status --porcelain -- patches/)" ]] ||
+    fail "patches/ has uncommitted changes — the port agent cannot re-anchor over them"
   say "patches do not apply cleanly — escalating to the port agent"
   "$ROOT/port-agent.sh" "$VER" "$WORK/apply.log" || say "the port agent exited nonzero"
+  AGENT_EDITED=1
   "$ROOT/apply-display-patches.sh" "$VER" "$CAND" > "$WORK/apply.log" 2>&1 ||
     { tail -20 "$WORK/apply.log"; fail "the patch set still does not apply after re-anchoring"; }
 fi
@@ -210,22 +221,19 @@ pkill -f -- '--bg-spare' 2>/dev/null || true
 rmdir "$BIN.lock" 2>/dev/null
 rm -f "$STATE/$VER.failed"
 
-finish "$VER promoted${DROPPED:+ (dropped:$DROPPED)}${SUSPECT:+ (suspect:$SUSPECT)} — restart sessions to pick it up"
+PATCH_FILES="$(git -C "$ROOT" diff --name-only -- patches/)"
+if [[ "$AGENT_EDITED" == 1 && -n "$PATCH_FILES" ]]; then
+  PATCH_IDS="$(printf '%s\n' "$PATCH_FILES" | sed 's#^patches/##; s/\.mjs$//' | tr '\n' ' ' | sed 's/ $//')"
+  git -C "$ROOT" add -- $PATCH_FILES || fail "could not stage the port agent's patch edits"
+  if ! git -C "$ROOT" commit -m "Re-anchor $PATCH_IDS for Claude Code $VER" \
+    -m "The port agent re-anchored these patches, and the functional suite gated them." \
+    -m "Co-Authored-By: Claude <noreply@anthropic.com>" -- $PATCH_FILES; then
+    git -C "$ROOT" reset -- patches/
+    fail "could not commit the port agent's patch edits"
+  fi
+fi
 
-# Re-anchor debt. A re-anchor in patches-local/ wins for one version only, so a
-# committed patch that stopped fitting costs the port agent another repair every
-# release while patches/ stays stale. Count the releases each one has been
-# carried for, so that toil shows up in the note instead of being paid silently.
-for id in $EFFECTIVE; do
-  case " $DROPPED " in *" $id "*) continue;; esac
-  [[ -f "$LOCAL/$VER/$id.mjs" ]] || continue
-  grep -qxF "$VER $id" "$STATE/reanchor-history" 2>/dev/null || echo "$VER $id" >> "$STATE/reanchor-history"
-  releases="$(grep -c " $id\$" "$STATE/reanchor-history")"
-  first="$(grep " $id\$" "$STATE/reanchor-history" | head -1 | cut -d' ' -f1)"
-  debt="re-anchor debt: $id has needed a local re-anchor in $releases release(s) since $first — patches/$id.mjs is stale"
-  say "$debt"
-  printf 'claude-patching: %s\n' "$debt" >> "$STATE/port-message"
-done
+finish "$VER promoted${DROPPED:+ (dropped:$DROPPED)}${SUSPECT:+ (suspect:$SUSPECT)} — restart sessions to pick it up"
 
 # Advisory pass. Promotion is already done, so a slow or failed review costs
 # nothing; its recommendations join the note the next launch prints.
