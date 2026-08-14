@@ -44,7 +44,7 @@
 // drain's queued_command mapping; (3) the notification body's fixed <note>
 // prose and the claimed/task destructure above it. All content-bearing,
 // exact-count asserted, spliced by index. Splice 1 additionally asserts its
-// position against the guards it must follow.
+// position against the guards it must follow and the launch it must precede.
 import { readFileSync, writeFileSync } from "node:fs";
 
 const jsPath = process.argv[2];
@@ -95,7 +95,7 @@ const trigger = (kind, from, text) =>
 // Splice 1: the resume entry records the prompt it is about to deliver.
 {
   const m = matchOne(
-    /async function [$\w]+\(\{agentId:([$\w]+),prompt:([$\w]+),promptOrigin:([$\w]+),promptIsMeta:[$\w]+,continueInterruptedTurn:([$\w]+),awaitCompletion:[$\w]+,toolUseContext:[$\w]+,canUseTool:[$\w]+,invokingRequestId:[$\w]+,userInitiated:[$\w]+,suppressOwnerNotification:([$\w]+),workerPermissionMode:[$\w]+,onDeliveryCommitted:[$\w]+\}\)\{/g,
+    /async function [$\w]+\(\{agentId:([$\w]+),prompt:([$\w]+),promptOrigin:([$\w]+),[^{}]*continueInterruptedTurn:([$\w]+),[^{}]*suppressOwnerNotification:([$\w]+),[^{}]*\}(?:,[$\w]+)?\)\{/g,
     "the agent resume entry",
   );
   const [, agent, prompt, origin, cont, suppress] = m;
@@ -137,7 +137,18 @@ const trigger = (kind, from, text) =>
 
   // Everything that can refuse the resume must already have run. The guards
   // are named individually because each one is a way to leave a stale record,
-  // and the throw sweep catches any the bundle grows later.
+  // and the throw sweep catches any the bundle grows later. The sweep ends at
+  // the launch — the success telemetry and the inline await of the run — since
+  // past that point the prompt has been delivered and a throw is the run's own
+  // failure travelling outward, which the record attributes correctly.
+  const launch = (() => {
+    const found = [...body.matchAll(/\("subagent_launch"\),[$\w]+\)try\{await /g)];
+    if (found.length !== 1)
+      fail(
+        `${found.length} run launches in the resume entry, expected exactly 1 — cannot tell delivery from refusal, refusing`,
+      );
+    return found[0].index;
+  })();
   for (const guard of [
     "has a malformed forked-skill scoping record",
     "No transcript found for agent ID",
@@ -151,9 +162,13 @@ const trigger = (kind, from, text) =>
         `the resume entry's ${guard} guard now runs after delivery — recording there would survive a refused resume, refusing`,
       );
   }
-  if (body.slice(at).includes("throw "))
+  if (launch < at)
     fail(
-      "the resume entry can still throw after the recording point — a refused resume would leave a record that misattributes the next stop, refusing",
+      "the resume entry launches the run before the recording point — refusing",
+    );
+  if (body.slice(at, launch).includes("throw "))
+    fail(
+      "the resume entry can still throw between the recording point and the launch — a refused resume would leave a record that misattributes the next stop, refusing",
     );
 
   js =
@@ -193,7 +208,7 @@ const trigger = (kind, from, text) =>
     "A task-notification fires each time this agent stops with no live background children of its own\\. The user can send it another message and resume it, so the same task-id may notify more than once\\.";
   const m = matchOne(
     new RegExp(
-      "[$\\w]+\\(\\{value:[$\\w]+\\(\\{taskId:([$\\w]+),toolUseId:[$\\w]+,outputFile:[$\\w]+\\(\\1\\),status:[$\\w]+,summary:([$\\w]+)\\([$\\w]+\\),body:`\\n<note>" +
+      "[$\\w]+\\(\\{value:[$\\w]+\\(\\{taskId:([$\\w]+),toolUseId:[$\\w]+,[^{}]*status:[$\\w]+,summary:([$\\w]+)\\([$\\w]+\\),body:`\\n<note>" +
         noteProse +
         "</note>",
       "g",

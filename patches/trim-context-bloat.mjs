@@ -15,9 +15,9 @@
 // object carries the userEmail and currentDate entries; removing the entries
 // removes the blocks, since the renderer walks whatever keys the object has
 // (userEmail is already conditional there). The second is the model-family
-// paragraph: its memoized builder is found by the paragraph's own opening
-// words, and the calls to it — array entries in the environment preamble, which
-// is null-filtered — are replaced with null.
+// paragraph: its builder is found by the paragraph's own opening words, and the
+// calls to it — array entries in the environment preamble, which is
+// null-filtered — are replaced with null.
 import { readFileSync, writeFileSync } from "node:fs";
 
 const jsPath = process.argv[2];
@@ -65,13 +65,13 @@ splice(
   "}",
 );
 
-// 3. The model-family paragraph. Its builder is memoized under a minified name;
-// take the name from the definition, then neutralize its call sites — each one
-// an entry in the environment preamble array, pinned by the sentence that
-// follows it there.
+// 3. The model-family paragraph. Its builder is a function declaration under a
+// minified name; take the name from the definition, then neutralize its call
+// sites — each one an entry in the environment preamble array, pinned by the
+// sentence that follows it there.
 const paragraph = matchesOf(
   "model-family paragraph",
-  /([$\w]+)=[$\w]+\(\(\)=>\{let ([$\w]+)=[$\w]+\(\)\.latest_per_family;return`The most recent Claude models are /g,
+  /function ([$\w]+)\(\)\{let [$\w]+=[$\w]+\(\)\.latest_per_family;return`The most recent Claude models are /g,
   1,
 )[0][1];
 const callSites = matchesOf(

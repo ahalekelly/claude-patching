@@ -70,15 +70,15 @@ replaceOne(
 );
 
 // The strip component's hook block, stock:
-//   function $Gl({showWorkflows:e=!1}={}){let t=st((X)=>X.tasks),r=rA(),...
-// Anchored on the component's own showWorkflows prop plus its first hook, so
-// the hooks that follow can come and go. Prepend a main-loop-model
-// subscription: unconditional and first, so the hook order stays fixed across
-// renders.
+//   function $Gl({showWorkflows:e=!1}={}){let t=lt((X)=>X.tasks),r=rA(),...
+// Anchored on the component's own showWorkflows prop plus its first hook — the
+// tasks selector, which also yields the store hook's minified name — so the
+// hooks that follow can come and go. Prepend a main-loop-model subscription:
+// unconditional and first, so the hook order stays fixed across renders.
 replaceOne(
   "main model hook",
-  /function ([$\w]+)\(\{showWorkflows:([$\w]+)=!1\}=\{\}\)\{let ([$\w]+)=st\(\(([$\w]+)\)=>\4\.tasks\),/g,
-  "function $1({showWorkflows:$2=!1}={}){let __almMM=st(($4)=>$4.mainLoopModel),$3=st(($4)=>$4.tasks),",
+  /function ([$\w]+)\(\{showWorkflows:([$\w]+)=!1\}=\{\}\)\{let ([$\w]+)=([$\w]+)\(\(([$\w]+)\)=>\5\.tasks\),/g,
+  "function $1({showWorkflows:$2=!1}={}){let __almMM=$4(($5)=>$5.mainLoopModel),$3=$4(($5)=>$5.tasks),",
 );
 
 // The main row (a separate component with no task record) renders inside the
