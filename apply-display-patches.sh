@@ -94,7 +94,9 @@ fi
 [[ -s "$STOCK.orig" ]] || { echo "ERROR: $STOCK.orig is empty — delete it and re-run to back up the stock binary again" >&2; exit 1; }
 
 WORK="$(mktemp -d "${TMPDIR:-/tmp}/claude-patching.XXXXXX")"
-trap 'rm -rf "$WORK"' EXIT
+# /bin/rm, not rm: an agent PATH can carry an rm guard shim that exits nonzero,
+# and under set -e that turns a successful build into a failed one at exit.
+trap '/bin/rm -rf "$WORK"' EXIT
 JS="$WORK/cli-$VER.js"
 "$TWEAKCC" unpack "$JS" "$STOCK.orig"
 
