@@ -16,6 +16,13 @@ set -uo pipefail
 # in /opt/homebrew/bin. Without them the mechanical apply fails on a missing
 # node and the port reports it as patch drift.
 export PATH="$HOME/.local/bin:/opt/homebrew/bin:$PATH"
+# claude resolves a different OAuth credential entry when CLAUDE_CONFIG_DIR is
+# unset than when it is set — even set to its default path — and the unset
+# entry is not kept fresh by anything on this machine. launchd fires this
+# script with the variable unset, so every claude the port runs (the smoke
+# test, the live-model suite tests) must pin the same profile the port agents
+# pin in agent-run.sh, or it fails with an OAuth error no session ever sees.
+export CLAUDE_CONFIG_DIR="$HOME/.claude"
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$ROOT/lib.sh"
 LOCAL="$ROOT/patches-local"
@@ -173,8 +180,8 @@ for id in $(basename -s .mjs "$ROOT/patches/"*.mjs); do
   case " $EFFECTIVE " in *" $id "*) ;; *) SKIPPED="$SKIPPED $id";; esac
 done
 "$CAND" --version >/dev/null 2>&1 || fail "the candidate does not report a version"
-"$CAND" -p --model sonnet "reply with the single word ok" >/dev/null 2>&1 ||
-  fail "the candidate cannot complete a prompt"
+SMOKE="$("$CAND" -p --model sonnet "reply with the single word ok" 2>&1)" ||
+  { echo "$SMOKE" | tail -5; fail "the candidate cannot complete a prompt"; }
 "$ROOT/tests/run-all.sh" "$CAND" $SKIPPED || fail "the functional suite did not pass"
 
 # The same suite against the stock binary. Every test is meant to fail here — a
