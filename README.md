@@ -115,11 +115,24 @@ The service runs once at login and on directory changes, has no start timeout, a
 
 `autoport-trigger.sh` first waits for the new binary's size to hold still, since the watch fires while the updater is still writing it, then takes the same stamp fast path the launch check takes and execs the port only if the stamp fails. launchd requires absolute paths, so edit the plist if your checkout is not at `~/.agents/claude-patching`.
 
+### Background sessions
+
+The background-agent supervisor, the sessions and workers it hosts, and the other covered background processes are spawned by absolute binary path, so they never reach the shell function — a new stock version that lands before its port finishes would otherwise run every background job unpatched. Claude Code's `processWrapper` closes that gap: it prepends an argv prefix to those spawns, and `process-wrapper.sh` re-points the binary using the same resolution order a launch takes. It prints nothing and reconciles nothing — the path watcher already does — and execs the requested binary unchanged when `CLAUDE_PATCHING_AUTOPORT` is set or the target is not an installed version.
+
+Set it in user settings (`~/.claude/settings.json`):
+
+```json
+{ "processWrapper": "/absolute/path/to/claude-patching/process-wrapper.sh" }
+```
+
+`CLAUDE_CODE_PROCESS_WRAPPER` takes precedence over the setting. The value is tokenized on whitespace and rejected if it contains shell metacharacters or names a first token that is not an existing executable file, so keep the checkout path free of spaces and the script in place and executable — otherwise Claude Code starts no background sessions at all. `claude daemon status` names the wrapper it resolved.
+
 ### Files
 
 - `check-and-apply.sh <target-file>` — pre-launch check: stamp fast path, archive fallback, staleness warning, background port. Exit 0 = silent, exit 1 = printed something the wrapper should hold for. Exits immediately when `CLAUDE_PATCHING_AUTOPORT` is set, so the port's own sessions never recurse.
 - `background-port.sh [version]` — the reconciler: retry damper, lock, prune of state for uninstalled versions, mechanical apply, agent escalation, gate, stock-suite run, promotion, notification, advisory pass.
-- `lib.sh` — shared platform seams and patch-set fingerprint.
+- `process-wrapper.sh <binary> <args...>` — the `processWrapper` argv prefix: execs the best patched binary in place of the one a background spawn asked for, silently, falling through to the requested binary on any failure.
+- `lib.sh` — shared platform seams, patch-set fingerprint, and the binary selection both launch paths use.
 - `autoport-trigger.sh` — fired by launchd or systemd on any change to the versions directory: settle wait, stamp fast path, else `exec` the port so the service manager tracks it as the job.
 - `com.akelly.claude-patching.autoport.plist` — the launchd agent. Absolute paths, `RunAtLoad` so an install during a logout is caught, `ThrottleInterval` so a burst of writes fires it once.
 - `claude-patching-autoport.path` — the systemd user path watcher.
