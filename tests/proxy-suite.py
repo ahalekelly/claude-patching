@@ -126,6 +126,14 @@ def task_reminder_conditional(binary):
     in seconds. Both halves matter — the empty-list half is what the patch
     changes, the non-empty half proves the run really does reach the reminder,
     so an empty-list pass cannot come from the reminder never firing at all.
+
+    The run wears a background session's env markers (CLAUDE_CODE_SESSION_KIND=bg
+    plus its paired CLAUDE_JOB_DIR), the same ones the bg daemon stamps on the
+    workers it spawns. Background sessions are where the reminder machinery is
+    unconditionally on, so this is the configuration the patch exists for — and
+    if the non-empty half starts failing here, check whether upstream disabled
+    the reminder for background sessions too, which would make the patch
+    droppable rather than portable.
     """
     nag = "The task tools haven't been used recently"
 
@@ -143,7 +151,9 @@ def task_reminder_conditional(binary):
         script.append([{"text": "loop finished"}])
         with CaptureProxy(script) as proxy:
             scratch.run(binary, proxy, "run the loop",
-                        {"CLAUDE_CODE_TODO_REMINDER_MODE": "baseline"})
+                        {"CLAUDE_CODE_TODO_REMINDER_MODE": "baseline",
+                         "CLAUDE_CODE_SESSION_KIND": "bg",
+                         "CLAUDE_JOB_DIR": str(scratch.root / "job")})
             seen = nag in json.dumps(proxy.requests)
         scratch.cleanup()
         return seen
