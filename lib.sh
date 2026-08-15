@@ -25,3 +25,25 @@ fingerprint() {
   find "$ROOT/apply-display-patches.sh" "$ROOT/patches" "$ROOT/patches-local" \
     -type f 2>/dev/null | sort | xargs cat /dev/null | "$HASH"
 }
+
+ARCHIVE="$HOME/.local/share/claude/patched"
+
+# A binary is patched iff its sibling stamp names both its current bytes and the
+# patch set that produced them.
+is_patched() { [[ -f "$1.patched" && "$(<"$1.patched")" == "$(file_id "$1"; fingerprint)" ]]; }
+
+# Newest patched build in the archive, empty when the archive holds none.
+newest_archived() { ls "$ARCHIVE" 2>/dev/null | sort -V | tail -1; }
+
+# The one selection policy: the best patched binary to run in place of the
+# requested one — itself when its stamp is valid, else the newest archived
+# patched build, else itself.
+best_patched() {
+  local archived
+  archived="$(newest_archived)"
+  if ! is_patched "$1" && [[ -n "$archived" ]]; then
+    printf '%s\n' "$ARCHIVE/$archived"
+  else
+    printf '%s\n' "$1"
+  fi
+}

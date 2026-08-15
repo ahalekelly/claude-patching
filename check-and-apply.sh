@@ -19,7 +19,6 @@ set -uo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$ROOT/lib.sh"
 STATE="$ROOT/port-state"
-ARCHIVE="$HOME/.local/share/claude/patched"
 TARGET="${1:?usage: check-and-apply.sh <target-file>}"
 
 # The background port launches Claude Code by absolute path with this set; the
@@ -28,7 +27,7 @@ TARGET="${1:?usage: check-and-apply.sh <target-file>}"
 
 BIN="$(realpath "$HOME/.local/bin/claude")"
 VER="$(basename "$BIN")"
-STAMP="$(file_id "$BIN"; fingerprint)"
+SELECTED="$(best_patched "$BIN")"
 
 launch() { echo "$1" > "$TARGET"; }
 
@@ -40,28 +39,26 @@ if [[ -f "$NOTE" ]]; then
   rm -f "$NOTE"
 fi
 
-# 1. The newest installed version is patched: silent fast path.
-if [[ -f "$BIN.patched" && "$(<"$BIN.patched")" == "$STAMP" ]]; then
-  launch "$BIN"
+launch "$SELECTED"
+
+# The newest installed version is patched: silent fast path.
+if [[ "$SELECTED" == "$BIN" ]] && is_patched "$BIN"; then
   [[ -z "$note" ]] && exit 0
   echo "$note"
   exit 1
 fi
 
-# 2. Otherwise fall back to the newest archived patched binary, 3. else stock.
-FALLBACK="$(ls "$ARCHIVE" 2>/dev/null | sort -V | tail -1)"
-if [[ -n "$FALLBACK" ]]; then
-  launch "$ARCHIVE/$FALLBACK"
+if [[ "$SELECTED" != "$BIN" ]]; then
+  FALLBACK="$(basename "$SELECTED")"
   echo "claude-patching: $VER is not patched yet — launching patched $FALLBACK from the archive."
   # Silent indefinite fallback is this design's main risk, and old versions do
   # get hard-deprecated: say so loudly once the gap gets real.
   behind=$(( ${VER##*.} - ${FALLBACK##*.} ))
-  days=$(( ( $(file_mtime "$BIN") - $(file_mtime "$ARCHIVE/$FALLBACK") ) / 86400 ))
+  days=$(( ( $(file_mtime "$BIN") - $(file_mtime "$SELECTED") ) / 86400 ))
   if [[ "${VER%.*}" != "${FALLBACK%.*}" || $behind -gt 3 || $days -gt 7 ]]; then
     echo "claude-patching: WARNING — that is $behind release(s) and $days day(s) behind $VER. Check $STATE/port-$VER.log."
   fi
 else
-  launch "$BIN"
   echo "claude-patching: no patched binary available — launching stock $VER."
 fi
 [[ -n "$note" ]] && echo "$note"
