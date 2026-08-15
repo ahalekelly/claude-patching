@@ -5,9 +5,12 @@
 #
 #   port-agent.sh <version> <apply-log>
 #
-# The agent re-anchors committed patches in place. The promotion gate decides
-# whether its work reaches the launch path, and background-port.sh commits it
-# only after that gate passes.
+# The agent re-anchors committed patches in place and verifies them against the
+# functional suite; when a fix needs more than a re-anchor (a stale test
+# fixture, a droppable patch) it consults a Fable subagent, which owns the
+# judgment call and commits contract-side changes separately. The promotion
+# gate still decides whether patch edits reach the launch path, and
+# background-port.sh commits them only after that gate passes.
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 STATE="$ROOT/port-state"
@@ -51,14 +54,34 @@ Drift inputs:
   the fastest way to see prompt-text changes, which is what the trim-context-bloat
   and defer-*-description patches anchor on.
 
-Re-anchor by editing the failing patches/<id>.mjs in place, and nothing else.
-Re-anchor only what fails; leave every patch that still applies alone. Do not
-git-commit — the port commits your work after its functional gate passes.
+Re-anchor the failing patches/<id>.mjs in place. Re-anchor only what fails;
+leave every patch that still applies alone. Do not git-commit anything under
+patches/ — the port commits those itself after its functional gate passes.
+
+Once the apply succeeds, run the suite the same way the port's gate will:
+
+  tests/run-all.sh /tmp/candidate <skip-ids>
+
+where <skip-ids> is the contents of patches-local/$VER/dropped plus every
+patches/*.mjs id absent from \`./apply-display-patches.sh --print-ids\`.
+Iterate until it passes. A test that fails the same way on the stock binary
+($VERSIONS/$VER.orig) is a stale contract, not patch drift — Claude Code's
+behavior moved underneath the fixture.
+
+Anything beyond a re-anchor is a judgment call, and judgment calls go to
+Fable: spawn a subagent with the Agent tool, model "fable", hand it your
+diagnosis and evidence, and do what it decides. That covers stale contracts,
+edits to tests/ or the harness, dropping a patch that has a test, and any case
+where the right move is unclear. Fable may change the contract; when it does,
+commit that change on its own — tests/ and harness edits in their own commit
+with the rationale in the message, never mixed with patches/. This port is
+meant to finish without human input on most versions: consult Fable rather
+than leaving a blocker for a human.
 
 For a patch whose anchor has drifted past repair, write its id to
 patches-local/$VER/dropped, one id per line. mcp-per-subagent is behavioral,
 is never droppable, and its guards firing means Claude Code changed something
-the patch depends on — report that rather than working around it.
+the patch depends on — take that to Fable.
 
 Keep the house style when you re-anchor: content-bearing anchors (property
 names, string literals — never a bare control-flow shape), an exact match-count
@@ -66,8 +89,9 @@ assertion, splice by index rather than a substring replace, and a loud refusal
 on any drift.
 
 Do not touch anything in $VERSIONS. Stop when
-\`./apply-display-patches.sh $VER /tmp/candidate\` succeeds, and report what you
-re-anchored and what you dropped.
+\`./apply-display-patches.sh $VER /tmp/candidate\` succeeds and the suite
+passes, and report what you re-anchored, what you dropped, and what Fable
+decided.
 EOF
 
 exec "$ROOT/agent-run.sh" "$VER" port-agent "$PROMPT" 45
