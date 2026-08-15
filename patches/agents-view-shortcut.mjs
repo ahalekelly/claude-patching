@@ -34,9 +34,11 @@ function matchOne(label, regex) {
   return matches[0];
 }
 
-function replaceOne(label, regex, replacement) {
-  matchOne(label, regex);
-  js = js.replace(regex, replacement);
+// build receives the match — m[0] is the matched text, m[1..] the capture
+// groups — and returns the text to splice in its place.
+function replaceOne(label, regex, build) {
+  const m = matchOne(label, regex);
+  js = js.slice(0, m.index) + build(m) + js.slice(m.index + m[0].length);
   console.log(`agents-view-shortcut: ${label} patched`);
 }
 
@@ -53,7 +55,7 @@ const useKeybinding = matchOne(
 replaceOne(
   "valid-actions list",
   /\["app:interrupt","app:exit","app:toggleTodos"/g,
-  '["app:openAgentsView","app:interrupt","app:exit","app:toggleTodos"',
+  () => '["app:openAgentsView","app:interrupt","app:exit","app:toggleTodos"',
 );
 
 // Default Global bindings table. ctrl+a is unbound in stock (it is the GNU
@@ -61,12 +63,13 @@ replaceOne(
 replaceOne(
   "default binding",
   /bindings:\{"ctrl\+c":"app:interrupt"/g,
-  'bindings:{"ctrl+a":"app:openAgentsView","ctrl+c":"app:interrupt"',
+  () => 'bindings:{"ctrl+a":"app:openAgentsView","ctrl+c":"app:interrupt"',
 );
 
-// The REPL component's left-arrow decision memo — captures the identifiers
-// the handler needs (all in REPL scope):
-//   FZt=Dr.useMemo(()=>{
+// The REPL component's left-arrow decision memo — the value of the
+// leftArrowRoute prop, and the source of the identifiers the handler needs
+// (all in REPL scope):
+//   Qzt=Dr.useMemo(()=>{
 //     if(A)return{handler:A,confirmHint:"Press ← again to go back"};
 //     {let vt=z9t({isBg:Es(),isLoading:Ln,...});
 //      if(vt.ok&&vt.via==="detach")return{handler:$Zt,confirmHint:"...go back to agents"};
@@ -84,24 +87,30 @@ const [, A, , Es, detach, openAgents] = matchOne(
 // The keybinding registry context is null in the REPL component itself, so
 // the handler is wired through the prompt-input component (where chat:submit
 // registers, proving the registry works there): the REPL passes an ungated
-// handler as a new onOpenAgentsShortcut prop beside onLeftArrowOnEmpty, the
-// prompt component destructures it and registers it in the Global context.
+// handler as a new onOpenAgentsShortcut prop beside leftArrowRoute, the prompt
+// component destructures it and registers it in the Global context.
 replaceOne(
   "handler prop pass",
-  /,onExit:([$\w]+),onLeftArrowOnEmpty:([$\w]+),leftArrowConfirmHint:([$\w]+),verbose:/g,
-  `,onExit:$1,onLeftArrowOnEmpty:$2,leftArrowConfirmHint:$3,onOpenAgentsShortcut:()=>{if(${A}){${A}();return}if(${Es}()){${detach}();return}${openAgents}()},verbose:`,
+  /,onExit:([$\w]+),leftArrowRoute:([$\w]+),messagesRef:/g,
+  (m) =>
+    `,onExit:${m[1]},leftArrowRoute:${m[2]},onOpenAgentsShortcut:()=>{` +
+    `if(${A}){${A}();return}if(${Es}()){${detach}();return}${openAgents}()},messagesRef:`,
 );
 
 replaceOne(
   "handler prop destructure",
-  /onOpenSessionMemories:([$\w]+),onExit:([$\w]+),onLeftArrowOnEmpty:([$\w]+),leftArrowConfirmHint:([$\w]+),getToolUseContext:/g,
-  "onOpenSessionMemories:$1,onExit:$2,onLeftArrowOnEmpty:$3,leftArrowConfirmHint:$4,onOpenAgentsShortcut:_avsOpenAgents,getToolUseContext:",
+  /onOpenSessionMemories:([$\w]+),onExit:([$\w]+),leftArrowRoute:([$\w]+),getToolUseContext:/g,
+  (m) =>
+    `onOpenSessionMemories:${m[1]},onExit:${m[2]},leftArrowRoute:${m[3]},` +
+    "onOpenAgentsShortcut:_avsOpenAgents,getToolUseContext:",
 );
 
 replaceOne(
   "handler registration",
-  /(return ([$\w]+)\.registerHandler\(\{action:"chat:submit",context:"Chat",handler:\(\)=>\{[$\w]+\.current\?\.\(([$\w]+)\.current\)\},singleKey:![$\w]+\}\)\},\[[^\]]*\]\);)/g,
-  `$1${useKeybinding}("app:openAgentsView",()=>{_avsOpenAgents&&_avsOpenAgents()},{context:"Global"});`,
+  /return [$\w]+\.registerHandler\(\{action:"chat:submit",context:"Chat",handler:\(\)=>\{[$\w]+\.current\?\.\([$\w]+\.current\)\},singleKey:![$\w]+\}\)\},\[[^\]]*\]\);/g,
+  (m) =>
+    m[0] +
+    `${useKeybinding}("app:openAgentsView",()=>{_avsOpenAgents&&_avsOpenAgents()},{context:"Global"});`,
 );
 
 writeFileSync(jsPath, js);
