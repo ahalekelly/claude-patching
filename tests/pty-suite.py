@@ -37,11 +37,22 @@ COLS, ROWS = 110, 34
 PROMPT_MARKER = "quixotic-prompt-marker"
 
 
+class Screen(pyte.Screen):
+    """pyte.Screen that tolerates DECDSR (`CSI ? 6 n`): Claude Code emits the
+    private-mode cursor-position query in its no-flicker fullscreen path, and
+    pyte's report_device_status() takes no `private` kwarg and would crash the
+    harness. The query needs no answer — the tests never feed replies back."""
+
+    def report_device_status(self, mode, private=False):
+        if not private:
+            super().report_device_status(mode)
+
+
 class Term:
     """The candidate running under a pty, rendered into a pyte screen."""
 
     def __init__(self, argv, env, cwd):
-        self.screen = pyte.Screen(COLS, ROWS)
+        self.screen = Screen(COLS, ROWS)
         self.stream = pyte.ByteStream(self.screen)
         self.pid, self.fd = pty.fork()
         if self.pid == 0:
