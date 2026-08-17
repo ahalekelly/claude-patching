@@ -49,7 +49,7 @@ function splice(match, replacement) {
 splice(
   matchesOf(
     "userEmail context entry",
-    /,\.\.\.([$\w]+)&&\{userEmail:`The user's email address is \$\{\1\}\.`\}/g,
+    /,\.\.\.([$\w]+)&&\{userEmail:`The user's email address is \$\{\1\}\.[^`]*`\}/g,
     1,
   )[0],
   "",

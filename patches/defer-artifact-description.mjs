@@ -18,8 +18,9 @@
 // window rejects short UI labels sharing the anchor. A blankUse target's
 // template literal contains ${} interpolations whose nested strings hold
 // unescaped backticks, so it cannot be bounded by an end-scan — instead derive
-// the chunk's minified variable name from its definition and delete the ${name}
-// use in the assembly template, leaving the definition behind as a dead string.
+// the chunk's minified name from its definition, a binding or a function
+// returning the literal, and delete its ${name} / ${name(args)} use from the
+// assembly template, leaving the definition behind as dead code.
 //
 // The skill is a build product. Before editing the bundle the patch renders
 // every chunk it is about to defer — escapes decoded, ${} interpolations
@@ -294,12 +295,25 @@ function blankUseSite(target) {
   if (end === -1) fail(`${label}: unterminated literal at ${i}`);
   target.text = renderLiteral(i, end, quote);
 
-  const m = js.slice(Math.max(0, i - 40), i - 1).match(/([$A-Za-z_][$\w]*)=$/);
-  if (!m) fail(`${label}: could not derive the chunk's variable name from its definition`);
-  const use = "${" + m[1] + "}";
-  const first = js.indexOf(use);
-  if (first === -1) fail(`${label}: no ${use} use site found`);
-  if (js.indexOf(use, first + 1) !== -1) fail(`${label}: multiple ${use} use sites — refusing`);
-  js = js.slice(0, first) + js.slice(first + use.length);
-  console.log(`${ID}: ${label}: removed ${use} from the assembly template`);
+  // A chunk is either bound to a name (`name=`) or returned by a function of
+  // the conditions it varies on (`function name(args){return`), so its use in
+  // the assembly template is `${name}` or `${name(args)}`.
+  const before = js.slice(Math.max(0, i - 80), i - 1);
+  const def =
+    before.match(/([$A-Za-z_][$\w]*)=$/) ??
+    before.match(/function ([$A-Za-z_][$\w]*)\([^()]*\)\{return$/);
+  if (!def) fail(`${label}: could not derive the chunk's name from its definition`);
+  const name = def[1];
+
+  const uses = [];
+  for (let at = js.indexOf("${" + name); at !== -1; at = js.indexOf("${" + name, at + 1)) {
+    const after = js[at + 2 + name.length];
+    // Anything else is a longer identifier that merely starts with the name.
+    if (after === "}" || after === "(") uses.push([at, scanExpression(at + 2)]);
+  }
+  if (uses.length !== 1)
+    fail(`${label}: ${uses.length} \${${name}} use sites, expected exactly 1 — refusing`);
+  const [from, to] = uses[0];
+  console.log(`${ID}: ${label}: removed ${js.slice(from, to)} from the assembly template`);
+  js = js.slice(0, from) + js.slice(to);
 }
