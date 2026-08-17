@@ -2,10 +2,13 @@
 // Minimal stdio MCP server exposing one `ping` tool, used by the functional
 // suite. Logs its PID and every CLAUDE_* variable it was spawned with, then its
 // initialize handshake, then one line per tool call, to $LOGSRV_LOG. The
-// startup PIDs and handshakes are what distinguish one shared server from one
-// server per subagent; which notes each PID served is what distinguishes one
-// server per subagent from one server per agent *name*; and
-// CLAUDE_MCP_PER_AGENT in the startup line is the mcp-per-subagent canary.
+// handshake PIDs are what distinguish one shared server from one server per
+// subagent; which notes each PID served is what distinguishes one server per
+// subagent from one server per agent *name*; and CLAUDE_MCP_PER_AGENT in the
+// startup line is the mcp-per-subagent canary. Claude Code also makes
+// short-lived preflight spawns it kills before `initialize`; the `initialized`
+// flag on the exit line is what lets readers tell a server's teardown from a
+// preflight spawn's.
 const fs = require('fs');
 
 const LOG = process.env.LOGSRV_LOG;
@@ -38,9 +41,12 @@ function send(msg) {
   process.stdout.write(JSON.stringify(msg) + '\n');
 }
 
+let initialized = false;
+
 function handle(msg) {
   const { id, method, params } = msg;
   if (method === 'initialize') {
+    initialized = true;
     log({ ev: 'init' });
     send({ jsonrpc: '2.0', id, result: {
       protocolVersion: params?.protocolVersion || '2025-06-18',
@@ -77,7 +83,7 @@ let stopped = false;
 function note(how) {
   if (stopped) return;
   stopped = true;
-  log({ ev: 'exit', how });
+  log({ ev: 'exit', how, initialized });
 }
 process.stdin.on('end', () => { note('stdin-closed'); process.exit(0); });
 process.on('SIGTERM', () => { note('sigterm'); process.exit(0); });

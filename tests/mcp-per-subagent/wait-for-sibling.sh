@@ -10,9 +10,12 @@
 # quote or reinterpret. Gives up after 90s and says so rather than hanging: the
 # call after it is the assertion, and it is worth making either way.
 log="$1"
+# quick-gone matches only exits of servers that completed the initialize
+# handshake: Claude Code's preflight spawns log exits too, and waiting on those
+# would let the waiter ping again before its sibling's server is really down.
 case "$2" in
   waiter-here) pattern='"note":"waiter-1"';;
-  quick-gone)  pattern='"ev":"exit"';;
+  quick-gone)  pattern='"ev":"exit".*"initialized":true';;
   *) echo "usage: wait-for-sibling.sh <log> waiter-here|quick-gone"; exit 1;;
 esac
 

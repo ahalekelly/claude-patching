@@ -22,6 +22,11 @@ again; `quick` waits for the waiter's first ping before doing anything, so the
 two are provably alive at once — sequential launches would prove nothing, since
 the first server is already gone before the second connects.
 
+A server, for every assertion here, is a process that completed the
+`initialize` handshake. Claude Code also makes short-lived preflight spawns it
+kills before `initialize`; those never serve anything, and counting their
+startup/exit events would say nothing about how connections are shared.
+
 Patched, the log shows two overlapping servers, each carrying the
 CLAUDE_MCP_PER_AGENT canary and serving exactly one role's notes, and the
 waiter's late ping lands after its sibling is gone. Stock, one server serves
@@ -85,8 +90,9 @@ def main():
         return 1
 
     events = [json.loads(line) for line in log.read_text().splitlines() if line.strip()]
-    starts = {e["pid"]: e for e in events if e["ev"] == "startup"}
     handshakes = [e for e in events if e["ev"] == "init"]
+    servers = {e["pid"] for e in handshakes}
+    starts = {e["pid"]: e for e in events if e["ev"] == "startup" and e["pid"] in servers}
     kinds = [e["ev"] for e in events]
     notes = {}
     for event in events:
@@ -96,18 +102,18 @@ def main():
 
     problems = []
     served = {pid: sorted(n) for pid, n in notes.items()}
-    if len(starts) != 2:
-        problems.append(f"{len(starts)} server process(es), expected 2 (served: {served})")
-    if len(handshakes) != 2:
-        problems.append(f"{len(handshakes)} initialize handshake(s), expected 2")
+    if len(handshakes) != 2 or len(servers) != 2:
+        problems.append(f"{len(handshakes)} initialize handshake(s) across "
+                        f"{len(servers)} process(es), expected 2 across 2 (served: {served})")
     for pid, start in starts.items():
         if start["claudeEnv"].get("CLAUDE_MCP_PER_AGENT") != "1":
             problems.append(f"pid {pid} did not see CLAUDE_MCP_PER_AGENT=1")
-    # Both servers up before either goes down. Two processes that never coexist
-    # prove nothing: they are what one shared connection looks like once the
-    # first probe's teardown forces the second to reconnect.
-    ups = [i for i, kind in enumerate(kinds) if kind == "startup"]
-    downs = [i for i, kind in enumerate(kinds) if kind == "exit"]
+    # Both servers handshook before either goes down. Two servers that never
+    # coexist prove nothing: they are what one shared connection looks like once
+    # the first probe's teardown forces the second to reconnect.
+    ups = [i for i, e in enumerate(events) if e["ev"] == "init"]
+    downs = [i for i, e in enumerate(events)
+             if e["ev"] == "exit" and e["pid"] in servers]
     if len(ups) < 2 or (downs and ups[1] > downs[0]):
         problems.append("the two servers were never up at the same time — the probes "
                         f"shared one connection, or never overlapped (log: {kinds})")
