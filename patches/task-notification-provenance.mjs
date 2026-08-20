@@ -95,7 +95,7 @@ const trigger = (kind, from, text) =>
 // Splice 1: the resume entry records the prompt it is about to deliver.
 {
   const m = matchOne(
-    /async function [$\w]+\(\{agentId:([$\w]+),prompt:([$\w]+),promptOrigin:([$\w]+),[^{}]*continueInterruptedTurn:([$\w]+),[^{}]*suppressOwnerNotification:([$\w]+),[^{}]*\}(?:,[$\w]+)?\)\{/g,
+    /async function [$\w]+\(\{agentId:([$\w]+),prompt:([$\w]+),promptOrigin:([$\w]+),[^{}]*continueInterruptedTurn:([$\w]+),[^{}]*suppressOwnerNotification:([$\w]+),[^{}]*\}(?:,[$\w]+)*\)\{/g,
     "the agent resume entry",
   );
   const [, agent, prompt, origin, cont, suppress] = m;
@@ -124,7 +124,10 @@ const trigger = (kind, from, text) =>
   const suppressCall = (() => {
     const found = [
       ...body.matchAll(
-        new RegExp(`if\\(${suppress}\\)[$\\w]+\\([$\\w]+\\.agentId,${registry}\\);`, "g"),
+        new RegExp(
+          `if\\((?:[$\\w]+\\(\\),)*${suppress}\\)[$\\w]+\\([$\\w]+\\.agentId,${registry}\\);`,
+          "g",
+        ),
       ),
     ];
     if (found.length !== 1)
