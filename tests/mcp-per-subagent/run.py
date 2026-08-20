@@ -53,24 +53,48 @@ PROMPT = (
     "their two final messages and nothing else."
 )
 ROLES = {"quick": {"quick-1"}, "waiter": {"waiter-1", "waiter-2"}}
+SYSTEM_PROMPT = """You are a probe agent. Your prompt names your role: `quick` or `waiter`. Do exactly the steps for your role, in order, use no other tool, and spawn no agent. Run every Bash command exactly as written. Never skip a step because an earlier one printed something unexpected.
+
+**quick**
+
+1. Run this Bash command, to wait until the other probe is running: `sh {waitsh} {log} waiter-here`
+2. Call `mcp__logserver__ping` once with `note` set to `quick-1`.
+3. Reply with exactly: DONE quick
+
+**waiter**
+
+1. Call `mcp__logserver__ping` once with `note` set to `waiter-1`.
+2. Run this Bash command, to wait until the other probe's server has shut down: `sh {waitsh} {log} quick-gone`
+3. Call `mcp__logserver__ping` once with `note` set to `waiter-2`. If this ping fails, report the error and stop — do not retry.
+4. Reply with exactly: DONE waiter"""
 
 
-def build_project(root, log):
-    agents = root / ".claude" / "agents"
-    agents.mkdir(parents=True)
-    (agents / "expa.md").write_text(
-        (HERE / "agents" / "expa.md").read_text()
-        .replace("{NODE}", NODE)
-        .replace("{LOGSRV}", str(HERE / "logsrv.js"))
-        .replace("{WAITSH}", str(HERE / "wait-for-sibling.sh"))
-        .replace("{LOG}", str(log)))
+def agents_flag(log):
+    """The `expa` definition, as --agents JSON.
+
+    Claude Code drops inline mcpServers from an agent defined in a project
+    directory unless that project is trusted; agents defined on the command line
+    are exempt, so the fixture needs no trust state in the config it shares with
+    the real user.
+    """
+    return json.dumps({"expa": {
+        "description": "Probe agent. Calls the ping probe tool according to the "
+                       "role in its prompt.",
+        "model": "sonnet",
+        "prompt": SYSTEM_PROMPT.format(waitsh=HERE / "wait-for-sibling.sh", log=log),
+        "mcpServers": [{"logserver": {
+            "type": "stdio",
+            "command": NODE,
+            "args": [str(HERE / "logsrv.js")],
+            "env": {"LOGSRV_LOG": str(log)},
+        }}],
+    }})
 
 
 def main():
     binary = sys.argv[1]
     root = pathlib.Path(tempfile.mkdtemp(prefix="cc-mcp-per-subagent-"))
     log = root / "mcp.log"
-    build_project(root, log)
 
     # The nested session must not inherit this session's identity; CLAUDE_CONFIG_DIR
     # is the one CLAUDE_* variable it still needs, for authentication.
@@ -81,7 +105,7 @@ def main():
 
     run = subprocess.run(
         [binary, "-p", "--model", "sonnet", "--permission-mode", "bypassPermissions",
-         "--output-format", "json", PROMPT],
+         "--agents", agents_flag(log), "--output-format", "json", PROMPT],
         cwd=str(root), env=env, capture_output=True, text=True, timeout=900)
 
     if not log.exists():
