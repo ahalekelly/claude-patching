@@ -88,13 +88,14 @@ replaceOne(
 
 // Simple-layout job row (behind CLAUDE_CODE_FLEETVIEW_SIMPLE or the
 // tengu_fleetview_simple gate), stock:
-//   age:CGr(ra),tokens:snr(ra,ku),state:ku,extra:...
+//   age:CGr(ra,dn,B),tokens:snr(ra,ku),state:ku,extra:...
 // Its detail line joins free-flowing segments, so prefixing the age string
-// is the whole edit.
+// is the whole edit; the age helper's trailing arguments ride through
+// untouched.
 replaceOne(
   "simple job row age",
-  /age:([$\w]+)\(([$\w]+)\),tokens:([$\w]+)\(\2,([$\w]+)\),state:\4,/g,
-  `age:(__avmJobModel($2.state,${W})?__avmJobModel($2.state,${W})+" \\xB7 ":"")+$1($2),tokens:$3($2,$4),state:$4,`,
+  /age:([$\w]+)\(([$\w]+)((?:,[$\w.]+)*)\),tokens:([$\w]+)\(\2,([$\w]+)\),state:\5,/g,
+  `age:(__avmJobModel($2.state,${W})?__avmJobModel($2.state,${W})+" \\xB7 ":"")+$1($2$3),tokens:$4($2,$5),state:$5,`,
 );
 
 writeFileSync(jsPath, js);

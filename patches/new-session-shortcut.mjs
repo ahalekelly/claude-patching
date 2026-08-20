@@ -93,17 +93,19 @@ const origin = matchOne(
 )[1];
 
 // The new-session flow itself, in FleetView component scope:
-//   YQe=(ot)=>{if(tn.current||nt.current!==null)return;...
-//     d_e([],void 0,"shell",ot,...)... mi(`Couldn't start a new session ...`)}
-// It debounces itself (spawn in flight, attach in progress), so both callers
-// below can invoke it unguarded. The kick rides the same let chain right
-// after the definition: it runs on every render, consumes the handoff stamp
-// at most once, and defers the call past the render since the flow sets
-// state. The lookahead pins the match to the definition's real end (the
-// useRef(!1) that follows it), not a lookalike closing inside the body.
+//   LEe=(ot)=>{let de=ue.getSnapshot();
+//     if(de.newSessionOpening||de.attachingJobId!==null)return;...
+//     nwe([],void 0,"shell",ot,...)... Fe(`Couldn't start a new session ...`)}
+// It debounces itself off the view's state store (spawn in flight, attach in
+// progress), so both callers below can invoke it unguarded. The kick rides
+// the same let chain right after the definition: it runs on every render,
+// consumes the handoff stamp at most once, and defers the call past the
+// render since the flow sets state. The lookahead pins the match to the
+// definition's real end (the next chain entry that follows it), not a
+// lookalike closing inside the body.
 const spawnMatch = matchOne(
   "spawn flow + handoff kick",
-  /,([$\w]+)=\(([$\w]+)\)=>\{if\(([$\w]+)\.current\|\|([$\w]+)\.current!==null\)return;[\s\S]{100,1500}?Couldn't start a new session[\s\S]{0,500}?\}\)\},(?=[$\w]+=[$\w]+\.useRef\(!1\))/g,
+  /,([$\w]+)=\(([$\w]+)\)=>\{let ([$\w]+)=([$\w]+)\.getSnapshot\(\);if\(\3\.newSessionOpening\|\|\3\.attachingJobId!==null\)return;[\s\S]{100,1500}?Couldn't start a new session[\s\S]{0,500}?\}\)\},(?=[$\w]+=[$\w]+!==void 0&&)/g,
 );
 const spawn = spawnMatch[1];
 js =
