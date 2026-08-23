@@ -42,12 +42,12 @@ const TARGETS = [
     label: "intro chunk",
     min: 800, // UI labels reusing this phrase are <300 chars; the chunk is ~1.5k
     max: 5000,
-    anchor: "Render an HTML or Markdown file to an Artifact",
-    replacement: `Render an HTML or Markdown file to an Artifact — a default-private web page hosted on claude.ai that the user can later choose to share. Write the page content to a file, then call Artifact with its path; action: "list" enumerates existing artifacts.
+    anchor: "Render an HTML file to an Artifact",
+    replacement: `Render an HTML file to an Artifact — a default-private web page hosted on claude.ai that the user can later choose to share. Author the page as .html even from a markdown source (publish a .md only when a loaded skill instructs it), write it to a file, then call Artifact with its path; action: "list" enumerates existing artifacts.
 
-REQUIRED before any publish: invoke the Skill tool with skill: "artifact-tool" to load the full reference (update flows — same file path redeploys to the same URL, updating an artifact from an earlier conversation needs its url; listing and sharing semantics; title/description/favicon rules; runtime capabilities via the artifact-capabilities skill), and load the artifact-design skill before writing the page.
+REQUIRED before any publish: invoke the Skill tool with skill: "artifact-tool" to load the full reference (update flows — same file path redeploys to the same URL, updating an artifact from an earlier conversation needs its url; reading, listing, and sharing semantics; title/description/favicon rules; runtime capabilities via the artifact-capabilities skill), and load the artifact-design skill before writing the page.
 
-Hard rules that always apply: pages must be fully self-contained — a strict CSP blocks every external host, so inline all CSS/JS and embed assets as data: URIs; write bare page content (no <!DOCTYPE>/<html>/<head>/<body> tags — a skeleton wraps the file at publish time); Read any file you did not write completely before publishing it; never publish pages impersonating a real person or organization, fabricated records presented as genuine, or credential/payment-collecting flows — and if publishing is refused, do not suggest other ways to host the page.
+Hard rules that always apply: pages must be fully self-contained — a strict CSP blocks every external host except Google Fonts (fonts.googleapis.com stylesheets and the fonts.gstatic.com files they pull), so inline all other CSS/JS and embed assets as data: URIs; write bare page content (no <!DOCTYPE>/<html>/<head>/<body> tags — a skeleton wraps the file at publish time); Read any file you did not write completely before publishing it; never publish pages impersonating a real person or organization, fabricated records presented as genuine, or credential/payment-collecting flows — and if publishing is refused, do not suggest other ways to host the page.
 
 `,
   },
@@ -68,7 +68,7 @@ Hard rules that always apply: pages must be fully self-contained — a strict CS
 // this is the only place to edit the skill's framing.
 const HEADER = `---
 name: artifact-tool
-description: Full reference for the Artifact tool — publish/update/list flows, cross-session URL targeting, sharing semantics, favicon/title rules, runtime capabilities, publishing constraints. Load before any Artifact call.
+description: Full reference for the Artifact tool — publish/update/read/list flows, cross-session URL targeting, sharing semantics, favicon/title rules, runtime capabilities, publishing constraints. Load before any Artifact call.
 ---
 
 # Artifact tool reference
