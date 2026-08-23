@@ -77,7 +77,7 @@ const paragraph = matchesOf(
 const callSites = matchesOf(
   "model-family paragraph call sites",
   new RegExp(
-    `${paragraph}\\(\\),"Claude Code is available as a CLI in the terminal`,
+    `${paragraph.replace(/\$/g, "\\$")}\\(\\),"Claude Code is available as a CLI in the terminal`,
     "g",
   ),
   2,
