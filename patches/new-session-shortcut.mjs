@@ -118,7 +118,7 @@ const flow = matchOne(
 const wrapperMatch = matchOne(
   "spawn wrapper + handoff kick",
   new RegExp(
-    `,([$\\w]+)=\\(([$\\w]+)\\)=>${flow}\\([$\\w]+,\\2\\),(?=[$\\w]+=[$\\w]+!==void 0&&)`,
+    `,([$\\w]+)=\\(([$\\w]+)\\)=>${flow.replace(/\$/g, "\\$")}\\([$\\w]+,\\2\\),(?=[$\\w]+=[$\\w]+!==void 0&&)`,
     "g",
   ),
 );

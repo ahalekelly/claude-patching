@@ -125,7 +125,7 @@ const trigger = (kind, from, text) =>
     const found = [
       ...body.matchAll(
         new RegExp(
-          `if\\((?:[$\\w]+\\(\\),)*${suppress}\\)[$\\w]+\\([$\\w]+\\.agentId,${registry}\\);`,
+          `if\\((?:[$\\w]+\\(\\),)*${suppress.replace(/\$/g, "\\$")}\\)[$\\w]+\\([$\\w]+\\.agentId,${registry.replace(/\$/g, "\\$")}\\);`,
           "g",
         ),
       ),

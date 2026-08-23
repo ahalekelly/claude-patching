@@ -44,7 +44,7 @@ const name = only("isDeferredTool export", /isDeferredTool:\(\)=>([$\w]+)[,}]/g)
 const head = only(
   "deferral predicate",
   new RegExp(
-    `function ${name}\\(([$\\w]+)\\)\\{if\\(\\1\\.alwaysLoad===!0\\)return!1;if\\([$\\w]+\\(\\)\\.includes\\(\\1\\.name\\)\\)return!1;if\\(\\1\\.isMcp===!0\\)return!0;`,
+    `function ${name.replace(/\$/g, "\\$")}\\(([$\\w]+)\\)\\{if\\(\\1\\.alwaysLoad===!0\\)return!1;if\\([$\\w]+\\(\\)\\.includes\\(\\1\\.name\\)\\)return!1;if\\(\\1\\.isMcp===!0\\)return!0;`,
     "g",
   ),
 );

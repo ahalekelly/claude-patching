@@ -40,7 +40,7 @@ function only(label, regex) {
 const toolName = only("ToolSearch name constant", /([$\w]+)="ToolSearch"/g)[1];
 const definition = only(
   "ToolSearch tool definition",
-  new RegExp(`name:${toolName},maxResultSizeChars:`, "g"),
+  new RegExp(`name:${toolName.replace(/\$/g, "\\$")},maxResultSizeChars:`, "g"),
 );
 
 // 1. The definition's null renderer. Required to sit inside the tool object
@@ -64,7 +64,7 @@ js =
 const absorb = only(
   "fullscreen absorb branch",
   new RegExp(
-    `if\\([$\\w]+\\(\\)&&[$\\w]+===${toolName}\\)return\\{isCollapsible:!0,isSearch:!1,isRead:!1,isList:!1,isREPL:!1,isMemoryWrite:!1,isScratchpadWrite:!1,isWorkshopWrite:!1,isAbsorbedSilently:!0\\};`,
+    `if\\([$\\w]+\\(\\)&&[$\\w]+===${toolName.replace(/\$/g, "\\$")}\\)return\\{isCollapsible:!0,isSearch:!1,isRead:!1,isList:!1,isREPL:!1,isMemoryWrite:!1,isScratchpadWrite:!1,isWorkshopWrite:!1,isAbsorbedSilently:!0\\};`,
     "g",
   ),
 );

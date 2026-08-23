@@ -113,7 +113,7 @@ spliceOne(
 spliceOne(
   "row render guard",
   new RegExp(
-    `\\b${activeFlag}&&${hintText}!==void 0&&([$\\w]+\\.jsxs\\([$\\w]+,\\{flexDirection:"row",children:\\[[$\\w]+\\.jsx\\([$\\w]+,\\{width:5,flexShrink:0)`,
+    `(?<![$\\w])${activeFlag.replace(/\$/g, "\\$")}&&${hintText.replace(/\$/g, "\\$")}!==void 0&&([$\\w]+\\.jsxs\\([$\\w]+,\\{flexDirection:"row",children:\\[[$\\w]+\\.jsx\\([$\\w]+,\\{width:5,flexShrink:0)`,
     "g",
   ),
   (m) => `(${thinkingFlag}||${activeFlag})&&${hintText}!==void 0&&${m[1]}`,
