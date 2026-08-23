@@ -86,7 +86,9 @@ the patch depends on — take that to Fable.
 Keep the house style when you re-anchor: content-bearing anchors (property
 names, string literals — never a bare control-flow shape), an exact match-count
 assertion, splice by index rather than a substring replace, and a loud refusal
-on any drift.
+on any drift. Minified names routinely start with \$, so a captured name
+interpolated into a new RegExp must be escaped — \${name.replace(/\\\$/g, "\\\\\$")} —
+and needs (?<![\$\\w]) instead of \\b for a left boundary.
 
 Do not touch anything in $VERSIONS. Stop when
 \`./apply-display-patches.sh $VER /tmp/candidate\` succeeds and the suite
