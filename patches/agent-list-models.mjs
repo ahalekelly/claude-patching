@@ -84,20 +84,31 @@ replaceOne(
 // The main row (a separate component with no task record) renders inside the
 // same strip, stock:
 //   Ks.jsx(D5m,{isSelected:g===0,isViewed:c===void 0,labelWidth:re,moreAbove:$,onClick:()=>Hfe(_)})
-// Pass it a prebuilt status string. The transcripts store variable (for the
-// main turn's token counter) is probed first from its unique assignment.
+// Pass it a prebuilt status string built from four minified names, each
+// probed from its own unique site rather than assumed — a stale name can
+// resolve to an unrelated function and crash the whole interface on render:
+//   - the transcripts store variable, from its unique assignment
+//   - the main agent id getter, from the transcripts lookup keyed on it
+//   - the figures object and token formatter, from the subagent status
+//     function's "↓ 92.8k tokens" expression
+function probe(label, regex) {
+  const matches = [...js.matchAll(regex)];
+  if (matches.length !== 1) fail(label, `${matches.length} probes, expected exactly 1`);
+  return matches[0].slice(1).map((name) => name.replaceAll("$", "$$$$"));
+}
 {
-  const label = "main row status prop";
-  const trRe = /,([$\w]+)=([$\w]+)\.getState\(\)\.transcripts,/g;
-  const trs = [...js.matchAll(trRe)];
-  if (trs.length !== 1) fail(label, `${trs.length} transcripts-store probes, expected exactly 1`);
-  const tr = trs[0][1];
+  const [tr] = probe("transcripts store", /,([$\w]+)=[$\w]+\.getState\(\)\.transcripts,/g);
+  const [mainId] = probe("main agent id getter", /\.transcripts\[([$\w]+)\(\)\]/g);
+  const [figures, fmtTokens] = probe(
+    "token status expression",
+    /\.progress\?\.lastActivity\?([$\w]+)\.arrowDown:\1\.arrowUp,[$\w]+=[$\w]+!==void 0&&[$\w]+>0\?`\$\{[$\w]+\} \$\{([$\w]+)\([$\w]+\)\} tokens`/g,
+  );
   replaceOne(
-    label,
+    "main row status prop",
     /&&([$\w]+)\.jsx\(([$\w]+),\{isSelected:([$\w]+)===0,isViewed:([$\w]+)===void 0,labelWidth:([$\w]+),moreAbove:([$\w]+),onClick:/g,
     "&&$1.jsx($2,{mainStatus:(function(){" +
-      `let m=__almShort(__almMM),k=${tr}[Hi()]?.progress?.tokenCount;` +
-      'return[m,k>0?ze.arrowDown+" "+Hd(k)+" tokens":""].filter(Boolean).join(" \\xB7 ")})(),' +
+      `let m=__almShort(__almMM),k=${tr}[${mainId}()]?.progress?.tokenCount;` +
+      `return[m,k>0?${figures}.arrowDown+" "+${fmtTokens}(k)+" tokens":""].filter(Boolean).join(" \\xB7 ")})(),` +
       "isSelected:$3===0,isViewed:$4===void 0,labelWidth:$5,moreAbove:$6,onClick:",
   );
 }
