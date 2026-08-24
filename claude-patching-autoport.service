@@ -4,6 +4,9 @@ Description=Port claude-patching onto a newly installed Claude Code version
 [Service]
 Type=oneshot
 ExecStart=%h/.agents/claude-patching/autoport-trigger.sh
+# The port spawns its Fable escalation detached and exits; the escalation must
+# outlive the unit.
+KillMode=process
 
 [Install]
 WantedBy=default.target

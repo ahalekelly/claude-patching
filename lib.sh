@@ -6,14 +6,12 @@ case "$(uname)" in
     STAT_SIZE=(-f %z)
     STAT_MTIME=(-f %m)
     HASH=shasum
-    notify() { osascript -e "display notification \"$2\" with title \"$1\"" 2>/dev/null || true; }
     ;;
   *)
     STAT_ID=(-c '%i %s %Y')
     STAT_SIZE=(-c %s)
     STAT_MTIME=(-c %Y)
     HASH=sha1sum
-    notify() { notify-send "$1" "$2" 2>/dev/null || true; }
     ;;
 esac
 

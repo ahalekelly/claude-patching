@@ -9,7 +9,7 @@
 # promotes it only if that passes. A promoted binary lands in versions/, is
 # archived outside the pruned versions/ directory, and gets the stamp that makes
 # the next launch take the silent fast path. After promotion an advisory agent
-# reviews what the port learned; it recommends, it never edits.
+# reviews what the port learned and acts on it through Fable.
 set -uo pipefail
 # launchd and systemd fire the autoport with a minimal PATH that misses the
 # tools this needs: claude lives in ~/.local/bin, and on macOS node, jq and uv
@@ -23,6 +23,8 @@ export PATH="$HOME/.local/bin:/opt/homebrew/bin:$PATH"
 # test, the live-model suite tests) must pin the same profile the port agents
 # pin in agent-run.sh, or it fails with an OAuth error no session ever sees.
 export CLAUDE_CONFIG_DIR="$HOME/.claude"
+# Nothing here has a human at a terminal to type a git password.
+export GIT_TERMINAL_PROMPT=0
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$ROOT/lib.sh"
 LOCAL="$ROOT/patches-local"
@@ -54,19 +56,6 @@ damper_fingerprint() {
     cat "$ROOT/README.md"; } | "$HASH"
 }
 
-# Retry damper. Both the launch check and the versions watcher fire this script,
-# and the watcher can fire repeatedly, so a version whose port failed must not
-# respawn an agent every time. A day, or any change to the port's inputs, clears
-# it. No desktop notification here for the same reason.
-if [[ -f "$STATE/$VER.failed" ]] &&
-   [[ -z "$(find "$STATE/$VER.failed" -maxdepth 0 -mmin +1440 2>/dev/null)" ]] &&
-   [[ "$(head -1 "$STATE/$VER.failed")" == "$(damper_fingerprint)" ]]; then
-  say "the port of $VER failed recently — not retrying; delete $STATE/$VER.failed to force a retry"
-  printf 'claude-patching: the port of %s failed recently — not retrying. See %s; delete %s to force a retry.\n' \
-    "$VER" "$STATE/port-$VER.log" "$STATE/$VER.failed" > "$STATE/port-message"
-  exit 0
-fi
-
 # One port per version at a time; self-heal a lock left by a crashed run.
 LOCK="$STATE/port-$VER.lock"
 if ! mkdir "$LOCK" 2>/dev/null; then
@@ -76,11 +65,28 @@ fi
 WORK="$(mktemp -d "${TMPDIR:-/tmp}/claude-port.XXXXXX")"
 trap 'rmdir "$LOCK" 2>/dev/null; rm -rf "$WORK"' EXIT
 
-finish() { # <headline> — notify now, and leave a note for the next launch
-  say "$1"
-  printf 'claude-patching: %s\n' "$1" > "$STATE/port-message"
-  notify "claude-patching" "$1"
-}
+# Several machines share this repository, so take whatever the others have
+# already committed before deciding anything: the mechanical apply then benefits
+# from another machine's re-anchor, and the port agent runs only when nobody has
+# fixed this version yet. Ahead of the damper too, so a pulled fix clears it.
+# A network problem or a rebase conflict is not a reason to fail a port.
+if [[ -n "$(git -C "$ROOT" status --porcelain -- patches/)" ]]; then
+  say "patches/ has uncommitted changes — not syncing with origin"
+elif ! git -C "$ROOT" pull --rebase --quiet origin master; then
+  git -C "$ROOT" rebase --abort 2>/dev/null
+  say "could not sync with origin — porting against the local tree"
+fi
+
+# Retry damper. Both the launch check and the versions watcher fire this script,
+# and the watcher can fire repeatedly, so a version whose port failed must not
+# respawn an agent every time. A day, or any change to the port's inputs, clears
+# it.
+if [[ -f "$STATE/$VER.failed" ]] &&
+   [[ -z "$(find "$STATE/$VER.failed" -maxdepth 0 -mmin +1440 2>/dev/null)" ]] &&
+   [[ "$(head -1 "$STATE/$VER.failed")" == "$(damper_fingerprint)" ]]; then
+  say "the port of $VER failed recently — not retrying; delete $STATE/$VER.failed to force a retry"
+  exit 0
+fi
 
 fail() { # <reason>
   local reason="$1" rejected
@@ -93,7 +99,14 @@ fail() { # <reason>
   { damper_fingerprint
     date '+%F %T'
     echo "$reason"; } > "$STATE/$VER.failed"
-  finish "port of $VER failed: $reason"
+  # Escalate detached: this run holds the lock and must exit, and the escalation
+  # re-runs the port itself once it has a fix. Once per version — a second
+  # failure after Fable's fix must not recurse into another escalation.
+  if [[ ! -e "$STATE/$VER.escalated" ]]; then
+    touch "$STATE/$VER.escalated"
+    nohup "$ROOT/escalation-agent.sh" "$VER" "$reason" >/dev/null 2>&1 &
+  fi
+  say "port of $VER failed: $reason"
   exit 1
 }
 
@@ -228,7 +241,9 @@ for wrapper in $(pgrep -f -- '--bg-pty-host' 2>/dev/null); do
 done
 pkill -f -- '--bg-spare' 2>/dev/null || true
 rmdir "$BIN.lock" 2>/dev/null
-rm -f "$STATE/$VER.failed"
+# The escalation marker goes with the failure marker, so a later regression on
+# this version can escalate again.
+rm -f "$STATE/$VER.failed" "$STATE/$VER.escalated"
 
 PATCH_FILES="$(git -C "$ROOT" diff --name-only -- patches/)"
 if [[ "$AGENT_EDITED" == 1 && -n "$PATCH_FILES" ]]; then
@@ -240,20 +255,14 @@ if [[ "$AGENT_EDITED" == 1 && -n "$PATCH_FILES" ]]; then
     git -C "$ROOT" reset -- patches/
     fail "could not commit the port agent's patch edits"
   fi
+  # Promotion is already done, so a machine that cannot reach origin keeps its
+  # patched binary; the re-anchor just waits for the next port to push it.
+  git -C "$ROOT" push --quiet origin master || say "could not push the re-anchor to origin"
 fi
 
-finish "$VER promoted${DROPPED:+ (dropped:$DROPPED)}${SUSPECT:+ (suspect:$SUSPECT)} — restart sessions to pick it up"
+say "$VER promoted${DROPPED:+ (dropped:$DROPPED)}${SUSPECT:+ (suspect:$SUSPECT)} — restart sessions to pick it up"
 
 # Advisory pass. Promotion is already done, so a slow or failed review costs
-# nothing; its recommendations join the note the next launch prints.
-ADVICE="$STATE/advisory-$VER.md"
-rm -f "$ADVICE"
-if "$ROOT/advisory-agent.sh" "$VER" "$STOCK_LOG" "$ADVICE" && [[ -s "$ADVICE" ]]; then
-  headline="$(head -1 "$ADVICE")"
-  printf 'claude-patching: upstream watch for %s: %s\n  full review: %s\n' "$VER" "$headline" "$ADVICE" \
-    >> "$STATE/port-message"
-  notify "claude-patching: upstream watch" "$headline"
-  say "advisory: $headline"
-else
-  say "the advisory agent produced nothing — see $STATE/advisory-$VER.log"
-fi
+# nothing.
+"$ROOT/advisory-agent.sh" "$VER" "$STOCK_LOG" ||
+  say "the advisory agent exited nonzero — see $STATE/advisory-$VER.log"

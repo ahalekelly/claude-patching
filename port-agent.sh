@@ -69,14 +69,15 @@ Iterate until it passes. A test that fails the same way on the stock binary
 behavior moved underneath the fixture.
 
 Anything beyond a re-anchor is a judgment call, and judgment calls go to
-Fable: spawn a subagent with the Agent tool, model "fable", hand it your
-diagnosis and evidence, and do what it decides. That covers stale contracts,
-edits to tests/ or the harness, dropping a patch that has a test, and any case
-where the right move is unclear. Fable may change the contract; when it does,
-commit that change on its own — tests/ and harness edits in their own commit
-with the rationale in the message, never mixed with patches/. This port is
-meant to finish without human input on most versions: consult Fable rather
-than leaving a blocker for a human.
+Fable: spawn a subagent with the Agent tool, model "fable", and hand it your
+diagnosis and evidence. Fable decides, and delegates the implementation to its
+own Opus subagents (Agent tool, model "opus"); you apply what it decides. That
+covers stale contracts, edits to tests/ or the harness, dropping a patch that
+has a test, and any case where the right move is unclear. Fable may change the
+contract; when it does, commit that change on its own — tests/ and harness
+edits in their own commit with the rationale in the message, never mixed with
+patches/. This port is meant to finish without human input on most versions:
+consult Fable rather than leaving a blocker for a human.
 
 For a patch whose anchor has drifted past repair, write its id to
 patches-local/$VER/dropped, one id per line. mcp-per-subagent is behavioral,
@@ -101,4 +102,4 @@ passes, and report what you re-anchored, what you dropped, and what Fable
 decided.
 EOF
 
-exec "$ROOT/agent-run.sh" "$VER" port-agent "$PROMPT" 45
+exec "$ROOT/agent-run.sh" "$VER" port-agent opus "$PROMPT" 45

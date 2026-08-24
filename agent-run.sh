@@ -1,47 +1,46 @@
 #!/usr/bin/env bash
 # Run one Claude Code agent for the port, and block until it finishes.
 #
-#   agent-run.sh <version> <tag> <prompt-file> <timeout-minutes>
+#   agent-run.sh <version> <tag> <model> <prompt-file> <timeout-minutes>
 #
-# The agent runs the version being ported, sandboxed in auto permission mode,
-# in a visible Terminal window when a GUI session exists and headless otherwise,
-# so a port is watchable while it happens without ever depending on a GUI. The
-# run streams: a line lands in the log as each step happens, so a half-hour
-# agent reads as progress rather than as a hang. This script blocks until that
-# window's run finishes, and exits with the agent's own exit code. Its log is
-# port-state/<tag>-<version>.log.
+# The agent runs the best patched binary on the machine — never the version
+# being ported, which may be the very thing that failed — headless, sandboxed
+# in auto permission mode. The run streams: a line lands in the log as each step
+# happens, so a half-hour agent reads as progress rather than as a hang. That
+# log, port-state/<tag>-<version>.log, is the only trace the run leaves. This
+# script blocks until the run finishes, and exits with the agent's own exit code.
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$ROOT/lib.sh"
 STATE="$ROOT/port-state"
-VER="${1:?usage: agent-run.sh <version> <tag> <prompt-file> <timeout-minutes>}"
-TAG="${2:?usage: agent-run.sh <version> <tag> <prompt-file> <timeout-minutes>}"
-PROMPT="${3:?usage: agent-run.sh <version> <tag> <prompt-file> <timeout-minutes>}"
-MINUTES="${4:?usage: agent-run.sh <version> <tag> <prompt-file> <timeout-minutes>}"
+USAGE="usage: agent-run.sh <version> <tag> <model> <prompt-file> <timeout-minutes>"
+VER="${1:?$USAGE}"
+TAG="${2:?$USAGE}"
+MODEL="${3:?$USAGE}"
+PROMPT="${4:?$USAGE}"
+MINUTES="${5:?$USAGE}"
 
+CLAUDE="$(best_patched "$HOME/.local/share/claude/versions/$VER")"
 mkdir -p "$STATE"
 DONE="$STATE/$TAG-$VER.done"
 RUN="$STATE/$TAG-$VER.command"
 LOG="$STATE/$TAG-$VER.log"
 rm -f "$DONE"
-rm -rf "$STATE/$TAG-$VER.lock"
 
 cat > "$RUN" <<EOF
 #!/bin/bash
-# First executor wins: the Terminal window and the headless fallback can race
-# when osascript's reply times out but Terminal runs the script anyway.
-mkdir '$STATE/$TAG-$VER.lock' 2>/dev/null || exit 0
 cd "$ROOT"
 export CLAUDE_PATCHING_AUTOPORT=1
 # Pin the default profile explicitly: the invoker's environment varies (daemon
-# jobs export CLAUDE_CONFIG_DIR=.claude-work, a Terminal window inherits
-# nothing), and the agent must authenticate the same way from both paths.
+# jobs export CLAUDE_CONFIG_DIR=.claude-work), and the agent must authenticate
+# the same way from every path.
 export CLAUDE_CONFIG_DIR="\$HOME/.claude"
 # -p writes nothing until the final message, so the log sits empty for the whole
 # run. stream-json emits an event per step instead; render one line each —
 # assistant text as written, a tool call as its name and the head of its input,
 # the final result in full. Anything that is not an event, stderr included,
 # passes through as it came.
-"\$HOME/.local/share/claude/versions/$VER" -p --model opus --permission-mode auto \\
+'$CLAUDE' -p --model $MODEL --permission-mode auto \\
   --output-format stream-json --verbose "\$(cat '$PROMPT')" 2>&1 |
 jq --unbuffered -rR '
   if ((fromjson? | type) // "raw") != "object" then .
@@ -58,16 +57,8 @@ echo "\${PIPESTATUS[0]}" > '$DONE'
 EOF
 chmod +x "$RUN"
 
-# The AppleScript-level timeout keeps a GUI-less context (daemon, background
-# job) from hanging on the AppleEvent instead of falling back to headless.
-if osascript -e "with timeout of 15 seconds
-tell application \"Terminal\" to do script \"$RUN\"
-end timeout" >/dev/null 2>&1; then
-  echo "$TAG for $VER running in a Terminal window; log: $LOG"
-else
-  echo "no GUI session for a Terminal window — running $TAG headless; log: $LOG"
-  "$RUN" >/dev/null 2>&1 &
-fi
+"$RUN" >/dev/null 2>&1 &
+echo "$TAG for $VER running headless; log: $LOG"
 
 for _ in $(seq 1 $((MINUTES * 12))); do
   [[ -f "$DONE" ]] && exit "$(<"$DONE")"
