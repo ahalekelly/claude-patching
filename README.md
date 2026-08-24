@@ -6,7 +6,7 @@ Claude Code ships as a single-file executable with its JavaScript bundled inside
 
 Two properties make that safe enough to run every day:
 
-- **Every patch refuses rather than guesses.** Anchors are content-bearing (property names, string literals, tool-name constants — never a bare control-flow shape), match counts are asserted exactly, and edits splice by index. A patch that no longer fits aborts the build with the binary untouched.
+- **Every patch refuses rather than guesses.** Anchors are content-bearing (property names, string literals, tool-name constants — never a bare control-flow shape), match counts are asserted exactly, and edits splice by index. Every bundle function that injected code calls is probed from its own unique site, never written in by its current minified name. A patch that no longer fits aborts the build with the binary untouched.
 - **Every patch has a behavioral test, or a written excuse.** Anchor counts catch layout drift but not semantic drift: a patch can apply cleanly to a lookalike site and quietly do nothing. `tests/` asserts what the patched binary *does* — what it sends to the API, what it draws on screen — and only a candidate that passes gets promoted. An applied patch with no test fails the gate unless `tests/waivers` names it and says why a test cannot exist yet.
 
 ## The patches

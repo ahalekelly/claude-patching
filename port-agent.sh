@@ -86,9 +86,14 @@ the patch depends on — take that to Fable.
 Keep the house style when you re-anchor: content-bearing anchors (property
 names, string literals — never a bare control-flow shape), an exact match-count
 assertion, splice by index rather than a substring replace, and a loud refusal
-on any drift. Minified names routinely start with \$, so a captured name
-interpolated into a new RegExp must be escaped — \${name.replace(/\\\$/g, "\\\\\$")} —
-and needs (?<![\$\\w]) instead of \\b for a left boundary.
+on any drift. Injected code must never call a bundle function by a name
+copied from the current bundle — a name that is right today resolves to an
+unrelated function after the next minify and crashes the interface at render
+(the anchor checks pass, so nothing catches it). Probe every such name from a
+unique content-bearing site and interpolate it. Minified names routinely start
+with \$, so a captured name interpolated into a new RegExp must be escaped —
+\${name.replace(/\\\$/g, "\\\\\$")} — and needs (?<![\$\\w]) instead of \\b for a
+left boundary; interpolated into a String.replace replacement, \$ must become \$\$.
 
 Do not touch anything in $VERSIONS. Stop when
 \`./apply-display-patches.sh $VER /tmp/candidate\` succeeds and the suite
