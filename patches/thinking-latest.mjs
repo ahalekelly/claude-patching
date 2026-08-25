@@ -7,14 +7,16 @@
 // group's latestThinkingSummary field, which the transcript grouper clears on
 // the next collapsible tool call:
 //
-//   ye=<hint>(ce,<cap>),he=<linger>(s?e.latestThinkingSummary:void 0,<ms>),
-//   Ce=s&&he!==void 0,Pe=Ce?he:ye;
+//   <hint>=<cap>(<displayHint>,<n>),<summary>=<linger>(<active>&&!<brief>?
+//     e.latestThinkingSummary:void 0,<ms>),<isThinking>=<active>&&<summary>!==void 0,
+//   <line>=<isThinking>?<summary>:<hint>;
 //   ...
-//   s&&Pe!==void 0&&<jsx>(<Box>,{flexDirection:"row",children:[
-//     <"  ⎿  " gutter>,
-//     ...Ce?<one line, GtT(Pe,columns-5,10)>:<hint lines>...]})
+//   <active>&&<line>!==void 0&&<jsxs>(<Box>,{flexDirection:"row",children:[
+//     <"  ⎿  " gutter cell>,
+//     ...<isThinking>?<one line, <trunc>(<line>,columns-5,10)>:<hint lines>...]})
 //
-// (s is isActiveGroup; GtT wrap-truncates to a row budget and appends "…".)
+// (<active> is isActiveGroup; <trunc> wrap-truncates to a row budget and
+// appends "…".)
 // Once the turn completes the row disappears, and the thinking is invisible
 // until the row is clicked into its expanded view.
 //
@@ -48,10 +50,25 @@ if (!jsPath) {
 }
 let js = readFileSync(jsPath, "utf8");
 
+const esc = (s) => s.replace(/\$/g, "\\$");
+
 const fail = (msg) => {
   console.error(`ERROR: thinking-latest: ${msg}`);
   process.exit(1);
 };
+
+// Every site this patch reads or rewrites has to live in one module: the
+// bundle is a concatenation of modules behind `//__CHUNK__ <name>` marker
+// lines, and injected code can only name bindings from the module it lands in.
+let owner;
+function sameModule(label, at) {
+  const marker = js.lastIndexOf("\n//__CHUNK__ ", at);
+  if (marker === -1) fail(`${label}: no module marker precedes the match — refusing`);
+  const name = js.slice(marker + 13, js.indexOf("\n", marker + 1));
+  if (owner === undefined) owner = name;
+  else if (name !== owner)
+    fail(`${label} is in ${name} but this patch's other sites are in ${owner} — refusing`);
+}
 
 function matchOne(label, regex) {
   const matches = [...js.matchAll(regex)];
@@ -59,6 +76,7 @@ function matchOne(label, regex) {
     fail(
       `${label}: ${matches.length} matches, expected exactly 1 — bundle layout changed, refusing`,
     );
+  sameModule(label, matches[0].index);
   return matches[0];
 }
 
@@ -91,7 +109,8 @@ const lastThinking =
 // into the row's hint slot in exactly one place, gated on the group being
 // active and the turn not being a live brief:
 //
-//   Te=XTm(s&&!ge?e.latestThinkingSummary:void 0,S$v),Pe=s&&Te!==void 0,_e=Pe?Te:fe,
+//   <summary>=<linger>(<active>&&!<brief>?e.latestThinkingSummary:void 0,<ms>),
+//   <isThinking>=<active>&&<summary>!==void 0,<line>=<isThinking>?<summary>:<hint>,
 //
 // Both gates go with the source they guarded; the brief flag stays bound ahead
 // of the run for whatever else reads it.
@@ -108,40 +127,33 @@ spliceOne(
   },
 );
 
-// The row's render guard, anchored on the gutter cell markup that follows it.
+// The row's render guard, anchored on the gutter cell markup that follows it:
+// the row opens with a width-5 cell holding the "  \u23BF  " glyph, which also
+// names the plain Text component the thinking line is re-rendered through.
 // Thinking lines show always; tool display hints stay streaming-only.
+let plainText;
 spliceOne(
   "row render guard",
   new RegExp(
-    `(?<![$\\w])${activeFlag.replace(/\$/g, "\\$")}&&${hintText.replace(/\$/g, "\\$")}!==void 0&&([$\\w]+\\.jsxs\\([$\\w]+,\\{flexDirection:"row",children:\\[[$\\w]+\\.jsx\\([$\\w]+,\\{width:5,flexShrink:0)`,
+    `(?<![$\\w])${esc(activeFlag)}&&${esc(hintText)}!==void 0&&` +
+      `([$\\w]+\\(([$\\w]+),\\{flexDirection:"row",children:\\[[$\\w]+\\(\\2,\\{width:5,flexShrink:0,` +
+      `children:[$\\w]+\\(([$\\w]+),\\{"aria-hidden":!0,dimColor:!0,children:"  \\\\u23BF  "\\}\\)\\}\\))`,
     "g",
   ),
-  (m) => `(${thinkingFlag}||${activeFlag})&&${hintText}!==void 0&&${m[1]}`,
+  (m) => {
+    plainText = m[3];
+    return `(${thinkingFlag}||${activeFlag})&&${hintText}!==void 0&&${m[1]}`;
+  },
 );
 
-// The plain Text component, named by the "  ⎿  " gutter cells of the group
-// row's sub-rows. Several sub-rows carry one; they must all name the same
-// component.
-const gutters = [
-  ...js.matchAll(
-    /[$\w]+\.jsx\(([$\w]+),\{"aria-hidden":!0,dimColor:!0,children:"  \\u23BF  "\}\)/g,
-  ),
-];
-const gutterNames = new Set(gutters.map((m) => m[1]));
-if (gutterNames.size !== 1)
-  fail(
-    `gutter cells: [${[...gutterNames]}] from ${gutters.length} matches, expected one shared component — bundle layout changed, refusing`,
-  );
-const plainText = gutters[0][1];
-
 // The thinking line: row budget drops to 1 — first line only, "…" when cut
-// off — and the Markdown component is swapped for plain Text so the line
-// un-dims on row hover.
+// off — and the Markdown component is swapped for the plain Text component
+// taken from the row's own gutter cell, so the line un-dims on row hover.
 spliceOne(
   "one-line hoverable render",
-  /([$\w]+)\.jsx\(([$\w]+),\{dimColor:!0,italic:!0,children:([$\w]+)\(([$\w]+),([$\w]+)-([$\w]+),([$\w]+)\)\}\):\4\.split/g,
+  /([$\w]+)\(([$\w]+),\{dimColor:!0,italic:!0,children:([$\w]+)\(([$\w]+),([$\w]+)-([$\w]+),([$\w]+)\)\}\):\4\.split/g,
   (m) =>
-    `${m[1]}.jsx(${plainText},{dimColor:!0,italic:!0,children:${m[3]}(${m[4]},${m[5]}-${m[6]},1)}):${m[4]}.split`,
+    `${m[1]}(${plainText},{dimColor:!0,italic:!0,children:${m[3]}(${m[4]},${m[5]}-${m[6]},1)}):${m[4]}.split`,
 );
 
 writeFileSync(jsPath, js);

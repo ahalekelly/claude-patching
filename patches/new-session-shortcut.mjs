@@ -11,12 +11,17 @@
 // calls it directly. In FleetView, ctrl+n runs it immediately (shadowing
 // the chord's stock role as a down-arrow alias — down, j and ctrl+p still
 // navigate). In a session,
-// ctrl+n stamps a handoff time on globalThis and runs the same open-agents
-// flow as ctrl+a; when FleetView next renders inside the 8-second window it
+// ctrl+n stamps a handoff time and runs the same open-agents flow as
+// ctrl+a; when FleetView next renders inside the 8-second window it
 // consumes the stamp and auto-runs the spawn, so the keystroke backgrounds
 // the conversation, spawns a fresh session, and attaches to it. When the
 // open-agents flow refuses (unsent draft, queued commands, persistence
 // disabled) it explains itself as usual and the stamp expires unread.
+//
+// The session half and the FleetView half live in different modules of the
+// code-split bundle, which load lazily and in either order, so the stamp
+// rides on globalThis.__nssHandoff — created idempotently by whichever side
+// runs first.
 //
 // Depends on agents-view-shortcut having run first: the session half anchors
 // on that patch's _avsOpenAgents prop — the REPL-scoped open-agents closure
@@ -54,6 +59,9 @@ function replaceOne(label, regex, replacement) {
   console.log(`new-session-shortcut: ${label} patched`);
 }
 
+for (const name of ["__nssHandoff", "_nssKick"])
+  if (js.includes(name)) fail(`helper injection: identifier ${name} already present`);
+
 // Valid-action list used to validate keybindings.json (and to build the
 // keybindings docs). agents-view-shortcut prepended its action to the stock
 // list head, so the pair is the anchor.
@@ -79,7 +87,7 @@ replaceOne(
 replaceOne(
   "handler registration",
   /([$\w]+)\("app:openAgentsView",\(\)=>\{_avsOpenAgents&&_avsOpenAgents\(\)\},\{context:"Global"\}\);/g,
-  '$&$1("app:newSession",()=>{_avsOpenAgents&&(globalThis._newSessionShortcutAt=Date.now(),_avsOpenAgents())},{context:"Global"});',
+  '$&$1("app:newSession",()=>{_avsOpenAgents&&((globalThis.__nssHandoff??={at:0}).at=Date.now(),_avsOpenAgents())},{context:"Global"});',
 );
 
 // FleetView's launch-scope origin: the origin the row builder stamps on a
@@ -125,7 +133,9 @@ const wrapperMatch = matchOne(
 const spawn = wrapperMatch[1];
 js =
   js.slice(0, wrapperMatch.index + wrapperMatch[0].length) +
-  `_nssKick=(globalThis._newSessionShortcutAt&&Date.now()-globalThis._newSessionShortcutAt<8e3&&(globalThis._newSessionShortcutAt=0,setTimeout(()=>${spawn}(${origin}),0)),0),` +
+  "_nssKick=((globalThis.__nssHandoff??={at:0}).at&&" +
+  "Date.now()-globalThis.__nssHandoff.at<8e3&&" +
+  `(globalThis.__nssHandoff.at=0,setTimeout(()=>${spawn}(${origin}),0)),0),` +
   js.slice(wrapperMatch.index + wrapperMatch[0].length);
 console.log("new-session-shortcut: spawn wrapper + handoff kick patched");
 

@@ -190,7 +190,7 @@ const trigger = (kind, from, text) =>
 // for delivery. The last one is the one the run reads last.
 {
   const m = matchOne(
-    /function [$\w]+\(([$\w]+)\)\{let ([$\w]+)=\1\.agentId;if\(!\2\)return\[\];let ([$\w]+)=[$\w]+\(\2,\1\.taskRegistry\);return [$\w]+\(\3\),\3\.map\(\(([$\w]+)\)=>\(\{type:"queued_command",prompt:\4\.text,source_uuid:[$\w.]+\.randomUUID\(\),origin:\4\.origin,isMeta:\4\.isMeta\}\)\)\}/g,
+    /function [$\w]+\(([$\w]+)\)\{let ([$\w]+)=\1\.agentId;if\(!\2\)return\[\];let ([$\w]+)=[$\w]+\(\2,\1\.taskRegistry\);return [$\w]+\(\3\),\3\.map\(\(([$\w]+)\)=>\(\{type:"queued_command",prompt:\4\.text,source_uuid:[$\w.]+\(\),origin:\4\.origin,isMeta:\4\.isMeta\}\)\)\}/g,
     "the pending-message drain",
   );
   const [, context, agent, drained] = m;
@@ -227,11 +227,17 @@ const trigger = (kind, from, text) =>
   const scope = [
     ...js
       .slice(m.index - 2000, m.index)
-      .matchAll(/let\{claimed:[$\w]+,task:([$\w]+)\}=[$\w]+\([$\w]+,([$\w]+)\)/g),
+      .matchAll(/let\{claimed:[$\w]+,task:([$\w]+)\}=[$\w]+\([$\w]+,([$\w]+)(?:,\{[^{}]*\})?\)/g),
   ];
   if (scope.length !== 1)
     fail(
       `${scope.length} claimed/task destructures above the notification builder, expected exactly 1 — refusing`,
+    );
+  // Both names are module-scoped, so the destructure has to sit in the same
+  // module as the builder that reads them.
+  if (js.slice(m.index - 2000 + scope[0].index, m.index).includes("\n//__CHUNK__ "))
+    fail(
+      "the claimed/task destructure sits in a different module from the notification builder — refusing",
     );
   const [, record, registry] = scope[0];
 

@@ -19,6 +19,11 @@
 // segment — including a bare alias like "opus" — shows as-is minus any
 // [1m] suffix.
 //
+// Every site the patch touches — the row-status builder, the strip
+// component, the main row's component — lives in one module of the
+// code-split bundle, so the injected helpers are plain module-scope function
+// declarations and the probed names resolve in the scope that uses them.
+//
 // Anchors are structural regexes over the minified bundle (variable names
 // change per build); any match count other than exactly 1 fails loudly so the
 // wrapper aborts before repack and the binary stays untouched.
@@ -56,7 +61,7 @@ for (const name of ["__almShort", "__almInner", "__almMM", "__almMS"]) {
 // out elapsed · model · tokens. The strip's status-column width is measured
 // from the same return value, so alignment follows for free. The __almShort
 // helper rides in on this edit (function declarations hoist across the
-// bundle scope).
+// module).
 replaceOne(
   "subagent row status",
   /function ([$\w]+)\(([$\w]+),([$\w]+),([$\w]+),([$\w]+)\)\{let ([$\w]+)=\2\.type==="in_process_teammate"\?\2\.pendingUserMessages\.length:\2\.pendingMessages\.length,/g,
@@ -83,7 +88,7 @@ replaceOne(
 
 // The main row (a separate component with no task record) renders inside the
 // same strip, stock:
-//   Ks.jsx(D5m,{isSelected:g===0,isViewed:c===void 0,labelWidth:re,moreAbove:$,onClick:()=>Hfe(_)})
+//   r(ESe,{isSelected:b===0,isViewed:u===void 0,labelWidth:te,moreAbove:ce,onClick:()=>cu(x)})
 // Pass it a prebuilt status string built from four minified names, each
 // probed from its own unique site rather than assumed — a stale name can
 // resolve to an unrelated function and crash the whole interface on render:
@@ -105,8 +110,8 @@ function probe(label, regex) {
   );
   replaceOne(
     "main row status prop",
-    /&&([$\w]+)\.jsx\(([$\w]+),\{isSelected:([$\w]+)===0,isViewed:([$\w]+)===void 0,labelWidth:([$\w]+),moreAbove:([$\w]+),onClick:/g,
-    "&&$1.jsx($2,{mainStatus:(function(){" +
+    /&&([$\w]+)\(([$\w]+),\{isSelected:([$\w]+)===0,isViewed:([$\w]+)===void 0,labelWidth:([$\w]+),moreAbove:([$\w]+),onClick:/g,
+    "&&$1($2,{mainStatus:(function(){" +
       `let m=__almShort(__almMM),k=${tr}[${mainId}()]?.progress?.tokenCount;` +
       `return[m,k>0?${figures}.arrowDown+" "+${fmtTokens}(k)+" tokens":""].filter(Boolean).join(" \\xB7 ")})(),` +
       "isSelected:$3===0,isViewed:$4===void 0,labelWidth:$5,moreAbove:$6,onClick:",
@@ -114,15 +119,15 @@ function probe(label, regex) {
 }
 
 // The main row component itself, stock:
-//   {isSelected:mZT,isViewed:kHi,labelWidth:orO,moreAbove:hZT,onClick:i5m}=nrO,
-//   [gZT,_ZT]=B4.useState(!1),s5m=...pointer...,a5m=...circle,
-//   KMl=hZT>0?`${qre} ${hZT} more`:""
+//   {isSelected:t7e,isViewed:SN,labelWidth:Z2t,moreAbove:o7e,onClick:zye}=J2t,
+//   [n7e,r7e]=E(!1),Yye=...pointer...,Xye=...circle,
+//   bK=o7e>0?`${lg} ${o7e} more`:""
 // Its right side is already right-aligned (justifyContent:"space-between")
-// and memoized on KMl's value, so folding the status into KMl needs no memo
+// and memoized on bK's value, so folding the status into bK needs no memo
 // surgery.
 replaceOne(
   "main row status render",
-  /\{isSelected:([$\w]+),isViewed:([$\w]+),labelWidth:([$\w]+),moreAbove:([$\w]+),onClick:([$\w]+)\}=([$\w]+),(\[[$\w]+,[$\w]+\]=[$\w]+\.useState\(!1\),[$\w]+=\1\|\|[$\w]+\?[$\w]+\.pointer\+" ":"  ",[$\w]+=\2\?[$\w]+:[$\w]+\.circle,)([$\w]+)=\4>0\?`\$\{([$\w]+)\} \$\{\4\} more`:""/g,
+  /\{isSelected:([$\w]+),isViewed:([$\w]+),labelWidth:([$\w]+),moreAbove:([$\w]+),onClick:([$\w]+)\}=([$\w]+),(\[[$\w]+,[$\w]+\]=[$\w]+(?:\.useState)?\(!1\),[$\w]+=\1\|\|[$\w]+\?[$\w]+\.pointer\+" ":"  ",[$\w]+=\2\?[$\w]+:[$\w]+\.circle,)([$\w]+)=\4>0\?`\$\{([$\w]+)\} \$\{\4\} more`:""/g,
   '{isSelected:$1,isViewed:$2,labelWidth:$3,moreAbove:$4,onClick:$5,mainStatus:__almMS}=$6,$7$8=[__almMS||"",$4>0?`${$9} ${$4} more`:""].filter(Boolean).join(" \\xB7 ")',
 );
 

@@ -14,9 +14,12 @@
 // the whitelist reaches MCP tools too. Set it in settings.json's `env` block to
 // have it apply to every session.
 //
-// Anchor: the predicate is reached through the module's export map
-// (isDeferredTool), which gives its minified name; the function body is then
-// pinned by the three checks that must precede our insertion point.
+// Anchor: the head of the predicate — the always-load escape, the
+// non-deferrable-builtin list, and the MCP branch our check has to precede.
+// Those three property names pin it. The match is then proved to be the real
+// deferral predicate by following the public isDeferredTool export back to it:
+// the facade module re-exports a binding it imports from the defining module,
+// whose export map names the matched function.
 import { readFileSync, writeFileSync } from "node:fs";
 
 const jsPath = process.argv[2];
@@ -38,18 +41,62 @@ function only(label, regex) {
   return matches[0];
 }
 
-const name = only("isDeferredTool export", /isDeferredTool:\(\)=>([$\w]+)[,}]/g)[1];
+const esc = (s) => s.replace(/\$/g, "\\$");
+
+// Text of the module containing `at`, and the module's file name. Modules are
+// concatenated in load order, each behind a `//__CHUNK__ <name>` marker line.
+function chunkAt(at) {
+  const marker = js.lastIndexOf("\n//__CHUNK__ ", at);
+  if (marker === -1) fail("no chunk marker precedes the match — refusing");
+  const nameEnd = js.indexOf("\n", marker + 1);
+  let end = js.indexOf("\n//__CHUNK__ ", nameEnd);
+  if (end === -1) end = js.length;
+  return { name: js.slice(marker + 13, nameEnd), text: js.slice(nameEnd + 1, end) };
+}
+
+function onlyIn(label, text, regex) {
+  const matches = [...text.matchAll(regex)];
+  if (matches.length !== 1)
+    fail(`${label}: ${matches.length} matches, expected exactly 1 — bundle layout changed, refusing`);
+  return matches[0];
+}
+
 // The head of the predicate: the always-load escape, the non-deferrable-builtin
 // list, and the MCP branch our check has to precede.
 const head = only(
   "deferral predicate",
-  new RegExp(
-    `function ${name.replace(/\$/g, "\\$")}\\(([$\\w]+)\\)\\{if\\(\\1\\.alwaysLoad===!0\\)return!1;if\\([$\\w]+\\(\\)\\.includes\\(\\1\\.name\\)\\)return!1;if\\(\\1\\.isMcp===!0\\)return!0;`,
-    "g",
-  ),
+  /function ([$\w]+)\(([$\w]+)\)\{if\(\2\.alwaysLoad===!0\)return!1;if\([$\w]+\(\)\.includes\(\2\.name\)\)return!1;if\(\2\.isMcp===!0\)return!0;/g,
 );
+const name = head[1];
 
-const tool = head[1];
+// Prove the match is the tool-search deferral predicate and not a lookalike:
+// the module that publishes isDeferredTool imports that binding from the
+// module holding the match, which exports the matched function under it.
+{
+  const exported = only("isDeferredTool export", /([$\w]+) as isDeferredTool[,}]/g);
+  const facade = chunkAt(exported.index);
+  const imported = onlyIn(
+    "facade import of the deferral predicate",
+    facade.text,
+    new RegExp(`import\\{[^{}]*?([$\\w]+) as ${esc(exported[1])}[,}][^{}]*?\\}from"[^"]*?/(chunk-[\\w]+\\.js)"`, "g"),
+  );
+  const owner = chunkAt(head.index);
+  if (imported[2] !== owner.name)
+    fail(
+      `isDeferredTool comes from ${imported[2]} but the predicate matched in ${owner.name} — refusing`,
+    );
+  const reexport = onlyIn(
+    "defining module's export of the predicate",
+    (owner.text.match(/export\{[^{}]*\}/g) ?? []).join(""),
+    new RegExp(`([$\\w]+) as ${esc(imported[1])}[,}]`, "g"),
+  );
+  if (reexport[1] !== name)
+    fail(
+      `isDeferredTool resolves to ${reexport[1]}, but the predicate matched is ${name} — refusing`,
+    );
+}
+
+const tool = head[2];
 const insertAt = head.index + `function ${name}(${tool}){`.length;
 const check =
   `if((process.env.CLAUDE_CODE_IMMEDIATE_TOOLS??"").split(/[,\\s]+/).includes(${tool}.name))return!1;`;

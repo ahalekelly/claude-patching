@@ -53,17 +53,21 @@ replaceOne(
   "for(let $1=$2-1;$1>=$3;$1--){let $4=$5($1);if($4>=0){if($4<$6){if($1===$2-1)$8=$2;break}$7=$4}$8=$1}let $9=-1,$10=null;if($8>0)for",
 );
 
-// The header's prompt line, stock:
-//   jsxs(h,{color:"subtle",wrap:"truncate-end",children:[pointer," ",text]})
+// The header's prompt line, drawn as one Text element holding the pointer
+// glyph and the prompt text:
+//   jsxs(Text,{color:"subtle",wrap:"truncate-end",children:[pointer," ",text]})
 // Restyle it like a transcript user message but a step less prominent:
 // pointer in "subtle", prompt text in "inactive" — the theme's true
 // intermediate grey between "text" and "subtle" in both light and dark
 // themes (dimColor is unusable here: SGR faint rendering is terminal-
 // dependent and observed to make the text MORE prominent), same background.
+// The element factory and the Text component are both taken from the match, so
+// nothing is written by its minified name; each nested element passes its
+// child as a one-element array, which is what that factory expects.
 replaceOne(
   "header contrast",
-  /([$\w]+)\.jsxs\(([$\w]+),\{color:"subtle",wrap:"truncate-end",children:\[([$\w]+)\.pointer," ",([$\w]+)\]\}\)/g,
-  '$1.jsxs($2,{wrap:"truncate-end",children:[$1.jsx($2,{color:"subtle",children:$3.pointer})," ",$1.jsx($2,{color:"inactive",children:$4})]})',
+  /([$\w]+)\(([$\w]+),\{color:"subtle",wrap:"truncate-end",children:\[([$\w]+)\.pointer," ",([$\w]+)\]\}\)/g,
+  '$1($2,{wrap:"truncate-end",children:[$1($2,{color:"subtle",children:[$3.pointer]})," ",$1($2,{color:"inactive",children:[$4]})]})',
 );
 
 writeFileSync(jsPath, js);

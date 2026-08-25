@@ -12,9 +12,13 @@
 // carries both effects: the prefix is part of the queued value, so the rendered
 // transcript row and the copy sent to the model agree.
 //
-// Anchor: the queued-prompt builder, identified by its full property set
-// (mode/priority/isMeta/skipSlashCommands/modelScheduledOrigin/wakeupSource/
-// workload) — modelScheduledOrigin and wakeupSource exist nowhere else.
+// Anchor: the head of the queued-prompt builder's object literal, identified
+// by its leading property run (value/mode/agentId/priority/isMeta/
+// skipSlashCommands/modelScheduledOrigin/wakeupSource). The scheduler's other
+// enqueue site — the Kairos cron path — builds the same fields in a different
+// order and does not lead with value, so the run is unique to the interactive
+// scheduled-tasks fire. Only the two properties the patch changes are
+// rewritten, so the builder's trailing fields are irrelevant to the anchor.
 import { readFileSync, writeFileSync } from "node:fs";
 
 const jsPath = process.argv[2];
@@ -25,7 +29,7 @@ if (!jsPath) {
 let js = readFileSync(jsPath, "utf8");
 
 const builder =
-  /\(([$\w]+),([$\w]+)\)=>\(\{value:\1,mode:"prompt",agentId:([$\w]+)\(\),priority:"later",isMeta:!0,skipSlashCommands:!0,modelScheduledOrigin:!0,wakeupSource:\2,workload:([$\w]+)\}\)/g;
+  /\{value:([$\w]+),mode:"prompt",agentId:[$\w]+\(\),priority:"later",isMeta:!0,skipSlashCommands:!0,modelScheduledOrigin:!0,wakeupSource:/g;
 const matches = [...js.matchAll(builder)];
 if (matches.length !== 1) {
   console.error(
@@ -35,11 +39,10 @@ if (matches.length !== 1) {
 }
 
 const m = matches[0];
-const [, prompt, source, agentId, workload] = m;
-const patched =
-  `(${prompt},${source})=>({value:"CronJob: "+${prompt},mode:"prompt",agentId:${agentId}(),` +
-  `priority:"later",isMeta:!1,skipSlashCommands:!0,modelScheduledOrigin:!0,` +
-  `wakeupSource:${source},workload:${workload}})`;
+const prompt = m[1];
+const patched = m[0]
+  .replace(`{value:${prompt},`, `{value:"CronJob: "+${prompt},`)
+  .replace("isMeta:!0,", "isMeta:!1,");
 js = js.slice(0, m.index) + patched + js.slice(m.index + m[0].length);
 
 writeFileSync(jsPath, js);
