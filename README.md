@@ -50,7 +50,7 @@ The two `defer-*-description` patches move each tool's description into a skill 
 - macOS or Linux, and Claude Code installed natively (`~/.local/bin/claude` → `~/.local/share/claude/versions/<version>`). The npm install is a different shape and is not supported.
 - `node` 24 or newer (the bundle uses `using` declarations, which older parsers reject), `python3`, and `jq`.
 - [`pyte`](https://github.com/selectel/pyte) for the PTY half of the suite — the tests fetch it themselves if `uv` is installed, since they run under `uv run --script`.
-- A logged-in `claude` CLI, for the agents the port escalates to. Without one, the port still works mechanically; it just cannot re-anchor a patch that has drifted, act on what the upstream watch finds, or diagnose a failure.
+- A logged-in `claude` CLI on the porter, for re-anchoring, advisories, and escalation.
 
 ## Install
 
@@ -87,15 +87,17 @@ One rule governs every launch: **run the best available patched binary now, reco
 
 Resolution order: the newest installed version if its stamp is valid (the silent fast path), else the newest binary in the archive, else stock. In the last two cases the check prints why, spawns the background port, and exits 1 so the wrapper holds for an Enter before the TUI wipes the message. It also warns when the archived binary it just launched is more than three releases or seven days behind the installed one, since silent indefinite fallback is this design's main risk.
 
-The port itself runs detached, in three tiers:
+On the porter, the detached port runs in three tiers:
 
 1. **Mechanical.** Apply the patch set to the new bundle. Usually enough — most releases move nothing a content-bearing anchor depends on.
 2. **Re-anchor.** If a patch no longer applies, a Claude agent (`port-agent.sh`) gets the failure, the previous release's bundle, and [Piebald-AI/claude-code-system-prompts](https://github.com/Piebald-AI/claude-code-system-prompts), then edits the drifted patch in place and verifies its work against the functional suite. Anything beyond a re-anchor — a test fixture gone stale because the release changed the underlying behavior, a patch worth dropping — goes to a Fable subagent, which owns the judgment call, delegates the implementation to Opus subagents, and commits contract-side changes (tests, harness) separately from patches. A patch it cannot repair goes in `patches-local/<version>/dropped`, so one cosmetic patch cannot pin the machine to an old release.
 3. **Gate.** The candidate must report a version, complete a trivial prompt, and pass `tests/run-all.sh`. **Only a candidate that passes is promoted.** After promotion, the port commits the agent's re-anchors automatically. The agent never touches the live launch path.
 
-A failed port writes `port-state/<version>.failed` and is not retried for 24 hours or until the patch set itself changes, so a broken version cannot respawn an agent every time something triggers it. It also escalates once: `escalation-agent.sh` hands the failure to a Fable agent that diagnoses it, delegates the fix to Opus subagents, verifies through the same gate, commits, and re-runs the port. Promotion takes the same lock a launch takes, writes every file new and moves it into place, and relinks the macOS app bundle.
+A failed port writes `port-state/<version>.failed` and is not retried for 24 hours or until its inputs change. On the porter, it also escalates once: `escalation-agent.sh` hands the failure to a Fable agent that diagnoses it, delegates the fix to Opus subagents, verifies through the same gate, commits, and re-runs the port. Promotion takes the same lock a launch takes, writes every file new and moves it into place, and relinks the macOS app bundle.
 
-Every port rebases on `origin/master` before it decides anything and pushes a re-anchor once the gate passes, so one machine's port serves the rest and the second machine to see a release usually has nothing left to fix.
+### Porter and consumers
+
+The short hostname in `porter` names the one machine that re-anchors patches, runs the full suite and advisory, and pushes its commits. Every other machine pulls `origin/master`, applies the patches mechanically, runs the parse and smoke checks, and promotes locally. On drift, a consumer waits for the porter's pushed re-anchor instead of spawning an agent. Edit `porter` to move the role.
 
 Everything else the port produces stays in `port-state/` for forensics. The one human-facing channel is `port-state/brief`: a Fable agent that hits something it cannot resolve itself opens a GitHub issue with the detail and delivers one paragraph through `brief.sh` — what the problem is, what you have to do, and the issue URL. It opens in a Terminal window at once, and the next launch prints and clears the file.
 
@@ -134,21 +136,22 @@ Set it in user settings (`~/.claude/settings.json`):
 ### Files
 
 - `check-and-apply.sh <target-file>` — pre-launch check: stamp fast path, archive fallback, staleness warning, background port. Exit 0 = silent, exit 1 = printed something the wrapper should hold for. Exits immediately when `CLAUDE_PATCHING_AUTOPORT` is set, so the port's own sessions never recurse.
-- `background-port.sh [version]` — the reconciler: retry damper, lock, prune of state for uninstalled versions, mechanical apply, agent escalation, gate, stock-suite run, promotion, advisory pass. A failure escalates to Fable once per version.
+- `background-port.sh [version]` — the reconciler: pull, retry damper, lock, prune, mechanical apply, role-specific gate, and promotion. The porter also handles re-anchoring, the stock suite, advisories, and escalation.
 - `process-wrapper.sh <binary> <args...>` — the `processWrapper` argv prefix: execs the best patched binary in place of the one a background spawn asked for, silently, falling through to the requested binary on any failure.
-- `lib.sh` — shared platform seams, patch-set fingerprint, and the binary selection both launch paths use.
+- `lib.sh` — shared platform seams, porter detection, patch-set fingerprint, and binary selection.
+- `porter` — short hostname of the machine allowed to run porting agents.
 - `autoport-trigger.sh` — fired by launchd or systemd on any change to the versions directory: settle wait, stamp fast path, else `exec` the port so the service manager tracks it as the job.
 - `com.akelly.claude-patching.autoport.plist` — the launchd agent. Absolute paths, `RunAtLoad` so an install during a logout is caught, `ThrottleInterval` so a burst of writes fires it once.
 - `claude-patching-autoport.path` — the systemd user path watcher.
 - `claude-patching-autoport.service` — the systemd user service, also started at login.
 - `apply-display-patches.sh <version> <output-binary>` — pure candidate builder: unpacks `versions/<version>.orig` (backing it up on first sight), applies `PATCH_IDS` in order, repacks to the output path and signs it on macOS. Fails loudly, writing nothing, if any patch does not match.
 - `bunbundle.py unpack|repack` — the bun-blob tool behind the builder: unpack concatenates the binary's embedded JS modules into one marker-delimited file, repack splits it back, syntax-checks and de-bytecodes the modules that changed, and rebuilds the blob at its original byte length.
-- `port-agent.sh` / `advisory-agent.sh` / `escalation-agent.sh` — the three escalations, all launched through `agent-run.sh`: a headless Claude session in auto permission mode. Each step it takes lands in `port-state/<tag>-<version>.log` as it happens — assistant text, a line per tool call, then the final report. That log is the run's only trace.
+- `port-agent.sh` / `advisory-agent.sh` / `escalation-agent.sh` — porter-only agents launched through `agent-run.sh` in auto permission mode. Each step lands in `port-state/<tag>-<version>.log`.
 - `brief.sh <paragraph>` — the only channel to a human: appends the paragraph to `port-state/brief` and, on macOS, opens a Terminal window showing it.
 - `setup-signing.sh` — macOS-only, run by hand once: creates the local certificate the port signs patched binaries with.
 - `patches/` — the committed patch set, including re-anchors that pass the port's functional gate.
 - `patches-local/` — machine-local `enable` and `disable` selections, plus `<version>/dropped`.
-- `port-state/` — locks, logs, failure and escalation markers, and `brief`, the paragraph the next launch prints.
+- `port-state/` — locks, logs, failure, waiting and escalation markers, and `brief`, the paragraph the next launch prints.
 
 ## Tests
 
@@ -162,7 +165,7 @@ Set it in user settings (`~/.claude/settings.json`):
 
 ### Upstream watch
 
-Every port runs the same suite against the stock binary too, where every test is meant to fail. A test that **passes on stock** has lost its discrimination — either Anthropic shipped the behavior natively, or the assertion drifted vacuous and its pass on the candidate proves nothing. Both are worth knowing; neither is decided by the port.
+Every porter promotion runs the same suite against the stock binary too, where every test is meant to fail. A test that **passes on stock** has lost its discrimination — either Anthropic shipped the behavior natively, or the assertion drifted vacuous and its pass on the candidate proves nothing. Both are worth knowing; neither is decided by the port.
 
 After promotion an advisory agent classifies those, reads the per-test stock failure reasons (a test asserting a patch artifact — the MCP canary, a defer stub's text — can never pass on stock even once Anthropic fixes the underlying problem, so only the reason distinguishes the two), and reviews what [phate45/claude-patching](https://github.com/phate45/claude-patching) has done since the SHA in `port-state/phate45-reviewed`. Anything actionable — a redundant patch, a vacuous test, an upstream patch worth adopting — goes to a Fable subagent that decides what to change and delegates the work to Opus subagents. Every edit passes the same gate the port uses before it is committed, and changing `patches/` moves the patch-set fingerprint, so the next launch or watch event re-ports the version on its own.
 
