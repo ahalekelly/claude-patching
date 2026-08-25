@@ -60,6 +60,7 @@ if [[ "$SELECTED" != "$BIN" ]]; then
     echo "claude-patching: WARNING — that is $behind release(s) and $days day(s) behind $VER. Check $STATE/port-$VER.log."
   fi
 else
+  FALLBACK="stock $VER"
   echo "claude-patching: no patched binary available — launching stock $VER."
 fi
 [[ -n "$brief" ]] && echo "$brief"
@@ -67,5 +68,9 @@ fi
 # Reconcile in the background. Never blocks the launch, and self-damps if the
 # port of this version already failed recently.
 CLAUDE_PATCHING_AUTOPORT=1 nohup "$ROOT/background-port.sh" "$VER" >/dev/null 2>&1 &
-echo "claude-patching: reconciling $VER in the background — see $STATE/port-$VER.log."
+if [[ -f "$STATE/$VER.waiting" ]]; then
+  echo "claude-patching: $VER not ported yet, waiting for $(<"$ROOT/porter") — launching $FALLBACK"
+else
+  echo "claude-patching: reconciling $VER in the background — see $STATE/port-$VER.log."
+fi
 exit 1

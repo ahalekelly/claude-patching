@@ -4,12 +4,12 @@
 #   background-port.sh [version]      (default: the newest installed version)
 #
 # Spawned detached by check-and-apply.sh, so nothing here may block a launch.
-# It builds a candidate — mechanically first, escalating to the port agent only
-# when a patch no longer applies — puts it through the functional suite, and
-# promotes it only if that passes. A promoted binary lands in versions/, is
-# archived outside the pruned versions/ directory, and gets the stamp that makes
-# the next launch take the silent fast path. After promotion an advisory agent
-# reviews what the port learned and acts on it through Fable.
+# It builds a candidate mechanically. The porter re-anchors drift and runs the
+# full gate; consumers wait for its pushed patch and run only the cheap checks.
+# A promoted binary lands in versions/, is archived outside the pruned versions/
+# directory, and gets the stamp that makes the next launch take the silent fast
+# path. After promotion on the porter, an advisory agent reviews what the port
+# learned and acts on it through Fable.
 set -uo pipefail
 # launchd and systemd fire the autoport with a minimal PATH that misses the
 # tools this needs: claude lives in ~/.local/bin, and on macOS node, jq and uv
@@ -78,19 +78,28 @@ elif ! git -C "$ROOT" pull --rebase --quiet origin master; then
 fi
 
 # Retry damper. Both the launch check and the versions watcher fire this script,
-# and the watcher can fire repeatedly, so a version whose port failed must not
-# respawn an agent every time. A day, or any change to the port's inputs, clears
-# it.
-if [[ -f "$STATE/$VER.failed" ]] &&
-   [[ -z "$(find "$STATE/$VER.failed" -maxdepth 0 -mmin +1440 2>/dev/null)" ]] &&
-   [[ "$(head -1 "$STATE/$VER.failed")" == "$(damper_fingerprint)" ]]; then
-  say "the port of $VER failed recently — not retrying; delete $STATE/$VER.failed to force a retry"
+# and the watcher can fire repeatedly. Failed ports wait a day; consumers that
+# found drift retry after 30 minutes. A changed fingerprint clears either damper,
+# and the pull above happens first so the porter's pushed re-anchor clears a
+# consumer's wait immediately.
+retry_marker="$STATE/$VER.failed"
+retry_minutes=1440
+retry_message="the port of $VER failed recently — not retrying; delete $retry_marker to force a retry"
+if ! is_porter && [[ -f "$STATE/$VER.waiting" ]]; then
+  retry_marker="$STATE/$VER.waiting"
+  retry_minutes=30
+  retry_message="waiting for $(<"$ROOT/porter") to port $VER — not retrying yet"
+fi
+if [[ -f "$retry_marker" ]] &&
+   [[ -z "$(find "$retry_marker" -maxdepth 0 -mmin +$retry_minutes 2>/dev/null)" ]] &&
+   [[ "$(head -1 "$retry_marker")" == "$(damper_fingerprint)" ]]; then
+  say "$retry_message"
   exit 0
 fi
 
 fail() { # <reason>
   local reason="$1" rejected
-  if [[ "$AGENT_EDITED" == 1 && -n "$(git -C "$ROOT" status --porcelain -- patches/)" ]]; then
+  if is_porter && [[ "$AGENT_EDITED" == 1 && -n "$(git -C "$ROOT" status --porcelain -- patches/)" ]]; then
     rejected="$STATE/patches-$VER.rejected.diff"
     git -C "$ROOT" diff -- patches/ > "$rejected"
     git -C "$ROOT" checkout -- patches/
@@ -102,7 +111,7 @@ fail() { # <reason>
   # Escalate detached: this run holds the lock and must exit, and the escalation
   # re-runs the port itself once it has a fix. Once per version — a second
   # failure after Fable's fix must not recurse into another escalation.
-  if [[ ! -e "$STATE/$VER.escalated" ]]; then
+  if is_porter && [[ ! -e "$STATE/$VER.escalated" ]]; then
     touch "$STATE/$VER.escalated"
     nohup "$ROOT/escalation-agent.sh" "$VER" "$reason" >/dev/null 2>&1 &
   fi
@@ -171,6 +180,13 @@ fi
 CAND="$WORK/claude-$VER"
 if ! "$ROOT/apply-display-patches.sh" "$VER" "$CAND" > "$WORK/apply.log" 2>&1; then
   tail -20 "$WORK/apply.log"
+  if ! is_porter; then
+    rm -f "$STATE/$VER.failed" "$STATE/$VER.escalated"
+    { damper_fingerprint
+      date '+%F %T'; } > "$STATE/$VER.waiting"
+    say "waiting for $(<"$ROOT/porter") to port $VER"
+    exit 0
+  fi
   [[ -z "$(git -C "$ROOT" status --porcelain -- patches/)" ]] ||
     fail "patches/ has uncommitted changes — the port agent cannot re-anchor over them"
   say "patches do not apply cleanly — escalating to the port agent"
@@ -183,32 +199,38 @@ cat "$WORK/apply.log"
 chmod +x "$CAND"
 
 DROPPED="$(cat "$LOCAL/$VER/dropped" 2>/dev/null | tr '\n' ' ')"
-# Patches not in this machine's effective set (default-off ones never enabled,
-# or locally disabled) get their suite tests skipped the same way dropped
-# per-version patches do — but only real per-version drops belong in the
-# promotion banner.
-EFFECTIVE="$("$ROOT/apply-display-patches.sh" --print-ids)"
-SKIPPED="$DROPPED"
-for id in $(basename -s .mjs "$ROOT/patches/"*.mjs); do
-  case " $EFFECTIVE " in *" $id "*) ;; *) SKIPPED="$SKIPPED $id";; esac
-done
+STOCK_LOG=""
+SUSPECT=""
+if is_porter; then
+  # Patches not in this machine's effective set (default-off ones never enabled,
+  # or locally disabled) get their suite tests skipped the same way dropped
+  # per-version patches do — but only real per-version drops belong in the
+  # promotion banner.
+  EFFECTIVE="$("$ROOT/apply-display-patches.sh" --print-ids)"
+  SKIPPED="$DROPPED"
+  for id in $(basename -s .mjs "$ROOT/patches/"*.mjs); do
+    case " $EFFECTIVE " in *" $id "*) ;; *) SKIPPED="$SKIPPED $id";; esac
+  done
+fi
 "$CAND" --version >/dev/null 2>&1 || fail "the candidate does not report a version"
 SMOKE="$("$CAND" -p --model sonnet "reply with the single word ok" 2>&1)" ||
   { echo "$SMOKE" | tail -5; fail "the candidate cannot complete a prompt"; }
-"$ROOT/tests/run-all.sh" "$CAND" $SKIPPED || fail "the functional suite did not pass"
 
-# The same suite against the stock binary. Every test is meant to fail here — a
-# test that passes has lost its discrimination, which means one of: Anthropic
-# shipped the behavior natively, the assertion drifted vacuous and its pass on
-# the candidate proves nothing, or a flake. The per-test reasons are kept
-# because they carry the mirror case too: a test asserting a patch artifact (the
-# MCP canary, a defer stub's text) can never pass on stock even once Anthropic
-# fixes the underlying behavior, and only its failure reason says which. The
-# advisory agent classifies; the port just records.
-STOCK_LOG="$STATE/stock-suite-$VER.log"
-"$ROOT/tests/run-all.sh" "$VERSIONS/$VER.orig" $SKIPPED > "$STOCK_LOG" 2>&1
-SUSPECT="$(awk '$1=="pass"{printf "%s ", $2}' "$STOCK_LOG")"
-[[ -n "$SUSPECT" ]] && say "suspect — these tests also pass on stock $VER: $SUSPECT"
+if is_porter; then
+  "$ROOT/tests/run-all.sh" "$CAND" $SKIPPED || fail "the functional suite did not pass"
+
+  # The same suite against the stock binary. Every test is meant to fail here —
+  # a test that passes has lost its discrimination, which means one of:
+  # Anthropic shipped the behavior natively, the assertion drifted vacuous and
+  # its pass on the candidate proves nothing, or a flake. The per-test reasons
+  # are kept because they carry the mirror case too: a test asserting a patch
+  # artifact can never pass on stock even once Anthropic fixes the underlying
+  # behavior. The advisory agent classifies; the port just records.
+  STOCK_LOG="$STATE/stock-suite-$VER.log"
+  "$ROOT/tests/run-all.sh" "$VERSIONS/$VER.orig" $SKIPPED > "$STOCK_LOG" 2>&1
+  SUSPECT="$(awk '$1=="pass"{printf "%s ", $2}' "$STOCK_LOG")"
+  [[ -n "$SUSPECT" ]] && say "suspect — these tests also pass on stock $VER: $SUSPECT"
+fi
 
 # Promotion. Under the same lock check-and-apply.sh takes, so no launch ever
 # reads a half-promoted state, and every file is written new then moved into
@@ -243,10 +265,10 @@ pkill -f -- '--bg-spare' 2>/dev/null || true
 rmdir "$BIN.lock" 2>/dev/null
 # The escalation marker goes with the failure marker, so a later regression on
 # this version can escalate again.
-rm -f "$STATE/$VER.failed" "$STATE/$VER.escalated"
+rm -f "$STATE/$VER.failed" "$STATE/$VER.escalated" "$STATE/$VER.waiting"
 
 PATCH_FILES="$(git -C "$ROOT" diff --name-only -- patches/)"
-if [[ "$AGENT_EDITED" == 1 && -n "$PATCH_FILES" ]]; then
+if is_porter && [[ "$AGENT_EDITED" == 1 && -n "$PATCH_FILES" ]]; then
   PATCH_IDS="$(printf '%s\n' "$PATCH_FILES" | sed 's#^patches/##; s/\.mjs$//' | tr '\n' ' ' | sed 's/ $//')"
   git -C "$ROOT" add -- $PATCH_FILES || fail "could not stage the port agent's patch edits"
   if ! git -C "$ROOT" commit -m "Re-anchor $PATCH_IDS for Claude Code $VER" \
@@ -263,6 +285,8 @@ fi
 say "$VER promoted${DROPPED:+ (dropped:$DROPPED)}${SUSPECT:+ (suspect:$SUSPECT)} — restart sessions to pick it up"
 
 # Advisory pass. Promotion is already done, so a slow or failed review costs
-# nothing.
-"$ROOT/advisory-agent.sh" "$VER" "$STOCK_LOG" ||
-  say "the advisory agent exited nonzero — see $STATE/advisory-$VER.log"
+# nothing. Only the porter reviews the shared JavaScript patch set.
+if is_porter; then
+  "$ROOT/advisory-agent.sh" "$VER" "$STOCK_LOG" ||
+    say "the advisory agent exited nonzero — see $STATE/advisory-$VER.log"
+fi

@@ -18,6 +18,7 @@ esac
 file_id() { stat "${STAT_ID[@]}" "$1"; }
 file_size() { stat "${STAT_SIZE[@]}" "$1"; }
 file_mtime() { stat "${STAT_MTIME[@]}" "$1"; }
+is_porter() { [[ "$(hostname -s)" == "$(<"$ROOT/porter")" ]]; }
 
 fingerprint() {
   find "$ROOT/apply-display-patches.sh" "$ROOT/patches" "$ROOT/patches-local" \

@@ -12,6 +12,10 @@
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$ROOT/lib.sh"
+if ! is_porter; then
+  echo "agent-run.sh runs only on porter $(<"$ROOT/porter")" >&2
+  exit 1
+fi
 STATE="$ROOT/port-state"
 USAGE="usage: agent-run.sh <version> <tag> <model> <prompt-file> <timeout-minutes>"
 VER="${1:?$USAGE}"

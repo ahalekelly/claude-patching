@@ -11,6 +11,11 @@
 # Claude Code may have made redundant.
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$ROOT/lib.sh"
+if ! is_porter; then
+  echo "advisory-agent.sh runs only on porter $(<"$ROOT/porter")" >&2
+  exit 1
+fi
 STATE="$ROOT/port-state"
 VER="${1:?usage: advisory-agent.sh <version> <stock-suite-log>}"
 STOCK_LOG="${2:?usage: advisory-agent.sh <version> <stock-suite-log>}"

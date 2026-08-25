@@ -13,6 +13,11 @@
 # background-port.sh commits them only after that gate passes.
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$ROOT/lib.sh"
+if ! is_porter; then
+  echo "port-agent.sh runs only on porter $(<"$ROOT/porter")" >&2
+  exit 1
+fi
 STATE="$ROOT/port-state"
 VERSIONS="$HOME/.local/share/claude/versions"
 VER="${1:?usage: port-agent.sh <version> <apply-log>}"
