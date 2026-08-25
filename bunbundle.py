@@ -9,33 +9,48 @@
 Blob format
 -----------
 A bun standalone binary ends with a blob laid out as: string region, module
-table, argv, a 32-byte header, then the trailer `\\n---- Bun! ----\\n`. The
-header holds, little-endian: u64 blob byte count (also the header's own offset
-inside the blob), u32 module table offset, u32 module table length, u32 entry
-module id, u32 argv offset, u32 argv length, u32 flags. All offsets are
-relative to the start of the blob.
+table, optional records, argv, a 32-byte header, then the trailer
+`\\n---- Bun! ----\\n`. The header holds, little-endian: u64 blob byte count
+(also the header's own offset inside the blob), u32 module table offset, u32
+module table length, u32 entry module id, u32 argv offset, u32 argv length, u32
+flags. All offsets are relative to the start of the blob.
 
 Each module is a 52-byte struct: six (u32 offset, u32 length) pointers into the
 string region — name, contents, sourcemap, bytecode, module info, bytecode
-origin path — followed by four flag bytes. Flag byte 1 is the loader: 1 for a
-JS module, 5 for a file asset (`.min.js` libraries, HTML payloads), 10 for a
-native `.node` addon. Only loader 1 modules are JS the runtime executes; this
-tool moves exactly those. Every string in the region is NUL-terminated.
+origin path — followed by four flag bytes. Flag byte 0 is the string encoding,
+1 for Latin-1. Flag byte 1 is the loader: 1 for a JS module, 5 for a file asset
+(`.min.js` libraries, HTML payloads), 10 for a native `.node` addon. Only
+loader 1 modules are JS the runtime executes; this tool moves exactly those.
+Every string in the region is NUL-terminated.
 
-Fixed-length rebuild
---------------------
-The rebuild pins the module table at its original offset and lets the string
-region absorb the size delta as slack, so the blob — and the whole binary —
-keeps its original byte length and every other file offset in the Mach-O image
-stays valid.
+The records between the module table and argv are each present when their flag
+bit is set, laid out in bit order: bit 5, a `[u32; modules]` array of Latin-1
+hashes of the modules' contents (0 means unrecorded, and the runtime then
+hashes the source itself); bit 6, a builtin bytecode table of a u32 count
+followed by count × {u32 id, u32 offset, u32 length}; bit 7, a (u32 offset, u32
+length) pointer to the shared bytecode string table every module's bytecode
+refers into; bit 8, a u32 startup module count. Bit 4 promises that all module
+contents lie in one contiguous run no other region overlaps, which the runtime
+madvise(DONTNEED)s once startup is done. Bytecode starts at an offset ≡ 120
+(mod 128).
+
+In-place edit
+-------------
+The repack rewrites only the bytes it must, so every byte it does not touch
+keeps its offset and the blob, the binary, and every other file offset in the
+executable stay valid. Clearing a modified module's bytecode opens a hole in
+the string region; each new source is written into the first hole that fits it,
+the module's contents pointer is repointed there, its source hash is zeroed,
+and flag bit 4 is cleared because the new source sits outside the contiguous
+run.
 
 Bytecode
 --------
 JS modules carry precompiled JSC bytecode, which bun validates against the
 source and rejects on mismatch. A modified module therefore has its bytecode
 field cleared and is compiled from source at startup. Bytecode dwarfs source
-(hundreds of MB against tens), so clearing a single module frees far more slack
-than any patch consumes.
+(hundreds of MB against tens), so the hole one cleared module opens swallows
+far more than any patch needs.
 """
 import os
 import re
@@ -47,6 +62,9 @@ import tempfile
 TRAILER = b'\n---- Bun! ----\n'
 STRUCT_SIZE = 52
 JS_LOADER = 1
+LATIN1 = 1
+HAS_SOURCE_HASHES = 1 << 5
+SOURCE_TEXT_CONTIGUOUS = 1 << 4
 MARKER = b'//__CHUNK__ '
 MARKER_RE = re.compile(b'(?:\\A|(?<=\n))' + re.escape(MARKER))
 FIELDS = ('name', 'contents', 'sourcemap', 'bytecode', 'moduleInfo', 'bytecodeOriginPath')
@@ -56,60 +74,58 @@ class Blob:
     def __init__(self, path):
         self.path = path
         self.data = bytearray(open(path, 'rb').read())
-        head = self.data.rfind(TRAILER) - 32
-        if head < 0:
+        self.head = self.data.rfind(TRAILER) - 32
+        if self.head < 0:
             raise SystemExit(f'{path}: no bun standalone trailer — not a bun binary')
-        (byte_count,) = struct.unpack_from('<Q', self.data, head)
-        self.base = head - byte_count
-        self.blob_len = byte_count + 32 + len(TRAILER)
-        blob = memoryview(self.data)[self.base:self.base + self.blob_len]
-        self.table_off, self.table_len = struct.unpack_from('<II', self.data, head + 8)
-        (self.entry_id,) = struct.unpack_from('<I', self.data, head + 16)
-        argv_off, argv_len = struct.unpack_from('<II', self.data, head + 20)
-        (self.flags,) = struct.unpack_from('<I', self.data, head + 28)
-        self.argv = bytes(blob[argv_off:argv_off + argv_len])
-        table = bytes(blob[self.table_off:self.table_off + self.table_len])
+        (byte_count,) = struct.unpack_from('<Q', self.data, self.head)
+        self.base = self.head - byte_count
+        self.blob = memoryview(self.data)[self.base:self.head + 32 + len(TRAILER)]
+        self.table_off, self.table_len = struct.unpack_from('<II', self.blob, byte_count + 8)
+        (self.flags,) = struct.unpack_from('<I', self.blob, byte_count + 28)
         self.mods = []
         for k in range(self.table_len // STRUCT_SIZE):
-            o = k * STRUCT_SIZE
-            m = {}
-            for j, field in enumerate(FIELDS):
-                off, ln = struct.unpack_from('<II', table, o + 8 * j)
-                m[field] = bytes(blob[off:off + ln])
-            m['efs'] = struct.unpack_from('<BBBB', table, o + 48)
+            o = self.table_off + k * STRUCT_SIZE
+            p = struct.unpack_from('<12I', self.blob, o)
+            ptr = dict(zip(FIELDS, zip(p[::2], p[1::2])))
+            m = {'index': k, 'ptr': ptr, 'efs': struct.unpack_from('<BBBB', self.blob, o + 48)}
+            for field in ('name', 'contents'):
+                off, ln = ptr[field]
+                m[field] = bytes(self.blob[off:off + ln])
             self.mods.append(m)
         self.js = [m for m in self.mods if m['efs'][1] == JS_LOADER]
         self.js_names = [os.path.basename(m['name'].decode()) for m in self.js]
 
-    def rebuild(self):
-        strings = [m[f] for m in self.mods for f in FIELDS]
-        offsets = []
-        u = 0
-        for s in strings:
-            offsets.append((u, len(s)))
-            u += len(s) + 1
-        if u > self.table_off:
-            raise SystemExit(f'string region grew past the module table: {u} > {self.table_off}')
-        argv_off = self.table_off + self.table_len
-        head = argv_off + len(self.argv) + 1
-        if head + 32 + len(TRAILER) != self.blob_len:
-            raise SystemExit(f'blob length changed: {head + 32 + len(TRAILER)} != {self.blob_len}')
-        blob = bytearray(self.blob_len)
-        for s, (off, ln) in zip(strings, offsets):
-            blob[off:off + ln] = s
-        blob[argv_off:argv_off + len(self.argv)] = self.argv
-        for k, m in enumerate(self.mods):
-            o = self.table_off + k * STRUCT_SIZE
-            for j in range(len(FIELDS)):
-                struct.pack_into('<II', blob, o + 8 * j, *offsets[k * len(FIELDS) + j])
-            struct.pack_into('<BBBB', blob, o + 48, *m['efs'])
-        struct.pack_into('<Q', blob, head, head)
-        struct.pack_into('<II', blob, head + 8, self.table_off, self.table_len)
-        struct.pack_into('<I', blob, head + 16, self.entry_id)
-        struct.pack_into('<II', blob, head + 20, argv_off, len(self.argv))
-        struct.pack_into('<I', blob, head + 28, self.flags)
-        blob[head + 32:head + 32 + len(TRAILER)] = TRAILER
-        self.data[self.base:self.base + self.blob_len] = blob
+    def set_ptr(self, m, field, off, ln):
+        o = self.table_off + m['index'] * STRUCT_SIZE + 8 * FIELDS.index(field)
+        struct.pack_into('<II', self.blob, o, off, ln)
+
+    def write(self, patched):
+        """Splice each patched module's contents in, reusing the space its now-stale
+        bytecode occupied. Nothing else in the blob moves or changes length."""
+        holes = []
+        for m in patched:
+            if m['efs'][0] != LATIN1:
+                raise SystemExit(f"{m['name'].decode()}: string encoding {m['efs'][0]} is not Latin-1")
+            off, ln = m['ptr']['bytecode']
+            if ln:
+                holes.append([off, ln])
+            self.set_ptr(m, 'bytecode', 0, 0)
+            if self.flags & HAS_SOURCE_HASHES:
+                struct.pack_into('<I', self.blob, self.table_off + self.table_len + 4 * m['index'], 0)
+        for m in patched:
+            need = len(m['contents']) + 1
+            hole = next((h for h in holes if h[1] >= need), None)
+            if hole is None:
+                largest = max((h[1] for h in holes), default=0)
+                raise SystemExit(f"no freed bytecode hole fits {m['name'].decode()}: needs {need} "
+                                 f'bytes, largest free hole is {largest}')
+            off = hole[0]
+            hole[0] += need
+            hole[1] -= need
+            self.blob[off:off + need] = m['contents'] + b'\0'
+            self.set_ptr(m, 'contents', off, len(m['contents']))
+        self.flags &= ~SOURCE_TEXT_CONTIGUOUS
+        struct.pack_into('<I', self.data, self.head + 28, self.flags)
         with open(self.path, 'wb') as f:
             f.write(self.data)
         os.chmod(self.path, 0o755)
@@ -164,17 +180,16 @@ def repack(src, binary):
             f'chunk markers do not match {binary}: {len(names)} chunks vs {len(blob.js_names)} JS modules, '
             f'first difference at index {first} ({names[first:first + 1]} vs {blob.js_names[first:first + 1]}), '
             f'unexpected {extra[:5]}, missing {missing[:5]}')
-    changed = 0
+    patched = []
     for (name, contents), m in zip(chunks, blob.js):
         if contents == m['contents']:
             continue
         node_check(name, contents, m['contents'])
         m['contents'] = contents
-        m['bytecode'] = b''
-        changed += 1
+        patched.append(m)
         print(f'patched {name} ({len(contents)} bytes)')
-    blob.rebuild()
-    print(f'repacked {changed} modified module(s) into {binary}')
+    blob.write(patched)
+    print(f'repacked {len(patched)} modified module(s) into {binary}')
 
 
 def node_check(name, contents, stock):

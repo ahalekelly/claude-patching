@@ -2,7 +2,7 @@
 
 Patches for the **native Claude Code binary** on macOS and Linux — all applied by default except the ones the table below marks default-off — plus a port that keeps them applied across updates without ever making you wait for it.
 
-Claude Code ships as a single-file bun executable with its JavaScript embedded as ~1400 code-split ESM modules, each carrying precompiled bytecode. Several things it does — collapsing tool calls, hiding ToolSearch and cron fires, spending thousands of standing prompt tokens on tool descriptions you rarely use, sharing one MCP server process between concurrent subagents — have no setting. So `bunbundle.py` unpacks every module into one concatenated file with a `//__CHUNK__ <name>` marker line before each, the patches edit that file, and the repack splits it back, syntax-checks the modules that changed, clears their stale bytecode (bun then parses the patched source), and rebuilds the embedded blob at its original byte length so the binary needs no other surgery beyond a re-sign.
+Claude Code ships as a single-file bun executable with its JavaScript embedded as ~1400 code-split ESM modules, each carrying precompiled bytecode. Several things it does — collapsing tool calls, hiding ToolSearch and cron fires, spending thousands of standing prompt tokens on tool descriptions you rarely use, sharing one MCP server process between concurrent subagents — have no setting. So `bunbundle.py` unpacks every module into one concatenated file with a `//__CHUNK__ <name>` marker line before each, the patches edit that file, and the repack splits it back, syntax-checks the modules that changed, clears their stale bytecode (bun then parses the patched source), and writes the new source into the space that bytecode freed, so every other byte of the binary keeps its offset and it needs no surgery beyond a re-sign.
 
 Two properties make that safe enough to run every day:
 
@@ -145,7 +145,7 @@ Set it in user settings (`~/.claude/settings.json`):
 - `claude-patching-autoport.path` — the systemd user path watcher.
 - `claude-patching-autoport.service` — the systemd user service, also started at login.
 - `apply-display-patches.sh <version> <output-binary>` — pure candidate builder: unpacks `versions/<version>.orig` (backing it up on first sight), applies `PATCH_IDS` in order, repacks to the output path and signs it on macOS. Fails loudly, writing nothing, if any patch does not match.
-- `bunbundle.py unpack|repack` — the bun-blob tool behind the builder: unpack concatenates the binary's embedded JS modules into one marker-delimited file, repack splits it back, syntax-checks and de-bytecodes the modules that changed, and rebuilds the blob at its original byte length.
+- `bunbundle.py unpack|repack` — the bun-blob tool behind the builder: unpack concatenates the binary's embedded JS modules into one marker-delimited file, repack splits it back, syntax-checks and de-bytecodes the modules that changed, and splices their new source into the freed bytecode, leaving every other byte in place.
 - `port-agent.sh` / `advisory-agent.sh` / `escalation-agent.sh` — porter-only agents launched through `agent-run.sh` in auto permission mode. Each step lands in `port-state/<tag>-<version>.log`.
 - `brief.sh <paragraph>` — the only channel to a human: appends the paragraph to `port-state/brief` and, on macOS, opens a Terminal window showing it.
 - `setup-signing.sh` — macOS-only, run by hand once: creates the local certificate the port signs patched binaries with.
