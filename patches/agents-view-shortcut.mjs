@@ -72,14 +72,16 @@ function bindingIn(label, text, regex) {
 const forRegExp = (name) => name.replace(/\$/g, "\\$");
 
 // The useKeybinding hook: registers a handler for an action in a context.
-//   function tr(e,t,r={}){let{context:n="Global",isActive:o=!0}=r,s=f(),i=y(t);
-//     i.current=t,h(()=>{if(!s||!o)return;return s.registerHandler(
-//       {action:e,context:n,handler:()=>i.current(),singleKey:!0})},[e,n,s,o])}
-// The sibling hook that registers a whole action map reads
-// `.current[c]?.()` instead, so the single-handler call pins this one.
+//   function tr(e,t,r={}){let{context:n="Global",isActive:s=!0}=r,o=f(),
+//     [i]=v(()=>({handler:t}));h(()=>{i.handler=t}),g(()=>{if(!o||!s)return;
+//     return o.registerHandler({action:e,context:n,handler:()=>i.handler(),
+//     singleKey:!0})},[e,n,o,s,i])}
+// The sibling hook that registers a whole action map takes two parameters and
+// registers each map key as its own action, so the three-parameter signature
+// registering the hook's own action argument pins this one.
 const hook = matchOne(
   "useKeybinding hook",
-  /function ([$\w]+)\(([$\w]+),[$\w]+,([$\w]+)=\{\}\)\{let\{context:([$\w]+)="Global",isActive:[$\w]+=!0\}=\3,[\s\S]{0,300}?registerHandler\(\{action:\2,context:\4,handler:\(\)=>[$\w]+\.current\(\),singleKey:!0\}\)/g,
+  /function ([$\w]+)\(([$\w]+),[$\w]+,([$\w]+)=\{\}\)\{let\{context:([$\w]+)="Global",isActive:[$\w]+=!0\}=\3,[\s\S]{0,300}?registerHandler\(\{action:\2,context:\4,handler:\(\)=>[^,]*,singleKey:!0\}\)/g,
 );
 
 // The prompt-input component's chat:submit registration, the proof that the
@@ -87,7 +89,7 @@ const hook = matchOne(
 // Global registration.
 const submit = matchOne(
   "handler registration",
-  /return [$\w]+\.registerHandler\(\{action:"chat:submit",context:"Chat",handler:\(\)=>\{[$\w]+\.current\?\.\([$\w]+\.current\)\},singleKey:![$\w]+\}\)\},\[[^\]]*\]\);/g,
+  /return [$\w]+\.registerHandler\(\{action:"chat:submit",context:"Chat",handler:\(\)=>\{[^{}]*\},singleKey:![$\w]+\}\)\},\[[^\]]*\]\);/g,
 );
 
 // The hook reaches the prompt-input module as an import alias: follow it from
@@ -124,23 +126,38 @@ replaceOne(
   () => 'bindings:{"ctrl+a":"app:openAgentsView","ctrl+c":"app:interrupt"',
 );
 
-// The REPL component's left-arrow decision memo — the value of the
-// leftArrowRoute prop, and the source of the identifiers the handler needs
-// (all in REPL scope):
-//   Ee=z(()=>{
-//     if(O)return{handler:O,confirmHint:"Press ← again to go back"};
-//     {let T=fw({isBg:No(),isLoading:xt,...});
-//      if(T.ok&&T.via==="detach")return{handler:YI,confirmHint:"...go back to agents"};
-//      if(iO(T)&&rT)return{handler:Ja,confirmHint:"...open agents"}}
-//     return},[deps])
-// O = back-to-agents override passed in when opened from the agents view,
-// No() = daemon-attached, YI = debounced detach, Ja = the self-guarded
-// open-agents flow (fw only ever returns via:"detach" when No() is true, so
-// branching on No() directly is equivalent to the memo's detach check).
-const [, override, , isBg, detach, openAgents] = matchOne(
-  "left-arrow memo",
-  /,[$\w]+=[$\w]+(?:\.useMemo)?\(\(\)=>\{if\(([$\w]+)\)return\{handler:\1,confirmHint:"Press \\u2190 again to go back"\};\{let ([$\w]+)=[$\w]+\(\{isBg:([$\w]+)\(\),isLoading:[$\w]+,isExternalLoading:[$\w]+,betweenCalls:[$\w]+,inFlight:\{count:0,kinds:\[\]\}\}\);if\(\2\.ok&&\2\.via==="detach"\)return\{handler:([$\w]+),confirmHint:"Press \\u2190 again to go back to agents"\};if\([$\w]+\(\2\)&&[$\w]+\)return\{handler:([$\w]+),confirmHint:"Press \\u2190 again to open agents"\}\}return\},\[[^\]]*\]\),/g,
+// The left-arrow route helper, called from the REPL to decide what the arrow
+// gesture does, and the source of the identifiers the shortcut's handler
+// needs:
+//   function mle(e,{onDetachToCaller:t,isLoading:o,isExternalLoading:n,
+//                   betweenCalls:r,leftArrowOpensAgents:s}){
+//     if(t)return{handler:t,confirmHint:"Press ← again to go back"};
+//     {let a=sk({isBg:ko(),isLoading:o,...,inFlight:{count:0,kinds:[]}});
+//      if(a.ok&&a.via==="detach")
+//        return{handler:e.onBgDetach,confirmHint:"...go back to agents"};
+//      if(FI(a)&&s)
+//        return{handler:e.onLeftArrow,confirmHint:"...open agents"}}
+//     return}
+// e = the session controller the REPL passes in: .onBgDetach is the debounced
+// detach, .onLeftArrow the self-guarded open-agents flow. ko() =
+// daemon-attached (sk only ever returns via:"detach" when ko() is true, so
+// branching on ko() directly is equivalent to the helper's detach check).
+const route = matchOne(
+  "left-arrow route helper",
+  /function [$\w]+\(([$\w]+),\{onDetachToCaller:([$\w]+),isLoading:[$\w]+,isExternalLoading:[$\w]+,betweenCalls:[$\w]+,leftArrowOpensAgents:([$\w]+)\}\)\{if\(\2\)return\{handler:\2,confirmHint:"Press \\u2190 again to go back"\};\{let ([$\w]+)=[$\w]+\(\{isBg:([$\w]+)\(\),isLoading:[$\w]+,isExternalLoading:[$\w]+,betweenCalls:[$\w]+,inFlight:\{count:0,kinds:\[\]\}\}\);if\(\4\.ok&&\4\.via==="detach"\)return\{handler:\1\.([$\w]+),confirmHint:"Press \\u2190 again to go back to agents"\};if\([$\w]+\(\4\)&&\3\)return\{handler:\1\.([$\w]+),confirmHint:"Press \\u2190 again to open agents"\}\}return\}/g,
 );
+const [, , , , , isBg, detachProp, openProp] = route;
+
+// The REPL's call of that helper, which names the controller and the
+// back-to-agents override in REPL scope. The helper is module-local, so its
+// parameter names carry over only because both sites share a module.
+const call = matchOne(
+  "left-arrow route call",
+  /=[$\w]+\(\(\)=>[$\w]+\(([$\w]+),\{onDetachToCaller:([$\w]+),isLoading:[$\w]+,isExternalLoading:[$\w]+,betweenCalls:[$\w]+,leftArrowOpensAgents:[$\w]+\}\),\[/g,
+);
+const [, controller, override] = call;
+if (js.lastIndexOf(MARKER, route.index) !== js.lastIndexOf(MARKER, call.index))
+  fail("left-arrow route", "the helper and its REPL call site are in different modules");
 
 // The keybinding registry context is null in the REPL component itself, so
 // the handler is wired through the prompt-input component (where chat:submit
@@ -152,7 +169,9 @@ replaceOne(
   /,onExit:([$\w]+),leftArrowRoute:([$\w]+),transcript:/g,
   (m) =>
     `,onExit:${m[1]},leftArrowRoute:${m[2]},onOpenAgentsShortcut:()=>{` +
-    `if(${override}){${override}();return}if(${isBg}()){${detach}();return}${openAgents}()},transcript:`,
+    `if(${override}){${override}();return}` +
+    `if(${isBg}()){${controller}.${detachProp}();return}` +
+    `${controller}.${openProp}()},transcript:`,
 );
 
 replaceOne(
@@ -165,7 +184,7 @@ replaceOne(
 
 replaceOne(
   "handler registration",
-  /return [$\w]+\.registerHandler\(\{action:"chat:submit",context:"Chat",handler:\(\)=>\{[$\w]+\.current\?\.\([$\w]+\.current\)\},singleKey:![$\w]+\}\)\},\[[^\]]*\]\);/g,
+  /return [$\w]+\.registerHandler\(\{action:"chat:submit",context:"Chat",handler:\(\)=>\{[^{}]*\},singleKey:![$\w]+\}\)\},\[[^\]]*\]\);/g,
   (m) =>
     m[0] +
     `${useKeybinding}("app:openAgentsView",()=>{_avsOpenAgents&&_avsOpenAgents()},{context:"Global"});`,

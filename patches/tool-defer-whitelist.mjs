@@ -78,7 +78,7 @@ const name = head[1];
   const imported = onlyIn(
     "facade import of the deferral predicate",
     facade.text,
-    new RegExp(`import\\{[^{}]*?([$\\w]+) as ${esc(exported[1])}[,}][^{}]*?\\}from"[^"]*?/(chunk-[\\w]+\\.js)"`, "g"),
+    new RegExp(`import\\{[^{}]*?([$\\w]+) as ${esc(exported[1])}[,}][^{}]*?\\}from"[^"]*?/([^"/]+\\.js)"`, "g"),
   );
   const owner = chunkAt(head.index);
   if (imported[2] !== owner.name)

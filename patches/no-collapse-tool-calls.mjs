@@ -130,7 +130,7 @@ function importedAs(label, defAt, local, site) {
   const exports = [...def.text.matchAll(/export\{([^{}]*)\}/g)].map((m) => m[1]).join(",");
   const exported = aliasOf(`${label} export`, exports, local);
   const imports = [
-    ...site.text.matchAll(/import\{([^{}]*)\}from"[^"]*\/(chunk-[\w]+\.js)"/g),
+    ...site.text.matchAll(/import\{([^{}]*)\}from"[^"]*\/([^"\/]+\.js)"/g),
   ].filter((m) => `,${m[1]},`.includes(`,${exported} as `));
   if (imports.length !== 1)
     fail(
@@ -179,7 +179,7 @@ const GROUPER =
   /(return\{collapsedBase:[$\w]+,lookups:[$\w]+,hasTruncatedMessages:[$\w]+,hiddenMessageCount:[$\w]+\}\},\[[^\]]*)(\]\))/g;
 // The chat:submit registration our own registration is appended to.
 const REGISTRATION =
-  /(return ([$\w]+)\.registerHandler\(\{action:"chat:submit",context:"Chat",handler:\(\)=>\{[$\w]+\.current\?\.\(([$\w]+)\.current\)\},singleKey:![$\w]+\}\)\},\[[^\]]*\]\);)/g;
+  /(return ([$\w]+)\.registerHandler\(\{action:"chat:submit",context:"Chat",handler:\(\)=>\{[^{}]*\},singleKey:![$\w]+\}\)\},\[[^\]]*\]\);)/g;
 
 for (const [label, regex] of [
   ["classifier", CLASSIFIER],
@@ -254,7 +254,7 @@ spliceOne(
 {
   const def = matchOne(
     "useKeybinding hook",
-    /function ([$\w]+)\(([$\w]+),([$\w]+),([$\w]+)=\{\}\)\{let\{context:([$\w]+)="Global",isActive:([$\w]+)=!0\}=\4,[\s\S]{0,300}?registerHandler\(\{action:\2,context:\5,handler:\(\)=>([$\w]+)\.current\(\),singleKey:!0\}\)/g,
+    /function ([$\w]+)\(([$\w]+),([$\w]+),([$\w]+)=\{\}\)\{let\{context:([$\w]+)="Global",isActive:([$\w]+)=!0\}=\4,[\s\S]{0,300}?registerHandler\(\{action:\2,context:\5,handler:\(\)=>[^,]*,singleKey:!0\}\)/g,
   );
   const useKeybinding = importedAs(
     "useKeybinding",
