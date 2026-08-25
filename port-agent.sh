@@ -44,8 +44,10 @@ at the top of apply-display-patches.sh. Each one's header comment states the
 behavior it produces and the anchor it relies on; tests/ holds a behavioral test
 per patch, and that test — not the anchor — is the contract.
 
-Unpack the bundle with \`./node_modules/.bin/tweakcc unpack <out.js>
-$VERSIONS/$VER.orig\` and iterate against that copy.
+Unpack the bundle with \`python3 ./bunbundle.py unpack $VERSIONS/$VER.orig
+<out.js>\` and iterate against that copy: it holds every embedded JS module, in
+module order, each preceded by a \`//__CHUNK__ <name>\` marker line. Each module
+is its own scope — the README's safety bullets cover the cross-module rules.
 
 Drift inputs:
 - $PREV_NOTE

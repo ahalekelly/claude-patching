@@ -22,7 +22,6 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PATCHES="$ROOT/patches"
 LOCAL="$ROOT/patches-local"
-TWEAKCC="$ROOT/node_modules/.bin/tweakcc"
 DEFAULT_PATCH_IDS="no-collapse-tool-calls cron-visibility tool-defer-whitelist
            trim-context-bloat defer-workflow-description defer-artifact-description
            sticky-prompt-header task-reminder-conditional agents-view-shortcut
@@ -99,7 +98,7 @@ WORK="$(mktemp -d "${TMPDIR:-/tmp}/claude-patching.XXXXXX")"
 # and under set -e that turns a successful build into a failed one at exit.
 trap '/bin/rm -rf "$WORK"' EXIT
 JS="$WORK/cli-$VER.js"
-"$TWEAKCC" unpack "$JS" "$STOCK.orig"
+python3 "$ROOT/bunbundle.py" unpack "$STOCK.orig" "$JS"
 
 for id in $PATCH_IDS; do
   case " $DROPPED " in *" $id "*) echo "--- $id  DROPPED for $VER"; continue;; esac
@@ -107,21 +106,23 @@ for id in $PATCH_IDS; do
   node "$PATCHES/$id.mjs" "$JS"
 done
 
-node --check "$JS"
-# tweakcc repacks into an existing Claude Code binary, so the candidate starts
+# bunbundle repacks into an existing Claude Code binary, so the candidate starts
 # as a copy of the stock one. A fresh file every time, never an overwrite of a
-# live binary, per the code-signature and ETXTBSY caveats above.
+# live binary, per the code-signature and ETXTBSY caveats above. Repack syntax
+# checks every module a patch touched, so there is no whole-bundle check here:
+# the concatenation of many ESM module scopes is not itself a valid module.
 cp "$STOCK.orig" "$OUT"
-"$TWEAKCC" repack "$JS" "$OUT"
+python3 "$ROOT/bunbundle.py" repack "$JS" "$OUT"
 
-# Linux binaries stay unsigned. On macOS tweakcc's repack ad-hoc signs under a
-# generated identifier, which makes every promotion a brand new app: TCC keys
-# its grants to the signing identity, and an ad-hoc one is just the binary's own
-# hash. A constant identifier plus the local certificate setup-signing.sh
-# creates gives every patched binary the same identity, so the permissions
-# granted once stick. Without that certificate the signature stays ad-hoc — the
-# prompts return on each promotion, but at least they name something
-# recognizable.
+# Linux binaries stay unsigned. On macOS rewriting the copied binary invalidates
+# the signature it inherited from the stock one, and the codesign below is what
+# makes the candidate runnable again. TCC keys its grants to the signing
+# identity, and an ad-hoc signature is just the binary's own hash, so every
+# ad-hoc promotion looks like a brand new app. A constant identifier plus the
+# local certificate setup-signing.sh creates gives every patched binary the same
+# identity, so the permissions granted once stick. Without that certificate the
+# signature stays ad-hoc — the prompts return on each promotion, but at least
+# they name something recognizable.
 if [[ "$(uname)" == Darwin ]]; then
   if security find-identity -p codesigning -v 2>/dev/null | grep -q '"claude-patching"'; then
     codesign --force --sign claude-patching --identifier claude-patched "$OUT"
