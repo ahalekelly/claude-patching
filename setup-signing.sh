@@ -6,11 +6,12 @@
 #   setup-signing.sh
 #
 # macOS keys TCC permissions — automation, accessibility, screen recording — to
-# a binary's signing identity. tweakcc's repack is ad-hoc signed, which gives it
-# no identity beyond its own hash, so every promotion is an app macOS has never
-# seen and every permission is asked for again. Signing with one stable
-# certificate makes every future patched binary the same app: you answer the
-# prompts once more, and never again.
+# a binary's signing identity. apply-display-patches.sh signs each candidate it
+# builds, and without this certificate it falls back to an ad-hoc signature,
+# which gives the binary no identity beyond its own hash: every promotion is an
+# app macOS has never seen and every permission is asked for again. Signing with
+# one stable certificate makes every future patched binary the same app: you
+# answer the prompts once more, and never again.
 set -euo pipefail
 [[ "$(uname)" == Darwin ]] || { echo "Code signing is macOS-only — nothing to set up."; exit 0; }
 NAME=claude-patching

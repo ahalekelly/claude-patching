@@ -2,11 +2,12 @@
 
 Patches for the **native Claude Code binary** on macOS and Linux — all applied by default except the ones the table below marks default-off — plus a port that keeps them applied across updates without ever making you wait for it.
 
-Claude Code ships as a single-file executable with its JavaScript bundled inside. Several things it does — collapsing tool calls, hiding ToolSearch and cron fires, spending thousands of standing prompt tokens on tool descriptions you rarely use, sharing one MCP server process between concurrent subagents — have no setting. So the bundle is unpacked, patched, and repacked.
+Claude Code ships as a single-file bun executable with its JavaScript embedded as ~1400 code-split ESM modules, each carrying precompiled bytecode. Several things it does — collapsing tool calls, hiding ToolSearch and cron fires, spending thousands of standing prompt tokens on tool descriptions you rarely use, sharing one MCP server process between concurrent subagents — have no setting. So `bunbundle.py` unpacks every module into one concatenated file with a `//__CHUNK__ <name>` marker line before each, the patches edit that file, and the repack splits it back, syntax-checks the modules that changed, clears their stale bytecode (bun then parses the patched source), and rebuilds the embedded blob at its original byte length so the binary needs no other surgery beyond a re-sign.
 
 Two properties make that safe enough to run every day:
 
-- **Every patch refuses rather than guesses.** Anchors are content-bearing (property names, string literals, tool-name constants — never a bare control-flow shape), match counts are asserted exactly, and edits splice by index. Every bundle function that injected code calls is probed from its own unique site, never written in by its current minified name. A patch that no longer fits aborts the build with the binary untouched.
+- **Every patch refuses rather than guesses.** Anchors are content-bearing (property names, string literals, tool-name constants — never a bare control-flow shape), match counts are asserted exactly against the whole concatenated bundle, and edits splice by index. Every bundle function that injected code calls is probed from its own unique site, never written in by its current minified name — and a probed name is only valid inside the module it was probed from, since imported bindings get a fresh minified alias per module. A patch that no longer fits aborts the build with the binary untouched.
+- **Each module is its own scope.** An injected function declaration hoists only within its module, so runtime state a patch shares across sites in different modules lives in one `__`-prefixed patch-unique object on `globalThis`, initialized idempotently at every site that touches it — modules load lazily in no guaranteed order, so no site may assume another module ran first. A splice must stay inside one module: the repack verifies every `//__CHUNK__` marker against the binary's module table and aborts if an edit consumed one.
 - **Every patch has a behavioral test, or a written excuse.** Anchor counts catch layout drift but not semantic drift: a patch can apply cleanly to a lookalike site and quietly do nothing. `tests/` asserts what the patched binary *does* — what it sends to the API, what it draws on screen — and only a candidate that passes gets promoted. An applied patch with no test fails the gate unless `tests/waivers` names it and says why a test cannot exist yet.
 
 ## The patches
@@ -53,11 +54,10 @@ The two `defer-*-description` patches move each tool's description into a skill 
 
 ## Install
 
-Clone anywhere, install the one dependency, and point your shell's `claude` at the check:
+Clone anywhere and point your shell's `claude` at the check:
 
 ```bash
 git clone https://github.com/ahalekelly/claude-patching.git ~/claude-patching
-cd ~/claude-patching && npm ci
 ```
 
 ```bash
@@ -141,7 +141,8 @@ Set it in user settings (`~/.claude/settings.json`):
 - `com.akelly.claude-patching.autoport.plist` — the launchd agent. Absolute paths, `RunAtLoad` so an install during a logout is caught, `ThrottleInterval` so a burst of writes fires it once.
 - `claude-patching-autoport.path` — the systemd user path watcher.
 - `claude-patching-autoport.service` — the systemd user service, also started at login.
-- `apply-display-patches.sh <version> <output-binary>` — pure candidate builder: unpacks `versions/<version>.orig` (backing it up on first sight), applies `PATCH_IDS` in order, checks the result parses, repacks to the output path and signs it on macOS. Fails loudly, writing nothing, if any patch does not match.
+- `apply-display-patches.sh <version> <output-binary>` — pure candidate builder: unpacks `versions/<version>.orig` (backing it up on first sight), applies `PATCH_IDS` in order, repacks to the output path and signs it on macOS. Fails loudly, writing nothing, if any patch does not match.
+- `bunbundle.py unpack|repack` — the bun-blob tool behind the builder: unpack concatenates the binary's embedded JS modules into one marker-delimited file, repack splits it back, syntax-checks and de-bytecodes the modules that changed, and rebuilds the blob at its original byte length.
 - `port-agent.sh` / `advisory-agent.sh` / `escalation-agent.sh` — the three escalations, all launched through `agent-run.sh`: a headless Claude session in auto permission mode. Each step it takes lands in `port-state/<tag>-<version>.log` as it happens — assistant text, a line per tool call, then the final report. That log is the run's only trace.
 - `brief.sh <paragraph>` — the only channel to a human: appends the paragraph to `port-state/brief` and, on macOS, opens a Terminal window showing it.
 - `setup-signing.sh` — macOS-only, run by hand once: creates the local certificate the port signs patched binaries with.
@@ -201,7 +202,7 @@ A binary already poisoned this way is only recoverable by replacing it through a
 
 [phate45/claude-patching](https://github.com/phate45/claude-patching) pioneered patching the native Claude Code binary this way, and is where the ideas behind five of these patches came from. That project carries no license, so nothing here is derived from its code: every patch in `patches/` is an original implementation written against anchors derived independently from the bundle, with its own behavioral test as the contract.
 
-[tweakcc](https://github.com/Piebald-AI/tweakcc) does the unpack and repack of the single-file executable, and [Piebald-AI/claude-code-system-prompts](https://github.com/Piebald-AI/claude-code-system-prompts) is the port agent's fastest signal on prompt-text drift.
+[tweakcc](https://github.com/Piebald-AI/tweakcc) did the unpack and repack while Claude Code shipped as one monolithic bundle, and is where the blob-format knowledge in `bunbundle.py` started. [Piebald-AI/claude-code-system-prompts](https://github.com/Piebald-AI/claude-code-system-prompts) is the port agent's fastest signal on prompt-text drift.
 
 ## License
 
