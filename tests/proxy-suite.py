@@ -28,13 +28,16 @@ def tool(body, name):
 
 
 def trim_context_bloat(binary):
-    """No userEmail, currentDate or model-family blurb anywhere in the request.
+    """No userEmail, currentDate, model-family blurb or env Platform/Shell line.
 
-    The three blocks do not travel together: the model-family paragraph sits in
-    the system prompt, while userEmail and currentDate arrive as user context in
-    the first message. Asserting over the whole payload is what keeps the latter
-    two from being vacuous — and userEmail only appears at all when an account
-    is logged in, so this test's discrimination rests on the other two.
+    The blocks do not travel together: the model-family paragraph and the
+    environment block sit in the system prompt, while userEmail and currentDate
+    arrive as user context in the first message. Asserting over the whole
+    payload is what keeps the latter two from being vacuous — and userEmail only
+    appears at all when an account is logged in, so this test's discrimination
+    rests on the rest. The two env lines are matched with the newline and bullet
+    that open them, escaped as the JSON-dumped payload escapes them, so no prose
+    mention of a platform or a shell can pass for them.
     """
     scratch = Scratch("trim")
     with CaptureProxy() as proxy:
@@ -42,7 +45,8 @@ def trim_context_bloat(binary):
         payload = json.dumps(proxy.main_request())
     scratch.cleanup()
     present = [n for n in ("The user's email address is", "Today's date is",
-                           "The most recent Claude models are") if n in payload]
+                           "The most recent Claude models are",
+                           "\\n - Platform: ", "\\n - Shell: ") if n in payload]
     assert not present, f"the request still carries: {present}"
 
 
