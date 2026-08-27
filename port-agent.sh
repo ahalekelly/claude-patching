@@ -103,6 +103,17 @@ with \$, so a captured name interpolated into a new RegExp must be escaped —
 \${name.replace(/\\\$/g, "\\\\\$")} — and needs (?<![\$\\w]) instead of \\b for a
 left boundary; interpolated into a String.replace replacement, \$ must become \$\$.
 
+System-prompt and tool-description text is served in two arms: current models
+get a lean branch, older models and Haiku subagents a verbose one, so the same
+guidance often exists at two sites with slightly different wording ("Reads a
+file from the local filesystem" on one arm, "Read a file from the local
+filesystem" on the other). A prompt-text patch can satisfy an exact match count
+and still change nothing any session sees, because it anchored only on the arm
+the served models never take. When a prompt anchor's count moves, check whether
+the text split into or merged from per-arm variants, and rely on the behavioral
+test — asserting on the outgoing payload is the only check that knows which arm
+is live.
+
 Do not touch anything in $VERSIONS. Stop when
 \`./apply-display-patches.sh $VER /tmp/candidate\` succeeds and the suite
 passes, and report what you re-anchored, what you dropped, and what Fable
