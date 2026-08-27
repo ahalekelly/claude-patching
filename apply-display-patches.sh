@@ -98,7 +98,7 @@ WORK="$(mktemp -d "${TMPDIR:-/tmp}/claude-patching.XXXXXX")"
 # and under set -e that turns a successful build into a failed one at exit.
 trap '/bin/rm -rf "$WORK"' EXIT
 JS="$WORK/cli-$VER.js"
-python3 "$ROOT/bunbundle.py" unpack "$STOCK.orig" "$JS"
+uv run --script "$ROOT/bunbundle.py" unpack "$STOCK.orig" "$JS"
 
 for id in $PATCH_IDS; do
   case " $DROPPED " in *" $id "*) echo "--- $id  DROPPED for $VER"; continue;; esac
@@ -112,7 +112,7 @@ done
 # checks every module a patch touched, so there is no whole-bundle check here:
 # the concatenation of many ESM module scopes is not itself a valid module.
 cp "$STOCK.orig" "$OUT"
-python3 "$ROOT/bunbundle.py" repack "$JS" "$OUT"
+uv run --script "$ROOT/bunbundle.py" repack "$JS" "$OUT"
 
 # Linux binaries stay unsigned. On macOS rewriting the copied binary invalidates
 # the signature it inherited from the stock one, and the codesign below is what

@@ -1,4 +1,7 @@
-#!/usr/bin/env python3
+#!/usr/bin/env -S uv run --script
+# /// script
+# requires-python = ">=3.11"
+# ///
 """Unpack and repack the JS modules embedded in a bun standalone binary.
 
   bunbundle.py unpack <binary> <out.js>   concatenate every JS module, one
