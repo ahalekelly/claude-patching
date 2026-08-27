@@ -192,6 +192,14 @@ def repack(src, binary):
         patched.append(m)
         print(f'patched {name} ({len(contents)} bytes)')
     blob.write(patched)
+    # The splice edits pointers, holes, and hashes by hand, so parse the written
+    # binary back and prove it holds exactly the sources routed into it — a slip in
+    # any of the three corrupts the bundle silently and only surfaces at runtime.
+    written = Blob(binary)
+    for (name, contents), rname, m in zip(chunks, written.js_names, written.js, strict=True):
+        if name != rname or contents != m['contents']:
+            raise SystemExit(f'{binary} is corrupt and must be discarded: module {rname} does not '
+                             f'read back as the {name} written for it')
     print(f'repacked {len(patched)} modified module(s) into {binary}')
 
 
