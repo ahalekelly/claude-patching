@@ -20,6 +20,13 @@ file_size() { stat "${STAT_SIZE[@]}" "$1"; }
 file_mtime() { stat "${STAT_MTIME[@]}" "$1"; }
 is_porter() { [[ "$(hostname -s)" == "$(<"$ROOT/porter")" ]]; }
 
+trash_existing() {
+  local path
+  for path; do
+    [[ ! -e "$path" ]] || trash "$path" || return
+  done
+}
+
 fingerprint() {
   find "$ROOT/apply-display-patches.sh" "$ROOT/patches" "$ROOT/patches-local" \
     -type f 2>/dev/null | sort | xargs cat /dev/null | "$HASH"

@@ -63,18 +63,16 @@ git clone https://github.com/ahalekelly/claude-patching.git ~/claude-patching
 ```bash
 # in ~/.zshrc
 claude() {
-  # Launch the best available patched binary, which check-and-apply.sh names in
-  # the target file; a new version is reconciled in the background, so a launch
-  # never waits on an unpack and repack. An empty target file falls back to
-  # `claude` on PATH. Nonzero exit = the check printed something worth reading;
-  # hold for an Enter before the TUI takes over the screen.
-  local target="$(mktemp "${TMPDIR:-/tmp}/claude-launch-target.XXXXXX")" bin=claude
-  if ! "$HOME/claude-patching/check-and-apply.sh" "$target" && [[ -t 0 && -t 1 ]]; then
+  # Launch the best available patched binary. A new version is reconciled in
+  # the background, so a launch never waits on an unpack and repack. An empty
+  # result falls back to `claude` on PATH. Nonzero exit = the check printed
+  # something worth reading; hold for Enter before the TUI takes over.
+  local target bin=claude
+  if ! target="$("$HOME/claude-patching/check-and-apply.sh")" && [[ -t 0 && -t 1 ]]; then
     printf 'Press Enter to launch Claude Code... '
     read -r
   fi
-  [[ -s "$target" ]] && bin="$(<"$target")"
-  rm -f "$target"
+  [[ -n "$target" ]] && bin="$target"
   command "$bin" "$@"
 }
 ```
@@ -83,7 +81,7 @@ To pick a subset, list ids in two optional machine-local files under gitignored 
 
 ## Launching and porting
 
-One rule governs every launch: **run the best available patched binary now, reconcile in the background.** `check-and-apply.sh` writes the binary to launch into a target file and returns immediately. A launch never waits on a 270 MB unpack and repack, and a Claude Code update never drops the session back to stock while a patched binary of the previous version exists.
+One rule governs every launch: **run the best available patched binary now, reconcile in the background.** `check-and-apply.sh` returns the binary to launch immediately. A launch never waits on a 270 MB unpack and repack, and a Claude Code update never drops the session back to stock while a patched binary of the previous version exists.
 
 Resolution order: the newest installed version if its stamp is valid (the silent fast path), else the newest binary in the archive, else stock. In the last two cases the check prints why, spawns the background port, and exits 1 so the wrapper holds for an Enter before the TUI wipes the message. It also warns when the archived binary it just launched is more than three releases or seven days behind the installed one, since silent indefinite fallback is this design's main risk.
 
@@ -135,7 +133,7 @@ Set it in user settings (`~/.claude/settings.json`):
 
 ### Files
 
-- `check-and-apply.sh <target-file>` — pre-launch check: stamp fast path, archive fallback, staleness warning, background port. Exit 0 = silent, exit 1 = printed something the wrapper should hold for. Exits immediately when `CLAUDE_PATCHING_AUTOPORT` is set, so the port's own sessions never recurse.
+- `check-and-apply.sh` — pre-launch check: prints the selected binary on stdout and human messages on stderr, then starts any needed background port. Exit 0 = silent, exit 1 = the wrapper should hold for its message. Exits immediately when `CLAUDE_PATCHING_AUTOPORT` is set, so the port's own sessions never recurse.
 - `background-port.sh [version]` — the reconciler: pull, retry damper, lock, prune, mechanical apply, role-specific gate, and promotion. The porter also handles re-anchoring, the stock suite, advisories, and escalation.
 - `process-wrapper.sh <binary> <args...>` — the `processWrapper` argv prefix: execs the best patched binary in place of the one a background spawn asked for, silently, falling through to the requested binary on any failure.
 - `lib.sh` — shared platform seams, porter detection, patch-set fingerprint, and binary selection.

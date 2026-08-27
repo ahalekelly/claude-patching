@@ -181,7 +181,7 @@ CAND="$WORK/claude-$VER"
 if ! "$ROOT/apply-display-patches.sh" "$VER" "$CAND" > "$WORK/apply.log" 2>&1; then
   tail -20 "$WORK/apply.log"
   if ! is_porter; then
-    rm -f "$STATE/$VER.failed" "$STATE/$VER.escalated"
+    trash_existing "$STATE/$VER.failed" "$STATE/$VER.escalated" || exit 1
     { damper_fingerprint
       date '+%F %T'; } > "$STATE/$VER.waiting"
     say "waiting for $(<"$ROOT/porter") to port $VER"
@@ -265,7 +265,7 @@ pkill -f -- '--bg-spare' 2>/dev/null || true
 rmdir "$BIN.lock" 2>/dev/null
 # The escalation marker goes with the failure marker, so a later regression on
 # this version can escalate again.
-rm -f "$STATE/$VER.failed" "$STATE/$VER.escalated" "$STATE/$VER.waiting"
+trash_existing "$STATE/$VER.failed" "$STATE/$VER.escalated" "$STATE/$VER.waiting" || exit 1
 
 PATCH_FILES="$(git -C "$ROOT" diff --name-only -- patches/)"
 if is_porter && [[ "$AGENT_EDITED" == 1 && -n "$PATCH_FILES" ]]; then
