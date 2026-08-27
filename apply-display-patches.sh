@@ -23,7 +23,8 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PATCHES="$ROOT/patches"
 LOCAL="$ROOT/patches-local"
 DEFAULT_PATCH_IDS="no-collapse-tool-calls cron-visibility tool-defer-whitelist
-           trim-context-bloat defer-workflow-description defer-artifact-description
+           trim-context-bloat hook-envelope-strip defer-workflow-description
+           defer-artifact-description
            sticky-prompt-header task-reminder-conditional agents-view-shortcut
            new-session-shortcut mcp-per-subagent agent-list-models agents-view-models
            task-notification-provenance"

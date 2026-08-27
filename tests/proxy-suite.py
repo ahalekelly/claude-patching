@@ -122,6 +122,27 @@ def tool_defer_whitelist(binary):
     assert "Logging probe" in ping["description"], "the tool shipped without its real schema"
 
 
+def hook_envelope_strip(binary):
+    """A UserPromptSubmit hook's stdout reaches the model unwrapped.
+
+    Both halves matter: the marker proves the hook ran and its output really did
+    travel to the API, so the absence of the envelope is evidence about the
+    framing rather than about a hook that never fired. " hook success: " is
+    matched with the spaces around it, the exact text the stock template puts
+    between the hook's name and its output.
+    """
+    marker = "HOOK_ENVELOPE_MARKER_XYZQ"
+    scratch = Scratch("hook-envelope")
+    scratch.write_settings(hooks={"UserPromptSubmit": [
+        {"hooks": [{"type": "command", "command": f"echo {marker}"}]}]})
+    with CaptureProxy() as proxy:
+        scratch.run(binary, proxy, "say hi")
+        payload = json.dumps(proxy.main_request())
+    scratch.cleanup()
+    assert marker in payload, "the hook's output never reached the request"
+    assert " hook success: " not in payload, "the hook output still carries the envelope"
+
+
 def task_reminder_conditional(binary):
     """The periodic task_reminder fires only when the session's task list is non-empty.
 
@@ -171,6 +192,7 @@ TESTS = {
     "defer-workflow-description": defer_workflow_description,
     "defer-artifact-description": defer_artifact_description,
     "tool-defer-whitelist": tool_defer_whitelist,
+    "hook-envelope-strip": hook_envelope_strip,
     "task-reminder-conditional": task_reminder_conditional,
 }
 

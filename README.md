@@ -18,6 +18,7 @@ Two properties make that safe enough to run every day:
 | `cron-visibility` | a cron-fired prompt renders in the transcript, and reaches the model prefixed `CronJob:` instead of arriving as an anonymous user turn |
 | `tool-defer-whitelist` | tools named in `CLAUDE_CODE_IMMEDIATE_TOOLS` ship their full schema up front instead of being deferred behind ToolSearch |
 | `trim-context-bloat` | drops `userEmail`, `currentDate`, the model-family paragraph and the env block's `Platform:` and `Shell:` lines from the system prompt |
+| `hook-envelope-strip` | a SessionStart, UserPromptSubmit or UserPromptExpansion hook's stdout reaches the model as itself, not wrapped in "`<hook>` hook success: " |
 | `defer-workflow-description` | the Workflow tool's ~5k-token description becomes a stub pointing at a `workflow-tool` skill that holds the full text |
 | `defer-artifact-description` | the same for the Artifact tool's ~1.5k tokens and an `artifact-tool` skill |
 | `sticky-prompt-header` | the previous-prompt header above the transcript shows whenever the prompt has scrolled off the top, not only while scrolled up, and in readable contrast |
