@@ -62,7 +62,11 @@ if ! mkdir "$LOCK" 2>/dev/null; then
   [[ -n "$(find "$LOCK" -maxdepth 0 -mmin +60 2>/dev/null)" ]] && rmdir "$LOCK" 2>/dev/null
   mkdir "$LOCK" 2>/dev/null || { echo "port of $VER already running"; exit 0; }
 fi
-WORK="$(mktemp -d "${TMPDIR:-/tmp}/claude-port.XXXXXX")"
+# Scratch on real disk: the candidate is a quarter-gigabyte binary, and /tmp
+# can be a small memory-backed tmpfs with per-user quotas. The port lock
+# makes the name exclusive, and recreating it heals a killed run's leftovers.
+WORK="$STATE/work-$VER"
+rm -rf "$WORK" && mkdir "$WORK"
 trap 'rmdir "$LOCK" 2>/dev/null; rm -rf "$WORK"' EXIT
 
 # Several machines share this repository, so take whatever the others have

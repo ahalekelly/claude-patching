@@ -94,7 +94,11 @@ if [[ ! -f "$STOCK.orig" ]]; then
 fi
 [[ -s "$STOCK.orig" ]] || { echo "ERROR: $STOCK.orig is empty — delete it and re-run to back up the stock binary again" >&2; exit 1; }
 
-WORK="$(mktemp -d "${TMPDIR:-/tmp}/claude-patching.XXXXXX")"
+# Scratch on real disk, beside the port's other state: /tmp can be a small
+# memory-backed tmpfs with per-user quotas. A dir a killed run leaves behind
+# is pruned with the rest of the version's state once the version is gone.
+mkdir -p "$ROOT/port-state"
+WORK="$(mktemp -d "$ROOT/port-state/build-$VER.XXXXXX")"
 # /bin/rm, not rm: an agent PATH can carry an rm guard shim that exits nonzero,
 # and under set -e that turns a successful build into a failed one at exit.
 trap '/bin/rm -rf "$WORK"' EXIT

@@ -150,7 +150,7 @@ Set it in user settings (`~/.claude/settings.json`):
 - `setup-signing.sh` — macOS-only, run by hand once: creates the local certificate the port signs patched binaries with.
 - `patches/` — the committed patch set, including re-anchors that pass the port's functional gate.
 - `patches-local/` — machine-local `enable` and `disable` selections, plus `<version>/dropped`.
-- `port-state/` — locks, logs, failure, waiting and escalation markers, and `brief`, the paragraph the next launch prints.
+- `port-state/` — locks, logs, build scratch (the port stages its quarter-gigabyte candidates here, on real disk rather than /tmp), failure, waiting and escalation markers, and `brief`, the paragraph the next launch prints.
 
 ## Tests
 

@@ -22,6 +22,10 @@ STATE="$ROOT/port-state"
 VERSIONS="$HOME/.local/share/claude/versions"
 VER="${1:?usage: port-agent.sh <version> <apply-log>}"
 LOG="${2:?usage: port-agent.sh <version> <apply-log>}"
+# The candidate builds beside the apply log, inside the port's scratch dir
+# on real disk — never /tmp, which can be a small quota-limited tmpfs. The
+# port's own cleanup removes it.
+CAND="$(dirname "$LOG")/candidate"
 mkdir -p "$STATE"
 PROMPT="$STATE/port-agent-$VER.prompt"
 
@@ -40,7 +44,7 @@ fi
 cat > "$PROMPT" <<EOF
 Port this repository's Claude Code patch set to version $VER.
 
-\`./apply-display-patches.sh $VER /tmp/candidate\` just failed. Its output:
+\`./apply-display-patches.sh $VER $CAND\` just failed. Its output:
 
 $(tail -60 "$LOG")
 
@@ -67,7 +71,7 @@ patches/ — the port commits those itself after its functional gate passes.
 
 Once the apply succeeds, run the suite the same way the port's gate will:
 
-  tests/run-all.sh /tmp/candidate <skip-ids>
+  tests/run-all.sh $CAND <skip-ids>
 
 where <skip-ids> is the contents of patches-local/$VER/dropped plus every
 patches/*.mjs id absent from \`./apply-display-patches.sh --print-ids\`.
@@ -115,7 +119,7 @@ test — asserting on the outgoing payload is the only check that knows which ar
 is live.
 
 Do not touch anything in $VERSIONS. Stop when
-\`./apply-display-patches.sh $VER /tmp/candidate\` succeeds and the suite
+\`./apply-display-patches.sh $VER $CAND\` succeeds and the suite
 passes, and report what you re-anchored, what you dropped, and what Fable
 decided.
 EOF
