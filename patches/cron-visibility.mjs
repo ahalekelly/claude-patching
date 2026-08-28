@@ -14,7 +14,7 @@
 //
 // Anchor: the head of the queued-prompt builder's object literal, identified
 // by its leading property run (value/mode/agentId/priority/isMeta/
-// skipSlashCommands/modelScheduledOrigin/wakeupSource). The scheduler's other
+// skipSlashCommands/modelScheduledOrigin). The scheduler's other
 // enqueue site — the Kairos cron path — builds the same fields in a different
 // order and does not lead with value, so the run is unique to the interactive
 // scheduled-tasks fire. Only the two properties the patch changes are
@@ -29,7 +29,7 @@ if (!jsPath) {
 let js = readFileSync(jsPath, "utf8");
 
 const builder =
-  /\{value:([$\w]+),mode:"prompt",agentId:[$\w]+\(\),priority:"later",isMeta:!0,skipSlashCommands:!0,modelScheduledOrigin:!0,wakeupSource:/g;
+  /\{value:([$\w]+),mode:"prompt",agentId:[$\w]+\(\),priority:"later",isMeta:!0,skipSlashCommands:!0,modelScheduledOrigin:!0/g;
 const matches = [...js.matchAll(builder)];
 if (matches.length !== 1) {
   console.error(

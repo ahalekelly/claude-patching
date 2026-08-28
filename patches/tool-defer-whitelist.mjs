@@ -14,10 +14,11 @@
 // the whitelist reaches MCP tools too. Set it in settings.json's `env` block to
 // have it apply to every session.
 //
-// Anchor: the head of the predicate — the always-load escape, the
-// non-deferrable-builtin list, and the MCP branch our check has to precede.
-// Those three property names pin it. The match is then proved to be the real
-// deferral predicate by following the public isDeferredTool export back to it:
+// Anchor: the head of the predicate — the always-load escape and the MCP
+// branch our check has to precede, separated by the brace-free run of the
+// non-deferrable-builtin check between them. Those two property names pin it.
+// The match is then proved to be the real deferral predicate by following the
+// public isDeferredTool export back to it:
 // the facade module re-exports a binding it imports from the defining module,
 // whose export map names the matched function.
 import { readFileSync, writeFileSync } from "node:fs";
@@ -61,38 +62,46 @@ function onlyIn(label, text, regex) {
   return matches[0];
 }
 
-// The head of the predicate: the always-load escape, the non-deferrable-builtin
-// list, and the MCP branch our check has to precede.
+// The head of the predicate: the always-load escape and the MCP branch our
+// check has to precede.
 const head = only(
   "deferral predicate",
-  /function ([$\w]+)\(([$\w]+)\)\{if\(\2\.alwaysLoad===!0\)return!1;if\([$\w]+\(\)\.includes\(\2\.name\)\)return!1;if\(\2\.isMcp===!0\)return!0;/g,
+  /function ([$\w]+)\(([$\w]+)\)\{if\(\2\.alwaysLoad===!0\)return!1;[^{}]{0,80}if\(\2\.isMcp===!0\)return/g,
 );
 const name = head[1];
 
 // Prove the match is the tool-search deferral predicate and not a lookalike:
 // the module that publishes isDeferredTool imports that binding from the
-// module holding the match, which exports the matched function under it.
+// module holding the match, which exports the matched function under it. Each
+// import and export entry is bare whenever its local and published names
+// agree, so both spellings are accepted.
 {
   const exported = only("isDeferredTool export", /([$\w]+) as isDeferredTool[,}]/g);
   const facade = chunkAt(exported.index);
+  const published = esc(exported[1]);
   const imported = onlyIn(
     "facade import of the deferral predicate",
     facade.text,
-    new RegExp(`import\\{[^{}]*?([$\\w]+) as ${esc(exported[1])}[,}][^{}]*?\\}from"[^"]*?/([^"/]+\\.js)"`, "g"),
+    new RegExp(
+      `import\\{[^{}]*?(?:([$\\w]+) as ${published}|(?<![$\\w])(${published}))[,}][^{}]*?\\}from"[^"]*?/([^"/]+\\.js)"`,
+      "g",
+    ),
   );
+  const local = esc(imported[1] ?? imported[2]);
   const owner = chunkAt(head.index);
-  if (imported[2] !== owner.name)
+  if (imported[3] !== owner.name)
     fail(
-      `isDeferredTool comes from ${imported[2]} but the predicate matched in ${owner.name} — refusing`,
+      `isDeferredTool comes from ${imported[3]} but the predicate matched in ${owner.name} — refusing`,
     );
   const reexport = onlyIn(
     "defining module's export of the predicate",
     (owner.text.match(/export\{[^{}]*\}/g) ?? []).join(""),
-    new RegExp(`([$\\w]+) as ${esc(imported[1])}[,}]`, "g"),
+    new RegExp(`(?:([$\\w]+) as ${local}|(?<![$\\w])(${local}))[,}]`, "g"),
   );
-  if (reexport[1] !== name)
+  const resolved = reexport[1] ?? reexport[2];
+  if (resolved !== name)
     fail(
-      `isDeferredTool resolves to ${reexport[1]}, but the predicate matched is ${name} — refusing`,
+      `isDeferredTool resolves to ${resolved}, but the predicate matched is ${name} — refusing`,
     );
 }
 

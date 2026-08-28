@@ -19,7 +19,7 @@
 //
 // Anchor: the inline-spec branch of the subagent frontmatter resolver, which is
 // the only place an agent-declared inline server config is materialized:
-//   return{name:o,config:{...i,scope:"dynamic",agentSource:t},isNewlyCreated:!0}
+//   return{name:o,config:{...i,scope:"agent",agentSource:t},isNewlyCreated:!0}
 // The patch appends two env vars to stdio configs there. Because the memoize
 // key hashes `env`, a per-invocation slot number makes each subagent's config
 // hash unique, which is the whole fix — the env vars are also spread into the
@@ -55,7 +55,7 @@ const fail = (msg) => {
 };
 
 const regex =
-  /return\{name:([$\w]+),config:\{\.\.\.([$\w]+),scope:"dynamic",agentSource:([$\w]+)\},isNewlyCreated:!0\}/g;
+  /return\{name:([$\w]+),config:\{\.\.\.([$\w]+),scope:"agent",agentSource:([$\w]+)\},isNewlyCreated:!0\}/g;
 const matches = [...js.matchAll(regex)];
 if (matches.length !== 1)
   fail(
@@ -102,7 +102,7 @@ if (spawnMatches.length !== 2)
 
 js = js.replace(
   regex,
-  'return{name:$1,config:{...$2,scope:"dynamic",agentSource:$3,...($2.type==="stdio"||$2.type===void 0&&"command" in $2?{env:{...$2.env,CLAUDE_MCP_PER_AGENT:"1",CLAUDE_MCP_AGENT_SLOT:"s"+(globalThis.__ccMcpAgentSlot=(globalThis.__ccMcpAgentSlot||0)+1)}}:{})},isNewlyCreated:!0}',
+  'return{name:$1,config:{...$2,scope:"agent",agentSource:$3,...($2.type==="stdio"||$2.type===void 0&&"command" in $2?{env:{...$2.env,CLAUDE_MCP_PER_AGENT:"1",CLAUDE_MCP_AGENT_SLOT:"s"+(globalThis.__ccMcpAgentSlot=(globalThis.__ccMcpAgentSlot||0)+1)}}:{})},isNewlyCreated:!0}',
 );
 writeFileSync(jsPath, js);
 console.log(

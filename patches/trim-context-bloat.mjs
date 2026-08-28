@@ -31,17 +31,19 @@
 // removes the blocks, since the renderer walks whatever keys the object has
 // (userEmail is already conditional there). The second is the model-family
 // paragraph: its builder is found by the paragraph's own opening words, and the
-// calls to it — array entries in the environment preamble, which is
-// null-filtered — are replaced with null.
+// call to it — an entry in the environment preamble array, which is
+// null-filtered — is replaced with null.
 //
-// The last two carry the environment block, all in one module: the <env>
-// template literal, and the "# Environment" arrays (two of them, built the same
-// way and null-filtered). Both anchors span the platform text, the shell-line
-// call beside it and the "OS Version: " line that follows, and the spliced-out
-// span leaves the block flowing straight from the working-directory lines into
-// "OS Version:". That adjacency is also what excludes the bundle's other
-// "Platform: ${...platform}" — the bug-report body template, which has no shell
-// call next to it and is left untouched.
+// The last two carry the environment block, both in one module and each the
+// platform and shell text of one prompt arm: the <env> template literal, where
+// the shell is a call that renders its own line, and the "# Environment" array,
+// where platform and shell are sibling entries formatted from the environment
+// snapshot. Both anchors span the platform text, the shell beside it and the
+// "OS Version: " line that follows, and the spliced-out span leaves the block
+// flowing straight from the working-directory lines into "OS Version:". That
+// adjacency is also what excludes the bundle's other "Platform: ${...platform}"
+// — the bug-report body template, which has no shell text next to it and is
+// left untouched.
 import { readFileSync, writeFileSync } from "node:fs";
 
 const jsPath = process.argv[2];
@@ -98,17 +100,17 @@ const paragraph = matchesOf(
   /function ([$\w]+)\(\)\{let [$\w]+=[$\w]+\(\)\.latest_per_family;return`The most recent Claude models are /g,
   1,
 )[0][1];
-const callSites = matchesOf(
-  "model-family paragraph call sites",
-  new RegExp(
-    `${paragraph.replace(/\$/g, "\\$")}\\(\\),"Claude Code is available as a CLI in the terminal`,
-    "g",
-  ),
-  2,
+splice(
+  matchesOf(
+    "model-family paragraph call site",
+    new RegExp(
+      `${paragraph.replace(/\$/g, "\\$")}\\(\\),"Claude Code is available as a CLI in the terminal`,
+      "g",
+    ),
+    1,
+  )[0],
+  'null,"Claude Code is available as a CLI in the terminal',
 );
-// Last first: an earlier splice would shift every later match index.
-for (const site of callSites.reverse())
-  splice(site, 'null,"Claude Code is available as a CLI in the terminal');
 
 // 4. The Platform and Shell lines in the <env> template literal, removed as one
 // span so the block runs from the working-directory lines to "OS Version:".
@@ -121,14 +123,16 @@ splice(
   "OS Version: ",
 );
 
-// 5. The same two lines as consecutive entries in the "# Environment" arrays.
-const envEntries = matchesOf(
-  "env array platform and shell entries",
-  /`Platform: \$\{[$\w]+\.platform\}`,[$\w]+\(\),`OS Version: /g,
-  2,
+// 5. The same two lines as consecutive entries in the "# Environment" array,
+// each formatted from the environment snapshot the array renders.
+splice(
+  matchesOf(
+    "env array platform and shell entries",
+    /`Platform: \$\{([$\w]+)\(([$\w]+)\.platform\)\}`,`Shell: \$\{\1\(\2\.shell\)\}`,`OS Version: /g,
+    1,
+  )[0],
+  "`OS Version: ",
 );
-// Last first: an earlier splice would shift every later match index.
-for (const entry of envEntries.reverse()) splice(entry, "`OS Version: ");
 
 writeFileSync(jsPath, js);
 console.log(

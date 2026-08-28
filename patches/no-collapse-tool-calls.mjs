@@ -115,12 +115,15 @@ function chunkAt(at) {
   return { name: js.slice(marker + 13, nameEnd), start: nameEnd + 1, text: js.slice(nameEnd + 1, end) };
 }
 
-// The one entry named `local` in a comma-separated `{a as b,c as d}` list.
+// The one entry named `local` in a comma-separated `{a as b,c,d as e}` list.
+// An entry is bare whenever the local and published names agree.
 function aliasOf(label, list, local) {
-  const hits = [...`,${list},`.matchAll(new RegExp(`,${esc(local)} as ([$\\w]+),`, "g"))];
+  const hits = [
+    ...`,${list},`.matchAll(new RegExp(`,${esc(local)}(?: as ([$\\w]+))?,`, "g")),
+  ];
   if (hits.length !== 1)
     fail(`${label}: ${hits.length} entries for ${local}, expected exactly 1 — refusing`);
-  return hits[0][1];
+  return hits[0][1] ?? local;
 }
 
 // The local name under which `site` imports the binding defined as `local` in
@@ -131,7 +134,9 @@ function importedAs(label, defAt, local, site) {
   const exported = aliasOf(`${label} export`, exports, local);
   const imports = [
     ...site.text.matchAll(/import\{([^{}]*)\}from"[^"]*\/([^"\/]+\.js)"/g),
-  ].filter((m) => `,${m[1]},`.includes(`,${exported} as `));
+  ].filter((m) =>
+    new RegExp(`,${esc(exported)}(?: as [$\\w]+)?,`).test(`,${m[1]},`),
+  );
   if (imports.length !== 1)
     fail(
       `${label}: ${site.name} imports ${exported} in ${imports.length} statements, expected exactly 1 — refusing`,
