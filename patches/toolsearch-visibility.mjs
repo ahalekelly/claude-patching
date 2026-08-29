@@ -7,15 +7,15 @@
 //      renderToolUseMessage(){return null},userFacingName:()=>""
 //    so even an un-collapsed call draws an empty row. Patched, the tool names
 //    itself and renders its query, like every other tool.
-// 2. In fullscreen mode the display classifier special-cases ToolSearch to
-//    isAbsorbedSilently, which drops the call from the transcript entirely.
-//    Patched, that branch is removed and ToolSearch falls through to the
-//    generic path, where a tool with no isSearchOrReadCommand is simply not
-//    collapsible.
+// 2. In fullscreen mode the display classifier absorbs ToolSearch alongside
+//    a list of other silently absorbed tools. Patched, the condition keeps
+//    only that list, so ToolSearch falls through to the generic path, where a
+//    tool with no isSearchOrReadCommand is simply not collapsible.
 //
 // Both edits are anchored off the "ToolSearch" tool-name constant, so they
 // cannot land on some other tool that happens to share a code shape.
 import { readFileSync, writeFileSync } from "node:fs";
+import { bundleTools } from "./lib/bundle.mjs";
 
 const jsPath = process.argv[2];
 if (!jsPath) {
@@ -29,46 +29,60 @@ const fail = (msg) => {
   process.exit(1);
 };
 
-function only(label, regex) {
-  const matches = [...js.matchAll(regex)];
-  if (matches.length !== 1)
-    fail(`${label}: ${matches.length} matches, expected exactly 1 — bundle layout changed, refusing`);
-  return matches[0];
-}
+const { esc, chunkAt, only, onlyIn, importedAs } = bundleTools(() => js, fail);
 
 // The minified binding that holds the tool's name, and the tool definition it names.
-const toolName = only("ToolSearch name constant", /([$\w]+)="ToolSearch"/g)[1];
+const nameConst = only("ToolSearch name constant", /([$\w]+)="ToolSearch"/g);
+const toolName = nameConst[1];
 const definition = only(
   "ToolSearch tool definition",
-  new RegExp(`name:${toolName.replace(/\$/g, "\\$")},maxResultSizeChars:`, "g"),
+  new RegExp(`name:${esc(toolName)},maxResultSizeChars:`, "g"),
 );
+const nameSite = chunkAt(nameConst.index);
+const defSite = chunkAt(definition.index);
+if (
+  defSite.name !== nameSite.name &&
+  importedAs("ToolSearch name", nameConst.index, toolName, defSite) !== toolName
+)
+  fail(`ToolSearch definition does not import ${toolName} from ${nameSite.name} — refusing`);
 
-// 1. The definition's null renderer. Required to sit inside the tool object
-//    that the definition anchor opened, so a null renderer elsewhere in the
-//    bundle can never be mistaken for this one.
-const renderer = only(
+// 1. The definition module's null renderer.
+const renderer = onlyIn(
   "ToolSearch renderer",
+  defSite.text,
   /renderToolUseMessage\(\)\{return null\},userFacingName:\(\)=>""/g,
 );
-const distance = renderer.index - definition.index;
-if (distance < 0 || distance > 20000)
-  fail(
-    `the null renderer is ${distance} chars from the ToolSearch definition — not the same tool object, refusing`,
-  );
-js =
-  js.slice(0, renderer.index) +
-  'renderToolUseMessage(e){return typeof e?.query==="string"?e.query:""},userFacingName:()=>"ToolSearch"' +
-  js.slice(renderer.index + renderer[0].length);
+const rendererAt = defSite.start + renderer.index;
 
 // 2. The fullscreen absorb branch, anchored on the ten display flags it returns.
 const absorb = only(
   "fullscreen absorb branch",
-  new RegExp(
-    `if\\([$\\w]+\\(\\)&&[$\\w]+===${toolName.replace(/\$/g, "\\$")}\\)return\\{isCollapsible:!0,isSearch:!1,isRead:!1,isList:!1,isREPL:!1,isMemoryWrite:!1,isScratchpadWrite:!1,isWorkshopWrite:!1,isAbsorbedSilently:!0\\};`,
-    "g",
-  ),
+  /if\(([$\w]+)\(\)&&([$\w]+)===([$\w]+)\|\|([$\w]+)\)return\{isCollapsible:!0,isSearch:!1,isRead:!1,isList:!1,isREPL:!1,isMemoryWrite:!1,isScratchpadWrite:!1,isWorkshopWrite:!1,isAbsorbedSilently:!0,popsOutOnError:\4\};/g,
 );
-js = js.slice(0, absorb.index) + js.slice(absorb.index + absorb[0].length);
+const absorbSite = chunkAt(absorb.index);
+if (absorbSite.name === nameSite.name) {
+  if (absorb[3] !== toolName)
+    fail(`fullscreen absorb branch uses ${absorb[3]}, not ToolSearch name ${toolName} — refusing`);
+} else if (
+  importedAs("ToolSearch name", nameConst.index, toolName, absorbSite) !== absorb[3]
+)
+  fail(`fullscreen absorb branch uses ${absorb[3]}, not its ToolSearch import — refusing`);
+
+const rendererReplacement =
+  'renderToolUseMessage(e){return typeof e?.query==="string"?e.query:""},userFacingName:()=>"ToolSearch"';
+js =
+  js.slice(0, rendererAt) +
+  rendererReplacement +
+  js.slice(rendererAt + renderer[0].length);
+console.log("toolsearch-visibility: ToolSearch renderer patched");
+
+const absorbAt =
+  absorb.index + (absorb.index > rendererAt ? rendererReplacement.length - renderer[0].length : 0);
+const condition = `if(${absorb[1]}()&&${absorb[2]}===${absorb[3]}||${absorb[4]})`;
+js =
+  js.slice(0, absorbAt) +
+  `if(${absorb[4]})` +
+  js.slice(absorbAt + condition.length);
+console.log("toolsearch-visibility: ToolSearch silent absorption removed");
 
 writeFileSync(jsPath, js);
-console.log("toolsearch-visibility: ToolSearch calls now render with their query");

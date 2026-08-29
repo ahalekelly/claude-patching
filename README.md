@@ -147,6 +147,7 @@ Set it in user settings (`~/.claude/settings.json`):
 - `brief.sh <paragraph>` — the only channel to a human: appends the paragraph to `port-state/brief` and, on macOS, opens a Terminal window showing it.
 - `setup-signing.sh` — macOS-only, run by hand once: creates the local certificate the port signs patched binaries with.
 - `patches/` — the committed patch set, including re-anchors that pass the port's functional gate.
+- `patches/lib/bundle.mjs` — module-scoping helpers the patches share.
 - `patches-local/` — machine-local `enable` and `disable` selections, plus `<version>/dropped`.
 - `port-state/` — locks, logs, build scratch (the port stages its quarter-gigabyte candidates here, on real disk rather than /tmp), failure, waiting and escalation markers, and `brief`, the paragraph the next launch prints.
 

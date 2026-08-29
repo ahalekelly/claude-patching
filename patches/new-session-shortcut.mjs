@@ -33,6 +33,7 @@
 // change per build); any match count other than exactly 1 fails loudly so the
 // wrapper aborts before repack and the binary stays untouched.
 import { readFileSync, writeFileSync } from "node:fs";
+import { bundleTools } from "./lib/bundle.mjs";
 
 const jsPath = process.argv[2];
 if (!jsPath) {
@@ -46,16 +47,11 @@ function fail(message) {
   process.exit(1);
 }
 
-function matchOne(label, regex) {
-  const matches = [...js.matchAll(regex)];
-  if (matches.length !== 1)
-    fail(`${label}: ${matches.length} matches, expected exactly 1 — bundle layout changed (or agents-view-shortcut did not run first), refusing`);
-  return matches[0];
-}
+const { esc, chunkAt, only, onlyIn, oneModule } = bundleTools(() => js, fail);
 
 function replaceOne(label, regex, replacement) {
-  matchOne(label, regex);
-  js = js.replace(regex, replacement);
+  const m = only(label, regex);
+  js = js.slice(0, m.index) + m[0].replace(regex, replacement) + js.slice(m.index + m[0].length);
   console.log(`new-session-shortcut: ${label} patched`);
 }
 
@@ -90,6 +86,8 @@ replaceOne(
   '$&$1("app:newSession",()=>{_avsOpenAgents&&((globalThis.__nssHandoff??={at:0}).at=Date.now(),_avsOpenAgents())},{context:"Global"});',
 );
 
+const inModule = oneModule();
+
 // FleetView's launch-scope origin: the origin the row builder stamps on a
 // "+ new session" row when the row itself carries none, read at the component
 // callsite that feeds the row-building pass
@@ -98,10 +96,12 @@ replaceOne(
 // it in "}){", so the trailing "})," pins the match to the call. The grouped
 // layouts never build the row, but the value is layout-independent, so passing
 // it straight to the spawn flow makes the chord work in every layout.
-const origin = matchOne(
+const originMatch = only(
   "fallback origin",
   /scopedFallbackOrigin:([$\w]+),termRows:[$\w]+,columns:[$\w]+,now:[$\w]+\}\),/g,
-)[1];
+);
+inModule("fallback origin", originMatch.index);
+const origin = originMatch[1];
 
 // The new-session flow itself, a module-scope function over FleetView's
 // context object:
@@ -111,10 +111,12 @@ const origin = matchOne(
 // It debounces itself off the view's state store (spawn in flight, attach in
 // progress), so every caller below can invoke it unguarded. Its second
 // argument is the launch origin.
-const flow = matchOne(
+const flowMatch = only(
   "spawn flow",
   /function ([$\w]+)\(([$\w]+),[$\w]+\)\{let\{editor:[$\w]+,roster:[$\w]+,attach:[$\w]+,storageV5:[$\w]+\}=\2,[$\w]+=[$\w]+\.setError,([$\w]+)=[$\w]+\.getSnapshot\(\);if\(\3\.newSessionOpening\|\|\3\.attachingJobId!==null\)return;[\s\S]{100,1500}?Couldn't start a new session/g,
-)[1];
+);
+inModule("spawn flow", flowMatch.index);
+const flow = flowMatch[1];
 
 // FleetView's component-scope wrapper over the flow, bound in the let chain
 // that builds the view's action closures:
@@ -123,29 +125,34 @@ const flow = matchOne(
 // render, consumes the handoff stamp at most once, and defers the call past
 // the render since the flow sets state. The lookahead pins the match to a
 // chain position, so a wrapper moved out of one fails loudly.
-const wrapperMatch = matchOne(
+const flowChunk = chunkAt(flowMatch.index);
+const wrapperMatch = onlyIn(
   "spawn wrapper + handoff kick",
+  flowChunk.text,
   new RegExp(
-    `,([$\\w]+)=\\(([$\\w]+)\\)=>${flow.replace(/\$/g, "\\$")}\\([$\\w]+,\\2\\),(?=[$\\w]+=[$\\w]+!==void 0&&)`,
+    `,([$\\w]+)=\\(([$\\w]+)\\)=>${esc(flow)}\\([$\\w]+,\\2\\),(?=[$\\w]+=[$\\w]+!==void 0&&)`,
     "g",
   ),
 );
+const wrapperAt = flowChunk.start + wrapperMatch.index;
+inModule("spawn wrapper + handoff kick", wrapperAt);
 const spawn = wrapperMatch[1];
 js =
-  js.slice(0, wrapperMatch.index + wrapperMatch[0].length) +
+  js.slice(0, wrapperAt + wrapperMatch[0].length) +
   "_nssKick=((globalThis.__nssHandoff??={at:0}).at&&" +
   "Date.now()-globalThis.__nssHandoff.at<8e3&&" +
   `(globalThis.__nssHandoff.at=0,setTimeout(()=>${spawn}(${origin}),0)),0),` +
-  js.slice(wrapperMatch.index + wrapperMatch[0].length);
+  js.slice(wrapperAt + wrapperMatch[0].length);
 console.log("new-session-shortcut: spawn wrapper + handoff kick patched");
 
 // FleetView's raw key handler is its own module-scope function over the same
 // context object, so it reaches the wrapper and the origin through it:
 //   function sPy(e,t){let{...,openNewSessionRow:T,openOrRespawn:C}=e.submit,...
-const keyContext = matchOne(
+const keyContext = only(
   "key-handler context",
   /openNewSessionRow:([$\w]+),openOrRespawn:[$\w]+\}=([$\w]+)\.submit,/g,
 );
+inModule("key-handler context", keyContext.index);
 const fleetSpawn = keyContext[1];
 const fleetOrigin = `${keyContext[2]}.submit.scopedFallbackOrigin`;
 
@@ -155,10 +162,11 @@ const fleetOrigin = `${keyContext[2]}.submit.scopedFallbackOrigin`;
 // of the branch (down arrow, multiline composer, list wrap) untouched. The
 // sub-mode handlers earlier in the flow — rename navigation, the pending
 // spawn's esc-to-cancel — still see their keys first.
-const branch = matchOne(
+const branch = only(
   "fleet ctrl+n",
   /if\(([$\w]+)\.key==="down"\|\|\1\.ctrl&&\1\.key==="n"\)\{if\(([$\w]+)\(\),([$\w]+)\.length>0\)\{([$\w]+)\(null\),([$\w]+)\(\(([$\w]+)\)=>Math\.min\(\3\.length-1/g,
 );
+inModule("fleet ctrl+n", branch.index);
 if (branch.index < keyContext.index)
   fail("fleet ctrl+n: the down-navigation branch precedes the key handler's context destructure — refusing");
 js =
