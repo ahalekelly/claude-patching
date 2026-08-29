@@ -35,10 +35,10 @@ cat > "$RUN" <<EOF
 #!/bin/bash
 cd "$ROOT"
 export CLAUDE_PATCHING_AUTOPORT=1
-# Pin the default profile explicitly: the invoker's environment varies (daemon
-# jobs export CLAUDE_CONFIG_DIR=.claude-work), and the agent must authenticate
-# the same way from every path.
-export CLAUDE_CONFIG_DIR="\$HOME/.claude"
+# Use the default profile: the invoker's environment varies (claudew sessions
+# export CLAUDE_CONFIG_DIR=.claude-work), and on macOS the variable being set
+# at all selects a different Keychain entry that nothing keeps fresh.
+unset CLAUDE_CONFIG_DIR
 # -p writes nothing until the final message, so the log sits empty for the whole
 # run. stream-json emits an event per step instead; render one line each —
 # assistant text as written, a tool call as its name and the head of its input,

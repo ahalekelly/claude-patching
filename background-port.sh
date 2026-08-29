@@ -16,13 +16,12 @@ set -uo pipefail
 # in /opt/homebrew/bin. Without them the mechanical apply fails on a missing
 # node and the port reports it as patch drift.
 export PATH="$HOME/.local/bin:/opt/homebrew/bin:$PATH"
-# claude resolves a different OAuth credential entry when CLAUDE_CONFIG_DIR is
-# unset than when it is set — even set to its default path — and the unset
-# entry is not kept fresh by anything on this machine. launchd fires this
-# script with the variable unset, so every claude the port runs (the smoke
-# test, the live-model suite tests) must pin the same profile the port agents
-# pin in agent-run.sh, or it fails with an OAuth error no session ever sees.
-export CLAUDE_CONFIG_DIR="$HOME/.claude"
+# On macOS claude keys its Keychain credential entry on whether CLAUDE_CONFIG_DIR
+# is set — even set to its default path — and only the unset entry is kept
+# fresh, by the interactive `claude` launcher. Every claude the port runs (the
+# smoke test, the live-model suite tests) must use that same entry, as the port
+# agents in agent-run.sh do, or it fails with an OAuth error no session sees.
+unset CLAUDE_CONFIG_DIR
 # Nothing here has a human at a terminal to type a git password.
 export GIT_TERMINAL_PROMPT=0
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
