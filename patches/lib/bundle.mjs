@@ -14,9 +14,9 @@ export function bundleTools(source, fail) {
   function chunkAt(at) {
     const js = source();
     const preceded = js.lastIndexOf("\n//__CHUNK__ ", at);
-    const marker = preceded === -1 && js.startsWith("//__CHUNK__ ") ? 0 : preceded + 1;
-    if (marker === 0 && preceded === -1 && !js.startsWith("//__CHUNK__ "))
+    if (preceded === -1 && !js.startsWith("//__CHUNK__ "))
       fail("no chunk marker precedes the match — refusing");
+    const marker = preceded + 1; // the first module's marker sits at byte zero
     const nameEnd = js.indexOf("\n", marker);
     let end = js.indexOf("\n//__CHUNK__ ", nameEnd);
     if (end === -1) end = js.length;
