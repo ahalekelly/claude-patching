@@ -198,13 +198,13 @@ CAND="$WORK/claude-$VER"
 if ! "$ROOT/apply-display-patches.sh" "$VER" "$CAND" > "$WORK/apply.log" 2>&1; then
   tail -20 "$WORK/apply.log"
   if ! is_porter; then
-    # Once the porter has promoted this version (or a newer one) its patch set
-    # fits its own binary, so no re-anchor is coming: the platforms' bundles
-    # diverged, and waiting would never end.
+    # Once the porter has promoted this version (or a newer one) with the
+    # committed patch set, no re-anchor is coming and waiting would never end:
+    # the build fails for a reason local to this machine.
     ported="$(<"$ROOT/ported")"
     if [[ "$(printf '%s\n' "$ported" "$VER" | sort -V | head -1)" == "$VER" ]]; then
       trash_existing "$STATE/$VER.waiting" || exit 1
-      fail "$(<"$ROOT/porter") already ported $ported, so no re-anchor for $VER is coming — the patch set does not apply to this machine's binary"
+      fail "$(<"$ROOT/porter") already ported $ported, so no re-anchor for $VER is coming; the build failed here with: $(grep -m1 '^ERROR' "$WORK/apply.log" || tail -1 "$WORK/apply.log")"
     fi
     trash_existing "$STATE/$VER.failed" "$STATE/$VER.escalated" || exit 1
     { damper_fingerprint
@@ -293,7 +293,6 @@ rmdir "$BIN.lock" 2>/dev/null
 trash_existing "$STATE/$VER.failed" "$STATE/$VER.escalated" "$STATE/$VER.waiting" || exit 1
 
 if is_porter; then
-  PUSH=0
   PATCH_FILES="$(git -C "$ROOT" diff --name-only -- patches/)"
   if [[ "$AGENT_EDITED" == 1 && -n "$PATCH_FILES" ]]; then
     PATCH_IDS="$(printf '%s\n' "$PATCH_FILES" | sed 's#^patches/##; s/\.mjs$//' | tr '\n' ' ' | sed 's/ $//')"
@@ -304,19 +303,21 @@ if is_porter; then
       git -C "$ROOT" reset -- patches/
       fail "could not commit the port agent's patch edits"
     fi
-    PUSH=1
   fi
-  # `ported` tells consumers which version the patch set is known to fit, so a
-  # consumer whose apply still fails stops waiting for a re-anchor. Newest only:
-  # a re-port of an older version must not roll the record back.
-  if [[ "$(printf '%s\n' "$(<"$ROOT/ported")" "$VER" | sort -V | tail -1)" == "$VER" && "$(<"$ROOT/ported")" != "$VER" ]]; then
+  # `ported` tells consumers which version the committed patch set is known to
+  # fit, so a consumer whose apply still fails stops waiting for a re-anchor.
+  # Only a clean patches/ certifies that, and only a newer version moves the
+  # record: a re-port of an older version must not roll it back.
+  if [[ -z "$(git -C "$ROOT" status --porcelain -- patches/)" &&
+        "$(printf '%s\n' "$(<"$ROOT/ported")" "$VER" | sort -V | tail -1)" == "$VER" &&
+        "$(<"$ROOT/ported")" != "$VER" ]]; then
     echo "$VER" > "$ROOT/ported"
-    git -C "$ROOT" commit --quiet -m "Ported Claude Code $VER" -- ported || fail "could not commit the ported record"
-    PUSH=1
+    git -C "$ROOT" commit --quiet -m "Ported Claude Code $VER" -- ported ||
+      { git -C "$ROOT" checkout -- ported; fail "could not commit the ported record"; }
   fi
   # Promotion is already done, so a machine that cannot reach origin keeps its
-  # patched binary; the commits just wait for the next port to push them.
-  [[ "$PUSH" == 1 ]] && { git -C "$ROOT" push --quiet origin master || say "could not push to origin"; }
+  # patched binary; unpushed commits go with the next port's push.
+  git -C "$ROOT" push --quiet origin master || say "could not push to origin"
 fi
 
 say "$VER promoted${DROPPED:+ (dropped:$DROPPED)}${SUSPECT:+ (suspect:$SUSPECT)} — restart sessions to pick it up"
