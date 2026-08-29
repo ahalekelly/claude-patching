@@ -52,7 +52,7 @@ say() { echo "[$(date '+%F %T')] $*"; }
 damper_fingerprint() {
   { fingerprint
     find "$ROOT/tests" -type f -not -path '*__pycache__*' 2>/dev/null | sort | xargs cat /dev/null
-    cat "$ROOT/README.md"; } | "$HASH"
+    cat "$ROOT/README.md" "$ROOT/ported"; } | "$HASH"
 }
 
 # One port per version at a time; self-heal a lock left by a crashed run.
@@ -198,6 +198,14 @@ CAND="$WORK/claude-$VER"
 if ! "$ROOT/apply-display-patches.sh" "$VER" "$CAND" > "$WORK/apply.log" 2>&1; then
   tail -20 "$WORK/apply.log"
   if ! is_porter; then
+    # Once the porter has promoted this version (or a newer one) its patch set
+    # fits its own binary, so no re-anchor is coming: the platforms' bundles
+    # diverged, and waiting would never end.
+    ported="$(<"$ROOT/ported")"
+    if [[ "$(printf '%s\n' "$ported" "$VER" | sort -V | head -1)" == "$VER" ]]; then
+      trash_existing "$STATE/$VER.waiting" || exit 1
+      fail "$(<"$ROOT/porter") already ported $ported, so no re-anchor for $VER is coming — the patch set does not apply to this machine's binary"
+    fi
     trash_existing "$STATE/$VER.failed" "$STATE/$VER.escalated" || exit 1
     { damper_fingerprint
       date '+%F %T'; } > "$STATE/$VER.waiting"
@@ -284,19 +292,31 @@ rmdir "$BIN.lock" 2>/dev/null
 # this version can escalate again.
 trash_existing "$STATE/$VER.failed" "$STATE/$VER.escalated" "$STATE/$VER.waiting" || exit 1
 
-PATCH_FILES="$(git -C "$ROOT" diff --name-only -- patches/)"
-if is_porter && [[ "$AGENT_EDITED" == 1 && -n "$PATCH_FILES" ]]; then
-  PATCH_IDS="$(printf '%s\n' "$PATCH_FILES" | sed 's#^patches/##; s/\.mjs$//' | tr '\n' ' ' | sed 's/ $//')"
-  git -C "$ROOT" add -- $PATCH_FILES || fail "could not stage the port agent's patch edits"
-  if ! git -C "$ROOT" commit -m "Re-anchor $PATCH_IDS for Claude Code $VER" \
-    -m "The port agent re-anchored these patches, and the functional suite gated them." \
-    -m "Co-Authored-By: Claude <noreply@anthropic.com>" -- $PATCH_FILES; then
-    git -C "$ROOT" reset -- patches/
-    fail "could not commit the port agent's patch edits"
+if is_porter; then
+  PUSH=0
+  PATCH_FILES="$(git -C "$ROOT" diff --name-only -- patches/)"
+  if [[ "$AGENT_EDITED" == 1 && -n "$PATCH_FILES" ]]; then
+    PATCH_IDS="$(printf '%s\n' "$PATCH_FILES" | sed 's#^patches/##; s/\.mjs$//' | tr '\n' ' ' | sed 's/ $//')"
+    git -C "$ROOT" add -- $PATCH_FILES || fail "could not stage the port agent's patch edits"
+    if ! git -C "$ROOT" commit -m "Re-anchor $PATCH_IDS for Claude Code $VER" \
+      -m "The port agent re-anchored these patches, and the functional suite gated them." \
+      -m "Co-Authored-By: Claude <noreply@anthropic.com>" -- $PATCH_FILES; then
+      git -C "$ROOT" reset -- patches/
+      fail "could not commit the port agent's patch edits"
+    fi
+    PUSH=1
+  fi
+  # `ported` tells consumers which version the patch set is known to fit, so a
+  # consumer whose apply still fails stops waiting for a re-anchor. Newest only:
+  # a re-port of an older version must not roll the record back.
+  if [[ "$(printf '%s\n' "$(<"$ROOT/ported")" "$VER" | sort -V | tail -1)" == "$VER" && "$(<"$ROOT/ported")" != "$VER" ]]; then
+    echo "$VER" > "$ROOT/ported"
+    git -C "$ROOT" commit --quiet -m "Ported Claude Code $VER" -- ported || fail "could not commit the ported record"
+    PUSH=1
   fi
   # Promotion is already done, so a machine that cannot reach origin keeps its
-  # patched binary; the re-anchor just waits for the next port to push it.
-  git -C "$ROOT" push --quiet origin master || say "could not push the re-anchor to origin"
+  # patched binary; the commits just wait for the next port to push them.
+  [[ "$PUSH" == 1 ]] && { git -C "$ROOT" push --quiet origin master || say "could not push to origin"; }
 fi
 
 say "$VER promoted${DROPPED:+ (dropped:$DROPPED)}${SUSPECT:+ (suspect:$SUSPECT)} — restart sessions to pick it up"

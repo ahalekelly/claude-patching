@@ -93,7 +93,7 @@ A `versions/` entry the installer created but never filled (anthropics/claude-co
 
 ### Porter and consumers
 
-The short hostname in `porter` names the one machine that re-anchors patches, runs the full suite and advisory, and pushes its commits. Every other machine pulls `origin/master`, applies the patches mechanically, runs the parse and smoke checks, and promotes locally. On drift, a consumer waits for the porter's pushed re-anchor instead of spawning an agent. Edit `porter` to move the role.
+The short hostname in `porter` names the one machine that re-anchors patches, runs the full suite and advisory, and pushes its commits. Every other machine pulls `origin/master`, applies the patches mechanically, runs the parse and smoke checks, and promotes locally. On drift, a consumer waits for the porter's pushed re-anchor instead of spawning an agent. The porter records each version it promotes in `ported` and pushes it, so a consumer whose apply still fails on a version the porter already ported stops waiting and fails loudly: the two platforms' bundles diverged and the patch needs a hand. Edit `porter` to move the role.
 
 Everything else the port produces stays in `port-state/` for forensics. The one human-facing channel is `port-state/brief`: a Fable agent that hits something it cannot resolve itself opens a GitHub issue with the detail and delivers one paragraph through `brief.sh` — what the problem is, what you have to do, and the issue URL. It opens in a Terminal window at once, and the next launch prints and clears the file.
 
@@ -136,6 +136,7 @@ Set it in user settings (`~/.claude/settings.json`):
 - `process-wrapper.sh <binary> <args...>` — the `processWrapper` argv prefix: execs the best patched binary in place of the one a background spawn asked for, silently, falling through to the requested binary on any failure.
 - `lib.sh` — shared platform seams, porter detection, patch-set fingerprint, and binary selection.
 - `porter` — short hostname of the machine allowed to run porting agents.
+- `ported` — newest Claude Code version the porter has promoted with the committed patch set.
 - `autoport-trigger.sh` — fired by launchd or systemd on any change to the versions directory: settle wait, stamp fast path, else `exec` the port so the service manager tracks it as the job.
 - `com.akelly.claude-patching.autoport.plist` — the launchd agent. Absolute paths, `RunAtLoad` so an install during a logout is caught, `ThrottleInterval` so a burst of writes fires it once.
 - `claude-patching-autoport.path` — the systemd user path watcher.
