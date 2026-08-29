@@ -172,9 +172,23 @@ done
 # run an hour after it last changed is not mid-install: a corrupted download or
 # a poisoned code signature stays broken forever, and earns the failure marker
 # and its notification. The .orig backup guard in apply-display-patches.sh
-# stays as the last line of defense.
+# stays as the last line of defense. One exception: the installer sometimes
+# creates the versions/ entry and never writes into it (anthropics/claude-code
+# #85900). An entry still empty ten minutes later is that, not a slow download,
+# so trash it and reinstall the version — the versions watcher re-fires this port
+# when the real binary lands. Once per version: a second empty file means the
+# installer keeps failing, which needs a human.
 if ! "$BIN" --version >/dev/null 2>&1; then
   [[ ! -e "$BIN" ]] && fail "$BIN does not exist — stale ~/.local/bin/claude symlink?"
+  if [[ "$(file_size "$BIN")" == 0 && -n "$(find "$BIN" -maxdepth 0 -mmin +10 2>/dev/null)" ]]; then
+    [[ -e "$STATE/$VER.reinstalled" ]] &&
+      fail "$VER is still an empty file after reinstalling it — the installer keeps failing (anthropics/claude-code#85900); delete $BIN and run 'claude install $VER' by hand"
+    touch "$STATE/$VER.reinstalled"
+    say "$VER is an empty file ten minutes after install — trashing it and reinstalling"
+    trash "$BIN" || fail "could not trash the empty $BIN"
+    "$(best_patched "$BIN")" install "$VER" || say "claude install $VER exited nonzero — the next installer attempt gets another try"
+    exit 0
+  fi
   [[ -n "$(find "$BIN" -maxdepth 0 -mmin +60 2>/dev/null)" ]] &&
     fail "$VER still cannot execute an hour after install — broken download or poisoned signature?"
   say "$VER does not execute yet — still being installed; not porting"
