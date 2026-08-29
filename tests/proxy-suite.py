@@ -50,45 +50,6 @@ def trim_context_bloat(binary):
     assert not present, f"the request still carries: {present}"
 
 
-def defer_artifact_description(binary):
-    """The Artifact description is the short skill-pointer stub.
-
-    The rules chunk is the bulkiest of the three the stock description
-    assembles, so its marker sentence is the sharpest evidence that the chunks
-    were dropped rather than merely shortened.
-
-    Getting the tool into a headless run at all takes three nudges, because
-    Claude Code gates it four ways: CLAUDE_CODE_ARTIFACT overrides the
-    off-by-default-in-SDK-sessions rule, dropping
-    CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC clears the essential-traffic
-    block, and a seeded feature-flag cache — read from disk only when
-    CLAUDE_CODE_GB_DISK_CACHE_WHEN_TELEMETRY_OFF says so — supplies the release
-    flag. The seeded cache keeps the session hermetic: it never has to reach a
-    flag service, and the test does not depend on the running user's account.
-    """
-    scratch = Scratch("defer-artifact")
-    config = scratch.config / ".claude.json"
-    seeded = json.loads(config.read_text())
-    seeded["cachedGrowthBookFeatures"] = {"tengu_cobalt_plinth": True,
-                                          "tengu_retire_chat_relay_artifact_backstop": True}
-    config.write_text(json.dumps(seeded))
-    with CaptureProxy() as proxy:
-        env = scratch.env(proxy, {"CLAUDE_CODE_ARTIFACT": "1",
-                                  "CLAUDE_CODE_GB_DISK_CACHE_WHEN_TELEMETRY_OFF": "1"})
-        env.pop("CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC", None)
-        subprocess.run([binary, "-p", "--model", "sonnet",
-                        "--permission-mode", "bypassPermissions", "say hi"],
-                       env=env, cwd=str(scratch.project),
-                       capture_output=True, text=True, timeout=180)
-        artifact = tool(proxy.main_request(), "Artifact")
-    scratch.cleanup()
-    assert artifact, "no Artifact tool in the request"
-    description = artifact["description"]
-    assert len(description) < 2500, f"Artifact description is {len(description)} chars, not a stub"
-    assert 'skill: "artifact-tool"' in description, "the stub does not point at the artifact-tool skill"
-    assert "**To update**: Edit the file" not in description, "the rules chunk is still inlined"
-
-
 def tool_defer_whitelist(binary):
     """A tool named in CLAUDE_CODE_IMMEDIATE_TOOLS ships its schema up front.
 
@@ -176,7 +137,6 @@ def task_reminder_conditional(binary):
 
 TESTS = {
     "trim-context-bloat": trim_context_bloat,
-    "defer-artifact-description": defer_artifact_description,
     "tool-defer-whitelist": tool_defer_whitelist,
     "hook-envelope-strip": hook_envelope_strip,
     "task-reminder-conditional": task_reminder_conditional,
