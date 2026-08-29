@@ -193,33 +193,6 @@ def toolsearch_visibility(binary):
     assert "ToolSearch" in screen, f"the ToolSearch call was not rendered:\n{screen}"
 
 
-def sticky_prompt_header(binary):
-    """With the prompt scrolled off-screen, the previous-prompt header still renders.
-
-    The header belongs to the fullscreen transcript viewport, which the TUI only
-    enters when the terminal is a real full-screen host — CLAUDE_CODE_NO_FLICKER
-    is the documented override that says so. A long answer then scrolls the
-    prompt off the top while the viewport keeps following the bottom, which is
-    the state stock hides the header in and the patch shows it in.
-    """
-    scratch = Scratch("sticky")
-    long_answer = "\n".join(f"answer line {i}" for i in range(1, 301))
-    with CaptureProxy([[{"text": long_answer}]]) as proxy:
-        term = start(binary, scratch, proxy, {"CLAUDE_CODE_NO_FLICKER": "1"})
-        term.submit(f"{PROMPT_MARKER} please answer at length")
-        term.wait_for("answer line 300", timeout=90)
-        term.pump(4)
-        screen = term.text()
-        term.close()
-    scratch.cleanup()
-    assert "answer line 300" in screen, f"the answer never rendered:\n{screen}"
-    assert PROMPT_MARKER not in "\n".join(screen.split("\n")[3:]), \
-        f"the prompt never scrolled off the top, so there is nothing to stick:\n{screen}"
-    header = "\n".join(screen.split("\n")[:3])
-    assert PROMPT_MARKER in header, \
-        f"the scrolled-off prompt is not in the header rows {header!r}:\n{screen}"
-
-
 def cron_visibility(binary):
     """A cron-fired prompt renders in the transcript and reaches the model prefixed.
 
@@ -521,7 +494,6 @@ def thinking_latest(binary):
 TESTS = {
     "no-collapse-tool-calls": no_collapse_tool_calls,
     "toolsearch-visibility": toolsearch_visibility,
-    "sticky-prompt-header": sticky_prompt_header,
     "cron-visibility": cron_visibility,
     "agents-view-shortcut": agents_view_shortcut,
     "new-session-shortcut": new_session_shortcut,

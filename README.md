@@ -20,7 +20,6 @@ Two properties make that safe enough to run every day:
 | `trim-context-bloat` | drops `userEmail`, `currentDate`, the model-family paragraph and the env block's `Platform:` and `Shell:` lines from the system prompt |
 | `hook-envelope-strip` | a SessionStart, UserPromptSubmit or UserPromptExpansion hook's stdout reaches the model as itself, not wrapped in "`<hook>` hook success: " |
 | `defer-artifact-description` | the Artifact tool's ~1.5k-token description becomes a stub pointing at an `artifact-tool` skill that holds the full text |
-| `sticky-prompt-header` | the previous-prompt header above the transcript shows whenever the prompt has scrolled off the top, not only while scrolled up, and in readable contrast |
 | `task-reminder-conditional` | the periodic "task tools haven't been used recently" reminder fires only when the session's task list is non-empty |
 | `agents-view-shortcut` | a rebindable keybinding action opens the agents view from anywhere; stock offers only left-arrow on an empty idle prompt |
 | `new-session-shortcut` | ctrl+n spawns a fresh session and attaches to it, from FleetView or from inside a session (backgrounding the conversation first); stock's only route is a "+ new session" row rendered solely in a feature-gated FleetView layout — requires `agents-view-shortcut` |
