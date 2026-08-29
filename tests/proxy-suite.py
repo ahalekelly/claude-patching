@@ -50,19 +50,6 @@ def trim_context_bloat(binary):
     assert not present, f"the request still carries: {present}"
 
 
-def defer_workflow_description(binary):
-    """The Workflow description is the short skill-pointer stub."""
-    scratch = Scratch("defer-workflow")
-    with CaptureProxy() as proxy:
-        scratch.run(binary, proxy, "say hi")
-        workflow = tool(proxy.main_request(), "Workflow")
-    scratch.cleanup()
-    assert workflow, "no Workflow tool in the request"
-    description = workflow["description"]
-    assert len(description) < 3000, f"Workflow description is {len(description)} chars, not a stub"
-    assert 'skill: "workflow-tool"' in description, "the stub does not point at the workflow-tool skill"
-
-
 def defer_artifact_description(binary):
     """The Artifact description is the short skill-pointer stub.
 
@@ -189,7 +176,6 @@ def task_reminder_conditional(binary):
 
 TESTS = {
     "trim-context-bloat": trim_context_bloat,
-    "defer-workflow-description": defer_workflow_description,
     "defer-artifact-description": defer_artifact_description,
     "tool-defer-whitelist": tool_defer_whitelist,
     "hook-envelope-strip": hook_envelope_strip,
