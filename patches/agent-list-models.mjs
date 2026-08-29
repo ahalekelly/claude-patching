@@ -28,6 +28,7 @@
 // change per build); any match count other than exactly 1 fails loudly so the
 // wrapper aborts before repack and the binary stays untouched.
 import { readFileSync, writeFileSync } from "node:fs";
+import { bundleTools } from "./lib/bundle.mjs";
 
 const jsPath = process.argv[2];
 if (!jsPath) {
@@ -36,20 +37,24 @@ if (!jsPath) {
 }
 let js = readFileSync(jsPath, "utf8");
 
-function fail(label, detail) {
-  console.error(`ERROR: agent-list-models: ${label}: ${detail} — bundle layout changed, refusing`);
+function fail(message) {
+  console.error(`ERROR: agent-list-models: ${message}`);
   process.exit(1);
 }
 
+const { only, oneModule } = bundleTools(() => js, fail);
+const inModule = oneModule();
+
 function replaceOne(label, regex, replacement) {
-  const matches = [...js.matchAll(regex)];
-  if (matches.length !== 1) fail(label, `${matches.length} matches, expected exactly 1`);
-  js = js.replace(regex, replacement);
+  const m = only(label, regex);
+  js = js.slice(0, m.index) + m[0].replace(regex, replacement) + js.slice(m.index + m[0].length);
   console.log(`agent-list-models: ${label} patched`);
+  return m;
 }
 
 for (const name of ["__almShort", "__almInner", "__almMM", "__almMS"]) {
-  if (js.includes(name)) fail("helper injection", `identifier ${name} already present`);
+  if (js.includes(name))
+    fail(`helper injection: identifier ${name} already present — bundle layout changed, refusing`);
 }
 
 // Subagent rows: every row's right-hand status is built by one function from
@@ -97,18 +102,24 @@ replaceOne(
 //   - the figures object and token formatter, from the subagent status
 //     function's "↓ 92.8k tokens" expression
 function probe(label, regex) {
-  const matches = [...js.matchAll(regex)];
-  if (matches.length !== 1) fail(label, `${matches.length} probes, expected exactly 1`);
-  return matches[0].slice(1).map((name) => name.replaceAll("$", "$$$$"));
+  return only(label, regex);
 }
 {
-  const [tr] = probe("transcripts store", /,([$\w]+)=[$\w]+\.getState\(\)\.transcripts,/g);
-  const [mainId] = probe("main agent id getter", /\.transcripts\[([$\w]+)\(\)\]/g);
-  const [figures, fmtTokens] = probe(
+  const trProbe = probe("transcripts store", /,([$\w]+)=[$\w]+\.getState\(\)\.transcripts,/g);
+  inModule("transcripts store", trProbe.index);
+  const mainIdProbe = probe("main agent id getter", /\.transcripts\[([$\w]+)\(\)\]/g);
+  inModule("main agent id getter", mainIdProbe.index);
+  const tokenProbe = probe(
     "token status expression",
     /\.progress\?\.lastActivity\?([$\w]+)\.arrowDown:\1\.arrowUp,[$\w]+=[$\w]+!==void 0&&[$\w]+>0\?`\$\{[$\w]+\} \$\{([$\w]+)\([$\w]+\)\} tokens`/g,
   );
-  replaceOne(
+  inModule("token status expression", tokenProbe.index);
+  const [tr] = trProbe.slice(1).map((name) => name.replaceAll("$", "$$$$"));
+  const [mainId] = mainIdProbe.slice(1).map((name) => name.replaceAll("$", "$$$$"));
+  const [figures, fmtTokens] = tokenProbe
+    .slice(1)
+    .map((name) => name.replaceAll("$", "$$$$"));
+  const mainRowStatus = replaceOne(
     "main row status prop",
     /&&([$\w]+)\(([$\w]+),\{isSelected:([$\w]+)===0,isViewed:([$\w]+)===void 0,labelWidth:([$\w]+),moreAbove:([$\w]+),onClick:/g,
     "&&$1($2,{mainStatus:(function(){" +
@@ -116,6 +127,7 @@ function probe(label, regex) {
       `return[m,k>0?${figures}.arrowDown+" "+${fmtTokens}(k)+" tokens":""].filter(Boolean).join(" \\xB7 ")})(),` +
       "isSelected:$3===0,isViewed:$4===void 0,labelWidth:$5,moreAbove:$6,onClick:",
   );
+  inModule("main row status prop", mainRowStatus.index);
 }
 
 // The main row component itself, stock:

@@ -19,6 +19,7 @@
 // change per build); any match count other than exactly 1 fails loudly so the
 // wrapper aborts before repack and the binary stays untouched.
 import { readFileSync, writeFileSync } from "node:fs";
+import { bundleTools } from "./lib/bundle.mjs";
 
 const jsPath = process.argv[2];
 if (!jsPath) {
@@ -27,16 +28,19 @@ if (!jsPath) {
 }
 let js = readFileSync(jsPath, "utf8");
 
-function fail(label, detail) {
-  console.error(`ERROR: agents-view-models: ${label}: ${detail} — bundle layout changed, refusing`);
+function fail(message) {
+  console.error(`ERROR: agents-view-models: ${message}`);
   process.exit(1);
 }
 
+const { only, oneModule } = bundleTools(() => js, fail);
+const inModule = oneModule();
+
 function replaceOne(label, regex, replacement) {
-  const matches = [...js.matchAll(regex)];
-  if (matches.length !== 1) fail(label, `${matches.length} matches, expected exactly 1`);
-  js = js.replace(regex, replacement);
+  const m = only(label, regex);
+  js = js.slice(0, m.index) + m[0].replace(regex, replacement) + js.slice(m.index + m[0].length);
   console.log(`agents-view-models: ${label} patched`);
+  return m;
 }
 
 // Two top-level helpers (function declarations hoist across the bundle
@@ -51,7 +55,8 @@ const HELPERS =
   'let f=s&&s.respawnFlags,i=Array.isArray(f)?f.indexOf("--model"):-1;' +
   'return i>=0?__avmShort(f[i+1]):""}';
 for (const name of ["__avmShort", "__avmJobModel"]) {
-  if (js.includes(name)) fail("helper injection", `identifier ${name} already present`);
+  if (js.includes(name))
+    fail(`helper injection: identifier ${name} already present — bundle layout changed, refusing`);
 }
 
 // Column widths, stock:
@@ -64,10 +69,9 @@ for (const name of ["__avmShort", "__avmJobModel"]) {
 // below (the simple row's renameWidth prop names it), and cvv's 4th
 // parameter receives that same local — so the width gate agrees between
 // measurement and drawing by construction.
-const widthProbes = [...js.matchAll(/renameWidth:Math\.max\(12,([$\w]+)-/g)];
-if (widthProbes.length !== 1)
-  fail("width probe", `${widthProbes.length} renameWidth sites, expected exactly 1`);
-const W = widthProbes[0][1];
+const widthProbe = only("width probe", /renameWidth:Math\.max\(12,([$\w]+)-/g);
+inModule("width probe", widthProbe.index);
+const W = widthProbe[1];
 
 replaceOne(
   "age column width",
@@ -80,11 +84,12 @@ replaceOne(
 //   age:fNi(ra,bT.has(ra.id)?$.get(ra.state.sessionId)?.nextAt:void 0)
 // The age cell is a right-aligned plain string, so the model prefix lands as
 // "fable · 3m" and stays aligned via the width edit above.
-replaceOne(
+const jobRowAge = replaceOne(
   "job row age",
   /age:([$\w]+)\(([$\w]+),([$\w]+)\.has\(\2\.id\)\?([$\w]+)\.get\(\2\.state\.sessionId\)\?\.nextAt:void 0\)/g,
   `age:(__avmJobModel($2.state,${W})?__avmJobModel($2.state,${W})+" \\xB7 ":"")+$1($2,$3.has($2.id)?$4.get($2.state.sessionId)?.nextAt:void 0)`,
 );
+inModule("job row age", jobRowAge.index);
 
 // Simple-layout job row (behind CLAUDE_CODE_FLEETVIEW_SIMPLE or the
 // tengu_fleetview_simple gate), stock:
@@ -92,10 +97,11 @@ replaceOne(
 // Its detail line joins free-flowing segments, so prefixing the age string
 // is the whole edit; the age helper's trailing arguments ride through
 // untouched.
-replaceOne(
+const simpleJobRowAge = replaceOne(
   "simple job row age",
   /age:([$\w]+)\(([$\w]+)((?:,[$\w.]+)*)\),tokens:([$\w]+)\(\2,([$\w]+)\),state:\5,/g,
   `age:(__avmJobModel($2.state,${W})?__avmJobModel($2.state,${W})+" \\xB7 ":"")+$1($2$3),tokens:$4($2,$5),state:$5,`,
 );
+inModule("simple job row age", simpleJobRowAge.index);
 
 writeFileSync(jsPath, js);
