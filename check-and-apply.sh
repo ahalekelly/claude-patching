@@ -66,9 +66,9 @@ else
 fi
 [[ -n "$brief" ]] && message "$brief"
 
-# Reconcile in the background. Never blocks the launch, and self-damps if the
-# port of this version already failed recently.
-CLAUDE_PATCHING_AUTOPORT=1 nohup "$ROOT/background-port.sh" "$VER" >/dev/null 2>&1 &
+# Report the markers before the port below rewrites them, then reconcile in
+# the background. Never blocks the launch, and self-damps if the port of this
+# version already failed recently.
 if [[ -f "$STATE/$VER.failed" ]]; then
   message "claude-patching: the port of $VER failed: $(sed -n 3p "$STATE/$VER.failed") — launching $FALLBACK; see $STATE/port-$VER.log"
 elif [[ -f "$STATE/$VER.waiting" ]]; then
@@ -76,4 +76,5 @@ elif [[ -f "$STATE/$VER.waiting" ]]; then
 else
   message "claude-patching: reconciling $VER in the background — see $STATE/port-$VER.log."
 fi
+CLAUDE_PATCHING_AUTOPORT=1 nohup "$ROOT/background-port.sh" "$VER" >/dev/null 2>&1 &
 exit 1
