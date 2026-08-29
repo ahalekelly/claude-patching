@@ -22,6 +22,7 @@
 // the facade module re-exports a binding it imports from the defining module,
 // whose export map names the matched function.
 import { readFileSync, writeFileSync } from "node:fs";
+import { bundleTools } from "./lib/bundle.mjs";
 
 const jsPath = process.argv[2];
 if (!jsPath) {
@@ -35,32 +36,7 @@ const fail = (msg) => {
   process.exit(1);
 };
 
-function only(label, regex) {
-  const matches = [...js.matchAll(regex)];
-  if (matches.length !== 1)
-    fail(`${label}: ${matches.length} matches, expected exactly 1 — bundle layout changed, refusing`);
-  return matches[0];
-}
-
-const esc = (s) => s.replace(/\$/g, "\\$");
-
-// Text of the module containing `at`, and the module's file name. Modules are
-// concatenated in load order, each behind a `//__CHUNK__ <name>` marker line.
-function chunkAt(at) {
-  const marker = js.lastIndexOf("\n//__CHUNK__ ", at);
-  if (marker === -1) fail("no chunk marker precedes the match — refusing");
-  const nameEnd = js.indexOf("\n", marker + 1);
-  let end = js.indexOf("\n//__CHUNK__ ", nameEnd);
-  if (end === -1) end = js.length;
-  return { name: js.slice(marker + 13, nameEnd), text: js.slice(nameEnd + 1, end) };
-}
-
-function onlyIn(label, text, regex) {
-  const matches = [...text.matchAll(regex)];
-  if (matches.length !== 1)
-    fail(`${label}: ${matches.length} matches, expected exactly 1 — bundle layout changed, refusing`);
-  return matches[0];
-}
+const { esc, chunkAt, only, onlyIn } = bundleTools(() => js, fail);
 
 // The head of the predicate: the always-load escape and the MCP branch our
 // check has to precede.

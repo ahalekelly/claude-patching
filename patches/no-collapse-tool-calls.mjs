@@ -74,6 +74,7 @@
 // its insertions into the valid-actions list, the Global bindings table and
 // the registration site all append after stock text those patches anchor on.
 import { readFileSync, writeFileSync } from "node:fs";
+import { bundleTools } from "./lib/bundle.mjs";
 
 const jsPath = process.argv[2];
 if (!jsPath) {
@@ -87,65 +88,12 @@ const fail = (msg) => {
   process.exit(1);
 };
 
-const esc = (s) => s.replace(/\$/g, "\\$");
-
-function matchOne(label, regex) {
-  const matches = [...js.matchAll(regex)];
-  if (matches.length !== 1)
-    fail(
-      `${label}: ${matches.length} matches, expected exactly 1 — bundle layout changed, refusing`,
-    );
-  return matches[0];
-}
+const { chunkAt, only, importedAs } = bundleTools(() => js, fail);
 
 function spliceOne(label, regex, build) {
-  const m = matchOne(label, regex);
+  const m = only(label, regex);
   js = js.slice(0, m.index) + build(m) + js.slice(m.index + m[0].length);
   console.log(`no-collapse-tool-calls: ${label} patched`);
-}
-
-// Text of the module containing `at`, and the module's file name. Modules are
-// concatenated in load order, each behind a `//__CHUNK__ <name>` marker line.
-function chunkAt(at) {
-  const marker = js.lastIndexOf("\n//__CHUNK__ ", at);
-  if (marker === -1) fail("no chunk marker precedes the match — refusing");
-  const nameEnd = js.indexOf("\n", marker + 1);
-  let end = js.indexOf("\n//__CHUNK__ ", nameEnd);
-  if (end === -1) end = js.length;
-  return { name: js.slice(marker + 13, nameEnd), start: nameEnd + 1, text: js.slice(nameEnd + 1, end) };
-}
-
-// The one entry named `local` in a comma-separated `{a as b,c,d as e}` list.
-// An entry is bare whenever the local and published names agree.
-function aliasOf(label, list, local) {
-  const hits = [
-    ...`,${list},`.matchAll(new RegExp(`,${esc(local)}(?: as ([$\\w]+))?,`, "g")),
-  ];
-  if (hits.length !== 1)
-    fail(`${label}: ${hits.length} entries for ${local}, expected exactly 1 — refusing`);
-  return hits[0][1] ?? local;
-}
-
-// The local name under which `site` imports the binding defined as `local` in
-// the module holding `defAt`, proven by the import's source module.
-function importedAs(label, defAt, local, site) {
-  const def = chunkAt(defAt);
-  const exports = [...def.text.matchAll(/export\{([^{}]*)\}/g)].map((m) => m[1]).join(",");
-  const exported = aliasOf(`${label} export`, exports, local);
-  const imports = [
-    ...site.text.matchAll(/import\{([^{}]*)\}from"[^"]*\/([^"\/]+\.js)"/g),
-  ].filter((m) =>
-    new RegExp(`,${esc(exported)}(?: as [$\\w]+)?,`).test(`,${m[1]},`),
-  );
-  if (imports.length !== 1)
-    fail(
-      `${label}: ${site.name} imports ${exported} in ${imports.length} statements, expected exactly 1 — refusing`,
-    );
-  if (imports[0][2] !== def.name)
-    fail(
-      `${label}: ${site.name} imports ${exported} from ${imports[0][2]}, but it is defined in ${def.name} — refusing`,
-    );
-  return aliasOf(`${label} import`, imports[0][1], exported);
 }
 
 // Runtime toggle state. Every module below that reads it seeds it at its own
@@ -159,7 +107,7 @@ const STATE =
 
 const seeded = new Set();
 function seedState(label, regex) {
-  const chunk = chunkAt(matchOne(label, regex).index);
+  const chunk = chunkAt(only(label, regex).index);
   if (seeded.has(chunk.name)) return;
   seeded.add(chunk.name);
   const head = /^(?:\/\/[^\n]*\n|\n)+(?:import\{[^{}]*\}from"[^"]*";)+/.exec(chunk.text);
@@ -224,7 +172,7 @@ spliceOne(
 // Subscribe to the toggle generation inside the grouper memo's dependency
 // array, through the grouper module's own alias for useSyncExternalStore.
 {
-  const def = matchOne(
+  const def = only(
     "useSyncExternalStore",
     /([$\w]+)=function\(([$\w]+),([$\w]+),([$\w]+)\)\{return ([$\w]+)\.H\.useSyncExternalStore\(\2,\3,\4\)\}/g,
   );
@@ -232,7 +180,7 @@ spliceOne(
     "useSyncExternalStore",
     def.index,
     def[1],
-    chunkAt(matchOne("grouper", GROUPER).index),
+    chunkAt(only("grouper", GROUPER).index),
   );
   spliceOne(
     "grouper memo dependencies",
@@ -257,7 +205,7 @@ spliceOne(
 // A Global-context registration beside the chat:submit one, through the
 // registration module's own alias for the useKeybinding hook.
 {
-  const def = matchOne(
+  const def = only(
     "useKeybinding hook",
     /function ([$\w]+)\(([$\w]+),([$\w]+),([$\w]+)=\{\}\)\{let\{context:([$\w]+)="Global",isActive:([$\w]+)=!0\}=\4,[\s\S]{0,300}?registerHandler\(\{action:\2,context:\5,handler:\(\)=>[^,]*,singleKey:!0\}\)/g,
   );
@@ -265,7 +213,7 @@ spliceOne(
     "useKeybinding",
     def.index,
     def[1],
-    chunkAt(matchOne("registration", REGISTRATION).index),
+    chunkAt(only("registration", REGISTRATION).index),
   );
   spliceOne(
     "handler registration",

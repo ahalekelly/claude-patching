@@ -42,6 +42,7 @@
 // which would leave this patch nothing to render — apply-display-patches.sh
 // refuses the combination.
 import { readFileSync, writeFileSync } from "node:fs";
+import { bundleTools } from "./lib/bundle.mjs";
 
 const jsPath = process.argv[2];
 if (!jsPath) {
@@ -50,34 +51,18 @@ if (!jsPath) {
 }
 let js = readFileSync(jsPath, "utf8");
 
-const esc = (s) => s.replace(/\$/g, "\\$");
-
 const fail = (msg) => {
   console.error(`ERROR: thinking-latest: ${msg}`);
   process.exit(1);
 };
 
-// Every site this patch reads or rewrites has to live in one module: the
-// bundle is a concatenation of modules behind `//__CHUNK__ <name>` marker
-// lines, and injected code can only name bindings from the module it lands in.
-let owner;
-function sameModule(label, at) {
-  const marker = js.lastIndexOf("\n//__CHUNK__ ", at);
-  if (marker === -1) fail(`${label}: no module marker precedes the match — refusing`);
-  const name = js.slice(marker + 13, js.indexOf("\n", marker + 1));
-  if (owner === undefined) owner = name;
-  else if (name !== owner)
-    fail(`${label} is in ${name} but this patch's other sites are in ${owner} — refusing`);
-}
+const { esc, only, oneModule } = bundleTools(() => js, fail);
+const inModule = oneModule();
 
 function matchOne(label, regex) {
-  const matches = [...js.matchAll(regex)];
-  if (matches.length !== 1)
-    fail(
-      `${label}: ${matches.length} matches, expected exactly 1 — bundle layout changed, refusing`,
-    );
-  sameModule(label, matches[0].index);
-  return matches[0];
+  const m = only(label, regex);
+  inModule(label, m.index);
+  return m;
 }
 
 function spliceOne(label, regex, build) {
