@@ -34,7 +34,6 @@ from capture_proxy import CaptureProxy  # noqa: E402
 from session import Scratch  # noqa: E402
 
 COLS, ROWS = 110, 34
-PROMPT_MARKER = "quixotic-prompt-marker"
 
 
 class Screen(pyte.Screen):
