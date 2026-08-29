@@ -95,6 +95,13 @@ patches-local/$VER/dropped, one id per line. mcp-per-subagent is behavioral,
 is never droppable, and its guards firing means Claude Code changed something
 the patch depends on — take that to Fable.
 
+Sessions run under T3 Code, not the CLI transcript view, so a patch that only
+changes what the terminal renders (the README table says which) is not worth a
+non-trivial re-anchor: retire it instead — delete patches/<id>.mjs, its
+DEFAULT_PATCH_IDS entry in apply-display-patches.sh, its README row and its
+test, in one commit of its own — and say so in your report. Patches that change
+what reaches the model or how subagents run still earn the re-anchor.
+
 Keep the house style when you re-anchor: content-bearing anchors (property
 names, string literals — never a bare control-flow shape), an exact match-count
 assertion, splice by index rather than a substring replace, and a loud refusal
