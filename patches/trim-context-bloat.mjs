@@ -85,7 +85,7 @@ splice(
 splice(
   matchesOf(
     "currentDate context entry",
-    /,currentDate:`Today's date is \$\{[$\w]+\(\)\}\.`\}/g,
+    /,currentDate:`Today's date is \$\{[$\w]+\([$\w]*\)\}\.`\}/g,
     1,
   )[0],
   "}",

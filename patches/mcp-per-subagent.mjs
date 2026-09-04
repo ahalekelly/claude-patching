@@ -62,12 +62,15 @@ if (matches.length !== 1)
     `${matches.length} matches for the inline agent MCP spec, expected exactly 1 — bundle layout changed, refusing`,
   );
 
-// Guard 1: the connect-cache key normalizer still hashes `env`. It strips a
-// fixed set of fields with a `delete` run before hashing what is left; if `env`
-// ever joins that run the patch would still inject the canary while silently no
-// longer separating connections, so refuse instead.
+// Guard 1: the connect-cache key normalizer still hashes `env`. It destructures
+// a set of fields away and strips more with a `delete` run before hashing what
+// is left; if `env` ever joins either the patch would still inject the canary
+// while silently no longer separating connections, so refuse instead. The seven
+// stable leading fields locate the destructure; the fields that follow them are
+// tolerated so an added one does not cost a port cycle, except for `env` itself,
+// which the lookahead excludes so its arrival kills the match.
 const keyNormalizer =
-  /let\{scope:[$\w]+,pluginSource:[$\w]+,pluginPath:[$\w]+,agentSource:[$\w]+,declaredIn:[$\w]+,configError:[$\w]+,configErrorReason:[$\w]+,\.\.\.([$\w]+)\}=([$\w]+)/g;
+  /let\{scope:[$\w]+,pluginSource:[$\w]+,pluginPath:[$\w]+,agentSource:[$\w]+,declaredIn:[$\w]+,configError:[$\w]+,configErrorReason:[$\w]+,(?:(?!env:)[$\w]+:[$\w]+,)*\.\.\.([$\w]+)\}=([$\w]+)/g;
 const normalizerMatches = [...js.matchAll(keyNormalizer)];
 if (normalizerMatches.length !== 1)
   fail(
@@ -89,11 +92,12 @@ if (stripped.includes("env"))
     "the connect-cache key normalizer now strips `env` before hashing — refusing (per-agent env would no longer separate connections)",
   );
 
-// Guard 2: both stdio spawn sites still spread config.env last, so the injected
-// vars reach the child process. Claude Code ships two MCP client trees (v1
-// default, v2 behind a flag); a count other than 2 means one was removed or
-// restructured and the surviving site needs re-verifying by hand.
-const stdioSpawn = /CLAUDE_CODE_SESSION_ID:[$\w]+\(\),CLAUDECODE:"1",\.\.\.([$\w]+)\.env\}/g;
+// Guard 2: both stdio spawn sites still spread config.env into the child's
+// environment, so the injected vars reach the process. Claude Code ships two
+// MCP client trees (v1 default, v2 behind a flag); a count other than 2 means
+// one was removed or restructured and the surviving site needs re-verifying by
+// hand.
+const stdioSpawn = /CLAUDE_CODE_SESSION_ID:[$\w]+\(\),CLAUDECODE:"1",\.\.\.([$\w]+)\.env[,}]/g;
 const spawnMatches = [...js.matchAll(stdioSpawn)];
 if (spawnMatches.length !== 2)
   fail(
