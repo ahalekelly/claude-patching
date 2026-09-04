@@ -23,8 +23,6 @@ Two properties make that safe enough to run every day:
 | `agents-view-models` | agents-view job rows show their `--model` flag in the age column ("fable · 3m") |
 | `task-notification-provenance` | agent task-notifications carry a `<trigger>` element naming what started the run — original launch, a user message sent to the agent, a SendMessage, or an auto-resume — so an owner can tell a user-initiated continuation from a rogue one ([#84957](https://github.com/anthropics/claude-code/issues/84957)) |
 | `toolsearch-visibility` *(default-off)* | ToolSearch calls render with their query instead of being absorbed silently |
-| `thinking-visibility` *(default-off)* | thinking blocks render inline in the normal chat view, expanded; stock shows them only in transcript mode (ctrl+o) or under `--verbose` |
-| `thinking-no-fold` *(default-off)* | a thinking block stays its own transcript entry instead of folding into the adjacent collapsed read/search group's "Thought for Ns" pill |
 | `thinking-latest` *(default-off)* | the "Thought for Ns" pill keeps a one-line, hover-highlightable summary of its group's most recent thinking block after the turn completes; clicking the pill still opens every block |
 
 Each patch is one self-contained script under `patches/`, run as `node patches/<id>.mjs <unpacked-cli.js>`, with a header comment explaining the stock behavior, the anchor, and why the anchor is safe.
@@ -33,7 +31,7 @@ Each patch is one self-contained script under `patches/`, run as `node patches/<
 
 `toolsearch-visibility` ships default-off: ToolSearch fires constantly in tool-heavy sessions, and the rows are noise once you trust that deferred tools load. Enable it via `patches-local/enable` when debugging tool discovery.
 
-The three thinking patches ship default-off (stock's stream-then-collapse behavior is a reasonable preference) and offer two mutually exclusive presentations. `thinking-visibility` + `thinking-no-fold` are a pair — enable both via `patches-local/enable` or neither: every thinking block renders as its own inline entry and the "Thought for Ns" pill disappears. Alone, `thinking-no-fold` unfolds thinking into a render path that stock draws as nothing, and `thinking-visibility` barely matters because nearly every thinking block gets folded before it reaches that path. `thinking-latest` is the quieter alternative: the pill stays, keeping the first line of its group's most recent thinking block visible under it (ellipsis when cut off, persisting after the turn completes), and clicking it opens the rest. It conflicts with `thinking-no-fold` — with thinking kept out of the groups there is nothing for the pill to show — and the build refuses that combination.
+`thinking-latest` ships default-off, since stock's stream-then-collapse behavior is a reasonable preference. Enabled via `patches-local/enable`, the "Thought for Ns" pill keeps the first line of its group's most recent thinking block visible under it (ellipsis when cut off, persisting after the turn completes), and clicking it opens the rest.
 
 The Artifact tool is not patched: `"enableArtifact": false` in settings turns it off, which also drops its ~1.5k-token description from the prompt.
 

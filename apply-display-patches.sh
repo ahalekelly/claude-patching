@@ -42,11 +42,6 @@ for id in $DEFAULT_PATCH_IDS $ENABLE; do
   case " $DISABLE " in *" $id "*) continue;; esac
   PATCH_IDS="$PATCH_IDS $id"
 done
-case " $PATCH_IDS " in *" thinking-no-fold "*) case " $PATCH_IDS " in *" thinking-latest "*)
-  echo "ERROR: thinking-no-fold and thinking-latest conflict — thinking-no-fold keeps thinking out of the groups thinking-latest renders from" >&2
-  exit 1;;
-esac;; esac
-
 # --print-ids: the effective id list, for the port to derive which suite tests
 # to skip and which patches must be covered. Per-version drops are separate (the
 # port already knows them). --print-default-ids ignores the machine-local
