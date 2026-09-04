@@ -125,57 +125,6 @@ def start(binary, scratch, proxy, extra_env=None):
     return term
 
 
-def read_blocks(paths):
-    return [{"tool": "Read", "id": f"toolu_read{i}", "input": {"file_path": str(p)}}
-            for i, p in enumerate(paths)]
-
-
-def no_collapse_tool_calls(binary):
-    """Tool calls render individually, and ctrl+f toggles stock folding back.
-
-    Stock collapses parallel Reads into "Read N files" and — in the tui — Bash
-    calls into "ran N shell commands"; patched, each call is its own line.
-    The default ctrl+f binding folds the already-rendered turn into the stock
-    roll-up, and a second press unfolds it again.
-    """
-    scratch = Scratch("no-collapse")
-    paths = []
-    for name in ("alpha.txt", "beta.txt", "gamma.txt"):
-        path = scratch.project / name
-        path.write_text(f"contents of {name}\n")
-        paths.append(path)
-    bash = {"tool": "Bash", "id": "toolu_bash0",
-            "input": {"command": "echo quokka-bash-probe"}}
-    with CaptureProxy([read_blocks(paths) + [bash], [{"text": "all read"}]]) as proxy:
-        term = start(binary, scratch, proxy)
-        term.submit("read them")
-        term.wait_for("all read", timeout=90)
-        screen = term.text()
-        term.send("\x06")  # ctrl+f: fold
-        term.pump(2)
-        folded = term.text()
-        term.send("\x06")  # ctrl+f: unfold
-        term.pump(2)
-        unfolded = term.text()
-        term.close()
-    scratch.cleanup()
-    assert not re.search(r"Read \d+ files", screen), \
-        f"reads were collapsed into a roll-up:\n{screen}"
-    named = sum(1 for name in ("alpha.txt", "beta.txt", "gamma.txt") if name in screen)
-    assert named == 3, f"only {named}/3 reads rendered individually:\n{screen}"
-    assert "shell command" not in screen, \
-        f"the shell command was collapsed into a roll-up:\n{screen}"
-    assert "quokka-bash-probe" in screen, \
-        f"the shell command did not render individually:\n{screen}"
-    assert re.search(r"Read \d+ files", folded), \
-        f"ctrl+f did not fold the rendered turn into a roll-up:\n{folded}"
-    assert re.search(r"Read \d+ files", unfolded) is None, \
-        f"a second ctrl+f did not unfold the roll-up:\n{unfolded}"
-    named = sum(1 for name in ("alpha.txt", "beta.txt", "gamma.txt") if name in unfolded)
-    assert named == 3, \
-        f"only {named}/3 reads rendered individually after unfolding:\n{unfolded}"
-
-
 def toolsearch_visibility(binary):
     """A ToolSearch call renders a visible line."""
     scratch = Scratch("toolsearch")
@@ -230,29 +179,6 @@ def cron_visibility(binary):
         "the prompt reached the model without the CronJob prefix"
 
 
-def agents_view_shortcut(binary):
-    """ctrl+a opens the agents view from a normal idle session.
-
-    \\x01 is how a terminal sends ctrl+a. Stock only moves the input cursor
-    home, so the screen must be unchanged there; patched backgrounds the
-    conversation and switches to the agents view.
-    """
-    scratch = Scratch("agents-view")
-    with CaptureProxy() as proxy:
-        term = start(binary, scratch, proxy)
-        term.pump(2)
-        before = term.text()
-        term.send("\x01")
-        term.pump(6)
-        after = term.text()
-        term.close()
-        _reap_scratch_daemon(scratch)
-    scratch.cleanup()
-    assert "moved to the background" in after and "Needs input" in after, \
-        f"ctrl+a did not open the agents view:\n{after}"
-    assert before != after, "ctrl+a left the screen untouched"
-
-
 def _reap_scratch_daemon(scratch):
     """Kill the transient daemon tree the test's session spawns left behind.
 
@@ -299,59 +225,13 @@ def _reap_scratch_daemon(scratch):
         shutil.rmtree(daemon_dir, ignore_errors=True)
 
 
-def new_session_shortcut(binary):
-    """ctrl+n spawns and attaches a fresh session, from FleetView and in-session.
-
-    \\x0e is how a terminal sends ctrl+n. In `claude agents`, stock moves the
-    list selection; patched runs the new-session spawn flow and the screen
-    becomes an attached fresh session, whose footer hint "← for agents" is a
-    string FleetView itself never draws. From an idle session, stock does
-    nothing; patched backgrounds the conversation into the agents view, whose
-    next render consumes the handoff stamp and auto-spawns — the attached
-    fresh session draws "manual mode on" where the origin session showed the
-    bypassPermissions banner.
-    """
-    scratch = Scratch("new-session")
-    with CaptureProxy() as proxy:
-        env = scratch.env(proxy)
-        env.update({"TERM": "xterm-256color", "COLUMNS": str(COLS),
-                    "LINES": str(ROWS), "FORCE_COLOR": "0", "NO_COLOR": "1"})
-        term = Term([binary, "agents"], env, str(scratch.project))
-        opened = term.wait_for("describe a task for a new session", timeout=90)
-        if opened:
-            term.send("\x0e")
-            attached = term.wait_for("← for agents", timeout=60)
-            screen = term.text()
-        term.close()
-        _reap_scratch_daemon(scratch)
-    scratch.cleanup()
-    assert opened, "the agents view never rendered"
-    assert attached, \
-        f"ctrl+n in the agents view did not attach a fresh session:\n{screen}"
-
-    scratch = Scratch("new-session-repl")
-    with CaptureProxy() as proxy:
-        term = start(binary, scratch, proxy)
-        term.pump(2)
-        term.send("\x0e")
-        attached = term.wait_for("manual mode on", timeout=60)
-        screen = term.text()
-        term.close()
-        _reap_scratch_daemon(scratch)
-    scratch.cleanup()
-    assert attached, \
-        f"ctrl+n in a session did not spawn and attach a fresh session:\n{screen}"
-
-
 def agents_view_models(binary):
     """An agents-view job row shows the model from its --model respawn flag.
 
     Two completed job records seeded into the config dir render as Completed
     rows when `claude agents` mounts; patched, their age cells read
     "fable · <age>" and — for a Bedrock-style provider-prefixed id —
-    "opus · <age>". Stock renders the ages alone. The sibling patch
-    agent-list-models has no hermetic test: its rows require a live subagent
-    spawn, which the capture proxy cannot script deterministically.
+    "opus · <age>". Stock renders the ages alone.
     """
     scratch = Scratch("agent-model")
     now_ms = int(time.time() * 1000)
@@ -491,11 +371,8 @@ def thinking_latest(binary):
 
 
 TESTS = {
-    "no-collapse-tool-calls": no_collapse_tool_calls,
     "toolsearch-visibility": toolsearch_visibility,
     "cron-visibility": cron_visibility,
-    "agents-view-shortcut": agents_view_shortcut,
-    "new-session-shortcut": new_session_shortcut,
     "agents-view-models": agents_view_models,
     "thinking-visibility": thinking_visibility,
     "thinking-no-fold": thinking_no_fold,

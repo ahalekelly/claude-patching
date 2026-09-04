@@ -3,5 +3,3 @@
 # say why a test cannot exist yet — a waiver is a debt, not a decision.
 #
 #   <patch-id> <reason>
-
-agent-list-models  the agent list only draws rows for live subagent sessions, so this needs a live-model test in the shape of tests/mcp-per-subagent/run.py

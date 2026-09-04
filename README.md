@@ -14,16 +14,12 @@ Two properties make that safe enough to run every day:
 
 | id | what changes |
 | --- | --- |
-| `no-collapse-tool-calls` | Read/Grep/Glob/Bash calls render individually instead of collapsing into "Read 3 files" or "ran 4 shell commands"; ctrl+f (rebindable as `app:toggleToolCallFolding`) toggles stock folding back on at runtime, whole scrollback included |
 | `cron-visibility` | a cron-fired prompt renders in the transcript, and reaches the model prefixed `CronJob:` instead of arriving as an anonymous user turn |
 | `tool-defer-whitelist` | tools named in `CLAUDE_CODE_IMMEDIATE_TOOLS` ship their full schema up front instead of being deferred behind ToolSearch |
 | `trim-context-bloat` | drops `userEmail`, `currentDate`, the model-family paragraph and the env block's `Platform:` and `Shell:` lines from the system prompt |
 | `hook-envelope-strip` | a SessionStart, UserPromptSubmit or UserPromptExpansion hook's stdout reaches the model as itself, not wrapped in "`<hook>` hook success: " |
 | `task-reminder-conditional` | the periodic "task tools haven't been used recently" reminder fires only when the session's task list is non-empty |
-| `agents-view-shortcut` | a rebindable keybinding action opens the agents view from anywhere; stock offers only left-arrow on an empty idle prompt |
-| `new-session-shortcut` | ctrl+n spawns a fresh session and attaches to it, from FleetView or from inside a session (backgrounding the conversation first); stock's only route is a "+ new session" row rendered solely in a feature-gated FleetView layout — requires `agents-view-shortcut` |
 | `mcp-per-subagent` | each subagent gets its own process for the stdio MCP servers its frontmatter declares inline ([#84638](https://github.com/anthropics/claude-code/issues/84638)) |
-| `agent-list-models` | the in-session agent list shows each row's model — subagents as "11m 50s · fable · ↓ 92.8k tokens", the main row as a right-aligned "fable · ↓ 12k tokens" |
 | `agents-view-models` | agents-view job rows show their `--model` flag in the age column ("fable · 3m") |
 | `task-notification-provenance` | agent task-notifications carry a `<trigger>` element naming what started the run — original launch, a user message sent to the agent, a SendMessage, or an auto-resume — so an owner can tell a user-initiated continuation from a rogue one ([#84957](https://github.com/anthropics/claude-code/issues/84957)) |
 | `toolsearch-visibility` *(default-off)* | ToolSearch calls render with their query instead of being absorbed silently |

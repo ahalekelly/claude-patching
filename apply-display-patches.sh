@@ -22,10 +22,9 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PATCHES="$ROOT/patches"
 LOCAL="$ROOT/patches-local"
-DEFAULT_PATCH_IDS="no-collapse-tool-calls cron-visibility tool-defer-whitelist
+DEFAULT_PATCH_IDS="cron-visibility tool-defer-whitelist
            trim-context-bloat hook-envelope-strip
-           task-reminder-conditional agents-view-shortcut
-           new-session-shortcut mcp-per-subagent agent-list-models agents-view-models
+           task-reminder-conditional mcp-per-subagent agents-view-models
            task-notification-provenance"
 
 # Machine-local patch selection, id per line, both files optional and living
