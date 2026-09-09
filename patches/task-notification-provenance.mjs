@@ -41,7 +41,7 @@
 // Anchors: (1) the resume entry's destructured parameter list — promptOrigin,
 // continueInterruptedTurn and suppressOwnerNotification co-occur nowhere else
 // — plus, inside it, the suppression call that follows registration; (2) the
-// drain's queued_command mapping; (3) the notification body's fixed <note>
+// drain's queued_command mapping; (3) the notification body's fixed note
 // prose and the claimed/task destructure above it. All content-bearing,
 // exact-count asserted, spliced by index. Splice 1 additionally asserts its
 // position against the guards it must follow and the launch it must precede.
@@ -209,16 +209,18 @@ const trigger = (kind, from, text) =>
 {
   const noteProse =
     "A task-notification fires each time this agent stops with no live background children of its own\\. The user can send it another message and resume it, so the same task-id may notify more than once\\.";
+  // The note element's tag lives in a module constant, so the body reads
+  // `<${tag}>` ... `</${tag}>`; the prose is what identifies the builder.
   const m = matchOne(
     new RegExp(
-      "[$\\w]+\\(\\{value:[$\\w]+\\(\\{taskId:([$\\w]+),toolUseId:[$\\w]+,[^{}]*status:[$\\w]+,summary:([$\\w]+)\\([$\\w]+\\),body:`\\n<note>" +
+      "[$\\w]+\\(\\{value:[$\\w]+\\(\\{taskId:([$\\w]+),toolUseId:[$\\w]+,[^{}]*status:[$\\w]+,summary:([$\\w]+)\\([$\\w]+\\),body:`\\n<\\$\\{([$\\w]+)\\}>" +
         noteProse +
-        "</note>",
+        "</\\$\\{\\3\\}>",
       "g",
     ),
     "the agent notification builder",
   );
-  const [, task, esc] = m;
+  const [, task, esc, noteTag] = m;
 
   // The record and the registry reach the builder through this destructure,
   // which is also what proves the notification was claimed: everything below
@@ -241,7 +243,7 @@ const trigger = (kind, from, text) =>
     );
   const [, record, registry] = scope[0];
 
-  const at = m.index + m[0].indexOf("`\n<note>") + 1;
+  const at = m.index + m[0].indexOf("`\n<${" + noteTag + "}>") + 1;
   js =
     js.slice(0, at) +
     "${(()=>{let __ccQ=" + record + "?.__ccTrigger;" +
