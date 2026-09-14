@@ -26,7 +26,7 @@
 //                win32-only PowerShell variants, and this repo builds only for
 //                macOS and Linux, so dropping the line unconditionally is safe.
 //
-// Four anchor sites. The first is the user-context builder, whose returned
+// Three anchor sites. The first is the user-context builder, whose returned
 // object carries the userEmail and currentDate entries; removing the entries
 // removes the blocks, since the renderer walks whatever keys the object has
 // (userEmail is already conditional there). The second is the model-family
@@ -34,16 +34,13 @@
 // call to it — an entry in the environment preamble array, which is
 // null-filtered — is replaced with null.
 //
-// The last two carry the environment block, both in one module and each the
-// platform and shell text of one prompt arm: the <env> template literal, where
-// the shell is a call that renders its own line, and the "# Environment" array,
-// where platform and shell are sibling entries formatted from the environment
-// snapshot. Both anchors span the platform text, the shell beside it and the
-// "OS Version: " line that follows, and the spliced-out span leaves the block
-// flowing straight from the working-directory lines into "OS Version:". That
-// adjacency is also what excludes the bundle's other "Platform: ${...platform}"
-// — the bug-report body template, which has no shell text next to it and is
-// left untouched.
+// The third is the "# Environment" array, where platform and shell are sibling
+// entries formatted from the environment snapshot. The anchor spans both
+// entries and the "OS Version: " entry that follows, and the spliced-out span
+// leaves the block flowing straight from the working-directory lines into
+// "OS Version:". That adjacency is also what excludes the bundle's other
+// "Platform: ${...}" text — the bug-report body template, which has no shell
+// entry next to it and is left untouched.
 import { readFileSync, writeFileSync } from "node:fs";
 
 const jsPath = process.argv[2];
@@ -112,19 +109,8 @@ splice(
   'null,"Claude Code is available as a CLI in the terminal',
 );
 
-// 4. The Platform and Shell lines in the <env> template literal, removed as one
-// span so the block runs from the working-directory lines to "OS Version:".
-splice(
-  matchesOf(
-    "env template platform and shell lines",
-    /Platform: \$\{[$\w]+\.platform\}\n\$\{[$\w]+\(\)\}\nOS Version: /g,
-    1,
-  )[0],
-  "OS Version: ",
-);
-
-// 5. The same two lines as consecutive entries in the "# Environment" array,
-// each formatted from the environment snapshot the array renders.
+// 4. The Platform and Shell lines, consecutive entries in the "# Environment"
+// array, each formatted from the environment snapshot the array renders.
 splice(
   matchesOf(
     "env array platform and shell entries",
