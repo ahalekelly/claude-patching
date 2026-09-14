@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# Pre-launch check, called by the `claude` shell wrapper before starting the
-# binary. One rule: launch the best available patched binary now, reconcile the
-# newest installed version in the background.
+# Pre-launch check, called by claude-launch.sh before starting the binary. One
+# rule: launch the best available patched binary now, reconcile the newest
+# installed version in the background.
 #
 # Contract with the wrapper:
 #   stdout  — the absolute path of the binary to launch; empty means "fall
-#             back to `claude` on PATH"
+#             back to the installer's ~/.local/bin/claude"
 #   stderr  — any message the human must see before the TUI takes over
 #   exit 0  — nothing printed, launch immediately
 #   exit 1  — something was printed (fallback in use / port started / a brief

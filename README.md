@@ -46,7 +46,7 @@ The Artifact tool is not patched: `"enableArtifact": false` in settings turns it
 
 ## Install
 
-Clone anywhere and point your shell's `claude` at the check:
+Clone anywhere and point your shell's `claude` at the launcher:
 
 ```bash
 git clone https://github.com/ahalekelly/claude-patching.git ~/claude-patching
@@ -54,19 +54,7 @@ git clone https://github.com/ahalekelly/claude-patching.git ~/claude-patching
 
 ```bash
 # in ~/.zshrc
-claude() {
-  # Launch the best available patched binary. A new version is reconciled in
-  # the background, so a launch never waits on an unpack and repack. An empty
-  # result falls back to `claude` on PATH. Nonzero exit = the check printed
-  # something worth reading; hold for Enter before the TUI takes over.
-  local target bin=claude
-  if ! target="$("$HOME/claude-patching/check-and-apply.sh")" && [[ -t 0 && -t 1 ]]; then
-    printf 'Press Enter to launch Claude Code... '
-    read -r
-  fi
-  [[ -n "$target" ]] && bin="$target"
-  command "$bin" "$@"
-}
+claude() { "$HOME/claude-patching/claude-launch.sh" "$@"; }
 ```
 
 To pick a subset, list ids in two optional machine-local files under gitignored `patches-local/`: `disable` (one id per line) turns off patches from the default set, and `enable` turns on patches that ship default-off. Both count toward the promotion stamp's fingerprint, so editing them triggers a rebuild on the next launch, and the port's gate skips the suite tests of whatever is not applied. `mcp-per-subagent` is mandatory and cannot be disabled.
@@ -117,9 +105,11 @@ Claude Code updates itself only from interactive sessions, so a machine that run
 cp claude-patching-update.{service,timer} ~/.config/systemd/user/ && systemctl --user daemon-reload && systemctl --user enable --now claude-patching-update.timer
 ```
 
-### Background sessions
+### Launchers that bypass the shell
 
-The background-agent supervisor, the sessions and workers it hosts, and the other covered background processes are spawned by absolute binary path, so they never reach the shell function — a new stock version that lands before its port finishes would otherwise run every background job unpatched. Claude Code's `processWrapper` closes that gap: it prepends an argv prefix to those spawns, and `process-wrapper.sh` re-points the binary using the same resolution order a launch takes. It prints nothing and reconciles nothing — the path watcher already does — and execs the requested binary unchanged when `CLAUDE_PATCHING_AUTOPORT` is set or the target is not an installed version.
+Anything that spawns Claude Code by name or path — T3 Code, the Agent SDK, scripts — never reaches the shell function, so it runs stock the moment an update lands, even while a patched archive binary exists. `claude-launch.sh` is the shell function as an executable: point such launchers at its absolute path. In T3 Code, set the Claude provider's binary path to it.
+
+Claude Code spawns the background-agent supervisor, the sessions and workers it hosts, and the other covered background processes by absolute binary path itself — a new stock version that lands before its port finishes would otherwise run every background job unpatched. Claude Code's `processWrapper` closes that gap: it prepends an argv prefix to those spawns, and `process-wrapper.sh` re-points the binary using the same resolution order a launch takes. It prints nothing and reconciles nothing — the path watcher already does — and execs the requested binary unchanged when `CLAUDE_PATCHING_AUTOPORT` is set or the target is not an installed version.
 
 Set it in user settings (`~/.claude/settings.json`):
 
@@ -131,6 +121,7 @@ Set it in user settings (`~/.claude/settings.json`):
 
 ### Files
 
+- `claude-launch.sh <args...>` — the launcher: runs the check, holds for Enter on a terminal when it printed something, and execs the selected binary, falling back to `~/.local/bin/claude`.
 - `check-and-apply.sh` — pre-launch check: prints the selected binary on stdout and human messages on stderr, then starts any needed background port. Exit 0 = silent, exit 1 = the wrapper should hold for its message. Exits immediately when `CLAUDE_PATCHING_AUTOPORT` is set, so the port's own sessions never recurse.
 - `background-port.sh [version]` — the reconciler: pull, retry damper, lock, prune, mechanical apply, role-specific gate, and promotion. The porter also handles re-anchoring, the stock suite, advisories, and escalation.
 - `process-wrapper.sh <binary> <args...>` — the `processWrapper` argv prefix: execs the best patched binary in place of the one a background spawn asked for, silently, falling through to the requested binary on any failure.
@@ -174,7 +165,7 @@ After promotion an advisory agent classifies those, reads the per-test stock fai
 
 A repatch only changes the file on disk; every claude process keeps the JS it loaded at start. Two consequences beyond the obvious "restart your sessions":
 
-- **The daemon's warm spares serve stale code.** The Claude Code daemon pre-forks spare processes (`claude bg-spare` + `bg-pty-host` pairs under `/tmp/cc-daemon-<uid>/<daemon>/spare/`) that load the binary's JS at fork time. Daemon-launched sessions (desktop app, agents view) claim a spare on start, so a session "restarted" right after a repatch can still run pre-patch code — repeatedly, until the pool cycles. Diagnose with `ps -axo pid,lstart,command | grep bg-spare` and compare spare fork times against the binary mtime. Promotion clears both halves of the problem: it kills every unclaimed spare, and every `--bg-pty-host` wrapper along with its direct children, which is how it reaches sessions claimed from a spare — those rewrite their argv to their own resume command and are otherwise unrecognizable. Every daemon-attached session bounces for a few seconds at promotion and auto-resumes on the new binary. That is the intended trade — promotions are rare and sessions come back patched. Terminal launches via the shell wrapper exec the binary directly and never touch the spare pool.
+- **The daemon's warm spares serve stale code.** The Claude Code daemon pre-forks spare processes (`claude bg-spare` + `bg-pty-host` pairs under `/tmp/cc-daemon-<uid>/<daemon>/spare/`) that load the binary's JS at fork time. Daemon-launched sessions (desktop app, agents view) claim a spare on start, so a session "restarted" right after a repatch can still run pre-patch code — repeatedly, until the pool cycles. Diagnose with `ps -axo pid,lstart,command | grep bg-spare` and compare spare fork times against the binary mtime. Promotion clears both halves of the problem: it kills every unclaimed spare, and every `--bg-pty-host` wrapper along with its direct children, which is how it reaches sessions claimed from a spare — those rewrite their argv to their own resume command and are otherwise unrecognizable. Every daemon-attached session bounces for a few seconds at promotion and auto-resumes on the new binary. That is the intended trade — promotions are rare and sessions come back patched. Launches through `claude-launch.sh` exec the binary directly and never touch the spare pool.
 - **The inode swap can kill live sessions on macOS.** Sessions launched from the replaced inode may die when the binary is swapped underneath them; they resume cleanly, but a repatch mid-conversation is what that crash was.
 
 ### Code signing and macOS permission prompts
