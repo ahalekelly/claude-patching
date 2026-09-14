@@ -26,15 +26,22 @@
 //                win32-only PowerShell variants, and this repo builds only for
 //                macOS and Linux, so dropping the line unconditionally is safe.
 //
-// Three anchor sites. The first is the user-context builder, whose returned
-// object carries the userEmail and currentDate entries; removing the entries
-// removes the blocks, since the renderer walks whatever keys the object has
-// (userEmail is already conditional there). The second is the model-family
-// paragraph: its builder is found by the paragraph's own opening words, and the
-// call to it — an entry in the environment preamble array, which is
-// null-filtered — is replaced with null.
+// Five anchor sites. The first two are in the user-context builder, whose
+// returned object carries the userEmail and currentDate entries; removing an
+// entry removes its block, since the renderer walks whatever keys the object
+// has (userEmail is already conditional there).
 //
-// The third is the "# Environment" array, where platform and shell are sibling
+// The third is the attachment producer that announces the date to a session: a
+// first-turn `{type:"date"}` attachment, rendered into a system reminder and
+// re-sent with `changed` set when the date rolls over mid-session. The whole
+// statement goes, so neither the announcement nor the follow-up is queued. The
+// currentDate context entry is the bare-fork path to the same text.
+//
+// The fourth is the model-family paragraph: its builder is found by the
+// paragraph's own opening words, and the call to it — an entry in the
+// environment preamble array, which is null-filtered — is replaced with null.
+//
+// The fifth is the "# Environment" array, where platform and shell are sibling
 // entries formatted from the environment snapshot. The anchor spans both
 // entries and the "OS Version: " entry that follows, and the spliced-out span
 // leaves the block flowing straight from the working-directory lines into
@@ -88,7 +95,19 @@ splice(
   "}",
 );
 
-// 3. The model-family paragraph. Its builder is a function declaration under a
+// 3. The date attachment, the producer's closing statement: pushed on the first
+// turn, and pushed again with `changed` set when the date rolls over. Dropping
+// the statement drops both.
+splice(
+  matchesOf(
+    "date attachment",
+    /let ([$\w]+)=[$\w]+\(\),([$\w]+)=[$\w]+\([$\w]+\);if\([$\w]+\?\2===void 0:\2!==\1\)[$\w]+\.push\([$\w]+\(\2===void 0\?\{type:"date",date:\1\}:\{type:"date",date:\1,changed:!0\},[$\w]+\)\);/g,
+    1,
+  )[0],
+  "",
+);
+
+// 4. The model-family paragraph. Its builder is a function declaration under a
 // minified name; take the name from the definition, then neutralize its call
 // sites — each one an entry in the environment preamble array, pinned by the
 // sentence that follows it there.
@@ -109,7 +128,7 @@ splice(
   'null,"Claude Code is available as a CLI in the terminal',
 );
 
-// 4. The Platform and Shell lines, consecutive entries in the "# Environment"
+// 5. The Platform and Shell lines, consecutive entries in the "# Environment"
 // array, each formatted from the environment snapshot the array renders.
 splice(
   matchesOf(
@@ -122,5 +141,5 @@ splice(
 
 writeFileSync(jsPath, js);
 console.log(
-  "trim-context-bloat: userEmail, currentDate, the model-family paragraph and the env Platform and Shell lines removed from the system prompt",
+  "trim-context-bloat: userEmail, the date (context entry and attachment), the model-family paragraph and the env Platform and Shell lines removed",
 );
