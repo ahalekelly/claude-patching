@@ -111,6 +111,12 @@ The service runs once at login and on directory changes, has no start timeout, a
 
 `autoport-trigger.sh` first waits for the new binary's size to hold still, since the watch fires while the updater is still writing it, then takes the same stamp fast path the launch check takes and execs the port only if the stamp fails. launchd requires absolute paths, so edit the plist if your checkout is not at `~/.agents/claude-patching`.
 
+Claude Code updates itself only from interactive sessions, so a machine that runs it only headlessly (T3 Code threads, timers) stays on the last version installed by hand. The porter must never be that machine, or no release gets ported and every consumer waits. On a headless Linux porter, install the hourly update timer:
+
+```bash
+cp claude-patching-update.{service,timer} ~/.config/systemd/user/ && systemctl --user daemon-reload && systemctl --user enable --now claude-patching-update.timer
+```
+
 ### Background sessions
 
 The background-agent supervisor, the sessions and workers it hosts, and the other covered background processes are spawned by absolute binary path, so they never reach the shell function — a new stock version that lands before its port finishes would otherwise run every background job unpatched. Claude Code's `processWrapper` closes that gap: it prepends an argv prefix to those spawns, and `process-wrapper.sh` re-points the binary using the same resolution order a launch takes. It prints nothing and reconciles nothing — the path watcher already does — and execs the requested binary unchanged when `CLAUDE_PATCHING_AUTOPORT` is set or the target is not an installed version.
@@ -135,6 +141,7 @@ Set it in user settings (`~/.claude/settings.json`):
 - `com.akelly.claude-patching.autoport.plist` — the launchd agent. Absolute paths, `RunAtLoad` so an install during a logout is caught, `ThrottleInterval` so a burst of writes fires it once.
 - `claude-patching-autoport.path` — the systemd user path watcher.
 - `claude-patching-autoport.service` — the systemd user service, also started at login.
+- `claude-patching-update.timer` / `claude-patching-update.service` — hourly `claude update`, for a headless machine that would otherwise never update.
 - `apply-display-patches.sh <version> <output-binary>` — pure candidate builder: unpacks `versions/<version>.orig` (backing it up on first sight), applies `PATCH_IDS` in order, repacks to the output path and signs it on macOS. Fails loudly, writing nothing, if any patch does not match.
 - `bunbundle.py unpack|repack` — the bun-blob tool behind the builder: unpack concatenates the binary's embedded JS modules into one marker-delimited file, repack splits it back, syntax-checks and de-bytecodes the modules that changed, and splices their new source into the freed bytecode, leaving every other byte in place.
 - `port-agent.sh` / `advisory-agent.sh` / `escalation-agent.sh` — porter-only agents launched through `agent-run.sh` in auto permission mode. Each step lands in `port-state/<tag>-<version>.log`.
