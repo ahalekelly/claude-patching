@@ -1,0 +1,9 @@
+[Unit]
+Description=Install the current Claude Code release
+
+# Claude Code's auto-updater runs only inside interactive sessions, so a machine
+# that runs Claude Code headlessly never updates on its own. The porter must see
+# every release, or every consumer waits for a port that never comes.
+[Service]
+Type=oneshot
+ExecStart=%h/.local/bin/claude update
