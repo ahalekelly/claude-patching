@@ -35,10 +35,11 @@ cat > "$RUN" <<EOF
 #!/bin/bash
 cd "$ROOT"
 export CLAUDE_PATCHING_AUTOPORT=1
-# Use the default profile: the invoker's environment varies (claudew sessions
-# export CLAUDE_CONFIG_DIR=.claude-work), and on macOS the variable being set
-# at all selects a different Keychain entry that nothing keeps fresh.
+# Run as the personal profile whatever the invoker is: claudew sessions export
+# CLAUDE_CONFIG_DIR=.claude-work and the work token, and on macOS the variable
+# being set at all selects a different Keychain entry that nothing keeps fresh.
 unset CLAUDE_CONFIG_DIR
+set -a; source "$HOME/.agents/claude-token.env"; set +a
 # -p writes nothing until the final message, so the log sits empty for the whole
 # run. stream-json emits an event per step instead; render one line each —
 # assistant text as written, a tool call as its name and the head of its input,
