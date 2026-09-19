@@ -35,10 +35,8 @@ cat > "$RUN" <<EOF
 #!/bin/bash
 cd "$ROOT"
 export CLAUDE_PATCHING_AUTOPORT=1
-# Run as the personal profile whatever the invoker is: claudew sessions export
-# CLAUDE_CONFIG_DIR=.claude-work and the work token, and on macOS the variable
-# being set at all selects a different Keychain entry that nothing keeps fresh.
-unset CLAUDE_CONFIG_DIR
+# Run as the personal account whatever the invoker is: a work session carries the
+# work token in its environment.
 set -a; source "$HOME/.agents/claude-token.env"; set +a
 # -p writes nothing until the final message, so the log sits empty for the whole
 # run. stream-json emits an event per step instead; render one line each —
