@@ -1,5 +1,7 @@
 # claude-patching
 
+Retired on 2026-09-20: the prompt-side patches live on as the `tweaks` Claude Code plugin in the agent-config repo, and browser-swarm's `swarm` CLI replaced `mcp-per-subagent`.
+
 Patches for the **native Claude Code binary** on macOS and Linux — all applied by default except the ones the table below marks default-off — plus a port that keeps them applied across updates without ever making you wait for it.
 
 Claude Code ships as a single-file bun executable with its JavaScript embedded as ~1400 code-split ESM modules, each carrying precompiled bytecode. Several things it does — collapsing tool calls, hiding ToolSearch and cron fires, spending thousands of standing prompt tokens on tool descriptions you rarely use, sharing one MCP server process between concurrent subagents — have no setting. So `bunbundle.py` unpacks every module into one concatenated file with a `//__CHUNK__ <name>` marker line before each, the patches edit that file, and the repack splits it back, syntax-checks the modules that changed, clears their stale bytecode (bun then parses the patched source), and writes the new source into the space that bytecode freed, so every other byte of the binary keeps its offset and it needs no surgery beyond a re-sign.
